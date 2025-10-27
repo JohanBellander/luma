@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "1.0",
+  "screen": {
+    "id": "settings-form",
+    "type": "stack",
+    "direction": "vertical",
+    "spacing": 16,
+    "children": [
+      {
+        "id": "header",
+        "type": "box",
+        "width": "100%",
+        "height": 50,
+        "children": [
+          {
+            "id": "title",
+            "type": "text",
+            "content": "User Settings",
+            "fontSize": 20
+          }
+        ]
+      },
+      {
+        "id": "username-field",
+        "type": "field",
+        "label": "Username",
+        "placeholder": "Enter username"
+      },
+      {
+        "id": "email-field",
+        "type": "field",
+        "label": "Email",
+        "placeholder": "Enter email"
+      },
+      {
+        "id": "unreachable-field",
+        "type": "field",
+        "label": "Hidden Field",
+        "placeholder": "This field is not keyboard accessible",
+        "tabIndex": -1
+      },
+      {
+        "id": "actions",
+        "type": "stack",
+        "direction": "horizontal",
+        "spacing": 12,
+        "children": [
+          {
+            "id": "save-button",
+            "type": "action",
+            "actionType": "primary",
+            "label": "Save",
+            "width": 100,
+            "height": 40
+          },
+          {
+            "id": "disabled-button",
+            "type": "action",
+            "actionType": "secondary",
+            "label": "Disabled",
+            "disabled": true,
+            "width": 100,
+            "height": 40
+          }
+        ]
+      },
+      {
+        "id": "orphan-button",
+        "type": "action",
+        "actionType": "tertiary",
+        "label": "Orphan Action",
+        "tabIndex": -1,
+        "width": 100,
+        "height": 40
+      }
+    ]
+  }
+}

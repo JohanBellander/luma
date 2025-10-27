@@ -1,0 +1,116 @@
+{
+  "schemaVersion": "1.0",
+  "screen": {
+    "id": "product-table",
+    "type": "stack",
+    "direction": "vertical",
+    "spacing": 12,
+    "children": [
+      {
+        "id": "table-header",
+        "type": "box",
+        "width": "100%",
+        "height": 50,
+        "children": [
+          {
+            "id": "title",
+            "type": "text",
+            "content": "Product Inventory",
+            "fontSize": 20,
+            "fontWeight": "bold"
+          }
+        ]
+      },
+      {
+        "id": "products-table",
+        "type": "table",
+        "columns": [
+          {
+            "id": "col-sku",
+            "header": "SKU",
+            "width": 100
+          },
+          {
+            "id": "col-name",
+            "header": "Product Name",
+            "width": 250
+          },
+          {
+            "id": "col-description",
+            "header": "Description",
+            "width": 400
+          },
+          {
+            "id": "col-price",
+            "header": "Price",
+            "width": 100
+          },
+          {
+            "id": "col-stock",
+            "header": "In Stock",
+            "width": 100
+          },
+          {
+            "id": "col-actions",
+            "header": "Actions",
+            "width": 150
+          }
+        ],
+        "rows": [
+          {
+            "id": "row-1",
+            "cells": [
+              { "id": "cell-1-sku", "content": "SKU-001" },
+              { "id": "cell-1-name", "content": "Wireless Mouse" },
+              { "id": "cell-1-desc", "content": "Ergonomic wireless mouse with USB receiver" },
+              { "id": "cell-1-price", "content": "$29.99" },
+              { "id": "cell-1-stock", "content": "45" },
+              { 
+                "id": "cell-1-actions",
+                "children": [
+                  { "id": "edit-1", "type": "action", "label": "Edit" },
+                  { "id": "delete-1", "type": "action", "label": "Delete" }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "row-2",
+            "cells": [
+              { "id": "cell-2-sku", "content": "SKU-002" },
+              { "id": "cell-2-name", "content": "Mechanical Keyboard" },
+              { "id": "cell-2-desc", "content": "RGB backlit mechanical keyboard with cherry switches" },
+              { "id": "cell-2-price", "content": "$89.99" },
+              { "id": "cell-2-stock", "content": "23" },
+              { 
+                "id": "cell-2-actions",
+                "children": [
+                  { "id": "edit-2", "type": "action", "label": "Edit" },
+                  { "id": "delete-2", "type": "action", "label": "Delete" }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "overrides": {
+    "320x640": {
+      "/screen/children/1": {
+        "columns": [
+          {
+            "id": "col-name",
+            "header": "Product",
+            "width": 200
+          },
+          {
+            "id": "col-price",
+            "header": "Price",
+            "width": 80
+          }
+        ]
+      }
+    }
+  }
+}

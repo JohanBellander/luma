@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "1.0",
+  "screen": {
+    "id": "signup-form",
+    "type": "stack",
+    "direction": "vertical",
+    "spacing": 16,
+    "children": [
+      {
+        "id": "header",
+        "type": "box",
+        "width": "100%",
+        "height": 60,
+        "children": [
+          {
+            "id": "title",
+            "type": "text",
+            "content": "Sign Up",
+            "fontSize": 24
+          }
+        ]
+      },
+      {
+        "id": "name-field",
+        "type": "field",
+        "placeholder": "Enter your name"
+      },
+      {
+        "id": "email-field",
+        "type": "field",
+        "placeholder": "Enter your email"
+      },
+      {
+        "id": "password-field",
+        "type": "field",
+        "label": "Password",
+        "placeholder": "Enter password"
+      },
+      {
+        "id": "submit-button",
+        "type": "action",
+        "actionType": "primary",
+        "label": "Sign Up",
+        "width": 120,
+        "height": 44
+      }
+    ]
+  }
+}
