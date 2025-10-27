@@ -30,6 +30,12 @@ LUMA analyzes early-stage UI mockups defined in **Component Scaffold JSON** form
 
 ## Installation
 
+### Quick Install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/JohanBellander/luma/master/scripts/install.sh | bash
+```
+
 ### From Source
 
 ```bash
