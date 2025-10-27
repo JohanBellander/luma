@@ -1,0 +1,134 @@
+{
+  "schemaVersion": "1.0.0",
+  "screen": {
+    "id": "responsive-demo",
+    "title": "Responsive Layout Demo",
+    "root": {
+      "id": "root",
+      "type": "Stack",
+      "direction": "horizontal",
+      "gap": 16,
+      "padding": 24,
+      "at": {
+        "<=768": {
+          "direction": "vertical",
+          "gap": 12
+        }
+      },
+      "children": [
+        {
+          "id": "sidebar",
+          "type": "Box",
+          "padding": 16,
+          "widthPolicy": "fixed",
+          "minSize": { "w": 250 },
+          "at": {
+            "<=768": {
+              "widthPolicy": "fill",
+              "minSize": { "w": 0 }
+            }
+          },
+          "child": {
+            "id": "nav",
+            "type": "Stack",
+            "direction": "vertical",
+            "gap": 8,
+            "children": [
+              {
+                "id": "nav-item-1",
+                "type": "Button",
+                "text": "Dashboard",
+                "roleHint": "link"
+              },
+              {
+                "id": "nav-item-2",
+                "type": "Button",
+                "text": "Settings",
+                "roleHint": "link"
+              }
+            ]
+          }
+        },
+        {
+          "id": "main-content",
+          "type": "Stack",
+          "direction": "vertical",
+          "gap": 24,
+          "widthPolicy": "fill",
+          "children": [
+            {
+              "id": "title",
+              "type": "Text",
+              "text": "Welcome",
+              "fontSize": 32,
+              "at": {
+                "<=768": { "fontSize": 24 },
+                "<=480": { "fontSize": 20 }
+              }
+            },
+            {
+              "id": "description",
+              "type": "Text",
+              "text": "This layout adapts to different screen sizes",
+              "fontSize": 16,
+              "at": {
+                "<=768": { "fontSize": 14 }
+              }
+            },
+            {
+              "id": "grid-container",
+              "type": "Grid",
+              "columns": 3,
+              "gap": 16,
+              "minColWidth": 200,
+              "at": {
+                "<=1024": { "columns": 2 },
+                "<=768": { "columns": 1 }
+              },
+              "children": [
+                {
+                  "id": "card-1",
+                  "type": "Box",
+                  "padding": 16,
+                  "child": {
+                    "id": "card-1-text",
+                    "type": "Text",
+                    "text": "Card 1"
+                  }
+                },
+                {
+                  "id": "card-2",
+                  "type": "Box",
+                  "padding": 16,
+                  "child": {
+                    "id": "card-2-text",
+                    "type": "Text",
+                    "text": "Card 2"
+                  }
+                },
+                {
+                  "id": "card-3",
+                  "type": "Box",
+                  "padding": 16,
+                  "child": {
+                    "id": "card-3-text",
+                    "type": "Text",
+                    "text": "Card 3"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "settings": {
+    "spacingScale": [4, 8, 12, 16, 24, 32, 48],
+    "minTouchTarget": {
+      "w": 44,
+      "h": 44
+    },
+    "breakpoints": ["320x640", "768x1024", "1280x800"]
+  }
+}
