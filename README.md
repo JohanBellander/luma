@@ -57,6 +57,15 @@ npm link  # Makes 'luma' command available globally
 # Validate a scaffold
 luma ingest examples/happy-form.json
 
+## Quick Start
+
+```bash
+# Initialize a new project with starter scaffold
+luma init
+
+# Analyze your scaffold
+luma ingest scaffold.json
+
 # Compute layout at multiple viewports
 luma layout examples/happy-form.json --viewports 320x640,1024x768
 
@@ -76,6 +85,10 @@ luma report .ui/runs/<run-id>
 See [QUICKSTART.md](./QUICKSTART.md) for a detailed walkthrough.
 
 ## Commands
+
+### Setup Command
+
+- `luma init` — Initialize LUMA in current directory (creates starter scaffold.json)
 
 ### Analysis Commands
 

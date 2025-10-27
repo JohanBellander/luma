@@ -7,6 +7,18 @@ This guide walks you through analyzing a UI scaffold with LUMA from start to fin
 - Node.js 18+ installed
 - LUMA installed (see [README.md](./README.md#installation))
 
+## Step 0: Initialize (Optional)
+
+If you're starting a new project, use `luma init` to create a starter scaffold:
+
+```bash
+mkdir my-luma-project
+cd my-luma-project
+luma init
+```
+
+This creates `scaffold.json` with a basic landing page structure (header, hero section, footer). You can edit this file to match your actual UI design, or continue with the manual approach below.
+
 ## Step 1: Prepare Your Scaffold
 
 Create a simple form scaffold in `my-form.json`:

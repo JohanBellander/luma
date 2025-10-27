@@ -17,6 +17,7 @@ import { createPatternsCommand } from './cli/patterns.command.js';
 import { createExplainCommand } from './cli/explain.command.js';
 import { createFaqCommand } from './cli/faq.command.js';
 import { createReportCommand } from './cli/report.command.js';
+import { initCommand } from './cli/init.command.js';
 
 const program = new Command();
 
@@ -26,6 +27,7 @@ program
   .version('1.0.0');
 
 // Add commands
+program.addCommand(initCommand);
 program.addCommand(createIngestCommand());
 program.addCommand(createLayoutCommand());
 program.addCommand(createKeyboardCommand());
