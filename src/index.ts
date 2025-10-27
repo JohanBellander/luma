@@ -8,6 +8,7 @@
 import { Command } from 'commander';
 import { createIngestCommand } from './cli/ingest.command.js';
 import { createLayoutCommand } from './cli/layout.command.js';
+import { createKeyboardCommand } from './cli/keyboard.command.js';
 
 const program = new Command();
 
@@ -19,6 +20,7 @@ program
 // Add commands
 program.addCommand(createIngestCommand());
 program.addCommand(createLayoutCommand());
+program.addCommand(createKeyboardCommand());
 
 // Placeholder for commands to be added in Phase 2+
 program.parse(process.argv);
