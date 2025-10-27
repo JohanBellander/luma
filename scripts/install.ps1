@@ -73,9 +73,13 @@ try {
     Write-Host "Building LUMA..." -ForegroundColor Cyan
     npm run build
     
-    # Install globally
+    # Pack the package
+    Write-Host "Packaging LUMA..." -ForegroundColor Cyan
+    $tarball = npm pack --silent
+    
+    # Install globally from tarball
     Write-Host "Installing LUMA globally..." -ForegroundColor Cyan
-    npm link
+    npm install -g $tarball
     
     Write-Host ""
     Write-Host "✅ LUMA installed successfully!" -ForegroundColor Green

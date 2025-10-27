@@ -53,9 +53,13 @@ npm install --silent
 echo "Building LUMA..."
 npm run build
 
-# Install globally
+# Pack the package
+echo "Packaging LUMA..."
+TARBALL=$(npm pack --silent)
+
+# Install globally from tarball
 echo "Installing LUMA globally..."
-npm link
+npm install -g "$TARBALL"
 
 # Cleanup
 cd ~
