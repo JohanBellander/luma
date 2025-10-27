@@ -4,16 +4,18 @@ set -e
 echo "Installing LUMA - Layout & UX Mockup Analyzer..."
 
 # Check for Node.js - try multiple methods for cross-platform compatibility
-NODE_CMD=""
-if command -v node &> /dev/null; then
+# Try direct execution first (most reliable on Windows)
+if node -v &> /dev/null 2>&1; then
+    NODE_CMD="node"
+elif node.exe -v &> /dev/null 2>&1; then
+    NODE_CMD="node.exe"
+elif command -v node &> /dev/null; then
     NODE_CMD="node"
 elif command -v node.exe &> /dev/null; then
     NODE_CMD="node.exe"
 elif which node &> /dev/null; then
     NODE_CMD="node"
-fi
-
-if [ -z "$NODE_CMD" ]; then
+else
     echo "Error: Node.js is required but not installed."
     echo "Please install Node.js >= 18.0.0 from https://nodejs.org/"
     exit 1
