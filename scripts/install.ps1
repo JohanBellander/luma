@@ -50,7 +50,7 @@ catch {
 if ($lumaInstalled) {
     Write-Host "Existing LUMA installation detected" -ForegroundColor Yellow
     Write-Host "Uninstalling previous version..." -ForegroundColor Cyan
-    npm unlink -g luma 2>$null
+    npm uninstall -g luma 2>$null
 }
 
 # Create temporary directory

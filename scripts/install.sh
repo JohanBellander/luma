@@ -35,7 +35,7 @@ echo "Found Node.js $($NODE_CMD -v) ✓"
 if npm list -g --depth=0 luma 2>/dev/null | grep -q "luma@"; then
     echo "Existing LUMA installation detected"
     echo "Uninstalling previous version..."
-    npm unlink -g luma 2>/dev/null || true
+    npm uninstall -g luma 2>/dev/null || true
 fi
 
 # Clone repository
