@@ -11,6 +11,11 @@ import { createLayoutCommand } from './cli/layout.command.js';
 import { createKeyboardCommand } from './cli/keyboard.command.js';
 import { createFlowCommand } from './cli/flow.command.js';
 import { createScoreCommand } from './cli/score.command.js';
+import { createCapabilitiesCommand } from './cli/capabilities.command.js';
+import { createSchemaCommand } from './cli/schema.command.js';
+import { createPatternsCommand } from './cli/patterns.command.js';
+import { createExplainCommand } from './cli/explain.command.js';
+import { createFaqCommand } from './cli/faq.command.js';
 
 const program = new Command();
 
@@ -25,6 +30,11 @@ program.addCommand(createLayoutCommand());
 program.addCommand(createKeyboardCommand());
 program.addCommand(createFlowCommand());
 program.addCommand(createScoreCommand());
+program.addCommand(createCapabilitiesCommand());
+program.addCommand(createSchemaCommand());
+program.addCommand(createPatternsCommand());
+program.addCommand(createExplainCommand());
+program.addCommand(createFaqCommand());
 
 // Placeholder for commands to be added in Phase 2+
 program.parse(process.argv);

@@ -1,0 +1,52 @@
+{
+  "questions": [
+    {
+      "q": "What is LUMA?",
+      "a": "LUMA (Layout & UX Mockup Analyzer) is a CLI tool that validates UI scaffolds against design system patterns, layout rules, and accessibility best practices."
+    },
+    {
+      "q": "What file format does LUMA accept?",
+      "a": "LUMA accepts JSON files with schemaVersion '1.0.0' containing a screen hierarchy with nodes (Stack, Grid, Box, Text, Button, Field, Form, Table)."
+    },
+    {
+      "q": "How do I run a full analysis?",
+      "a": "Run these commands in sequence: 1) luma ingest <file>, 2) luma layout <file> --viewports 375x667,1024x768, 3) luma keyboard <file>, 4) luma flow <file> --patterns form,table, 5) luma score <run-dir>"
+    },
+    {
+      "q": "What are MUST vs SHOULD pattern rules?",
+      "a": "MUST rules are blocking - failing them results in exit code 3 and failed score. SHOULD rules are recommendations that reduce score by 10 points each but don't block."
+    },
+    {
+      "q": "How is the overall score calculated?",
+      "a": "Overall = round(0.45×PatternFidelity + 0.25×FlowReachability + 0.20×HierarchyGrouping + 0.10×ResponsiveBehavior). Passing requires overall ≥ 85, no MUST failures, and no unreachable nodes."
+    },
+    {
+      "q": "What patterns are available?",
+      "a": "LUMA v1.0 includes Form.Basic (GOV.UK) and Table.Simple (IBM Carbon). Run 'luma patterns --list' to see all patterns."
+    },
+    {
+      "q": "How do responsive overrides work?",
+      "a": "Add 'overrides' array to nodes with { minWidth: <pixels>, <properties> }. Overrides apply when viewport width ≥ minWidth. Last matching override wins."
+    },
+    {
+      "q": "Where are analysis results stored?",
+      "a": "All outputs go to .ui/runs/<timestamp>/ containing ingest.json, layout_*.json, keyboard.json, flow.json, and score.json."
+    },
+    {
+      "q": "Can I customize scoring weights?",
+      "a": "Yes! Use 'luma score <run-dir> --weights <json>' with custom weights. Weights must sum to 1.0."
+    },
+    {
+      "q": "What exit codes does LUMA use?",
+      "a": "0=success, 2=invalid input, 3=blocking issues (MUST failures/unreachable nodes/score<85), 4=internal error, 5=unsupported schemaVersion"
+    },
+    {
+      "q": "Is LUMA deterministic?",
+      "a": "Yes. Same input always produces same output. No network calls. No randomness. Fixed heuristics."
+    },
+    {
+      "q": "How do I see all available commands?",
+      "a": "Run 'luma capabilities --json' to see all commands, exit codes, and defaults."
+    }
+  ]
+}
