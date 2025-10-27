@@ -66,7 +66,7 @@ luma ingest examples/happy-form.json
 ## Quick Start
 
 ```bash
-# Initialize a new project with starter scaffold
+# First time? Get onboarding instructions for agents
 luma init
 
 # Analyze your scaffold
@@ -94,7 +94,7 @@ See [QUICKSTART.md](./QUICKSTART.md) for a detailed walkthrough.
 
 ### Setup Command
 
-- `luma init` — Initialize LUMA in current directory (creates starter scaffold.json)
+- `luma init` — Display onboarding instructions for integrating LUMA into agent workflows
 
 ### Analysis Commands
 
