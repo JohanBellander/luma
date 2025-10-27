@@ -7,6 +7,7 @@
 
 import { Command } from 'commander';
 import { createIngestCommand } from './cli/ingest.command.js';
+import { createLayoutCommand } from './cli/layout.command.js';
 
 const program = new Command();
 
@@ -17,6 +18,7 @@ program
 
 // Add commands
 program.addCommand(createIngestCommand());
+program.addCommand(createLayoutCommand());
 
 // Placeholder for commands to be added in Phase 2+
 program.parse(process.argv);
