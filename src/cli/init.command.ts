@@ -2,121 +2,130 @@ import {Command} from 'commander';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const agentsContent = `## UI Analysis with LUMA
+const agentsContent = `# Agent Instructions
 
-**IMPORTANT**: This project uses **LUMA (Layout & UX Mockup Analyzer)** for UI scaffold validation and analysis.
+## Purpose
 
-### Why LUMA?
+This project uses **LUMA (Layout & UX Mockup Analyzer)** to guide UI design **before coding**.
+Your job is to:
+1. Design UI **structurally** using Scaffold JSON.
+2. Validate and refine the scaffold using LUMA.
+3. Only generate implementation code **after** the scaffold passes scoring.
 
-- Validates UI structure before implementation
-- Detects responsive layout issues across viewports
-- Analyzes keyboard navigation and tab flow
-- Validates against UX patterns (forms, tables, etc.)
-- Machine-readable JSON outputs for CI/CD
-- Deterministic scoring and pass/fail criteria
+Do **not** generate JSX/HTML/CSS until LUMA says the scaffold is ready.
 
-### Quick Start
+---
 
-**Check LUMA capabilities:**
-\`\`\`bash
-luma capabilities
+## Design & Development Workflow (Follow Exactly)
+
+### 0. Read This File First
+Before generating anything, confirm you understand:
+- Scaffold JSON format
+- LUMA commands
+- Pattern rules
+- Evaluation flow
+
+If unsure → call:
+\`\`\`
+luma explain --topic workflow --json
 \`\`\`
 
-**Analyze a scaffold:**
-\`\`\`bash
-luma ingest scaffold.json        # Validate structure
-luma layout scaffold.json        # Compute responsive layouts
-luma keyboard scaffold.json      # Analyze tab flow
-luma flow scaffold.json          # Validate UX patterns
-luma score .ui/runs/<run-id>    # Get overall score
-luma report .ui/runs/<run-id>   # Generate HTML report
+---
+
+### 1. Start with a UI Goal
+
+For this project, begin by designing a **simple TODO application** with:
+
+- A screen to view tasks
+- A form to create tasks
+- A way to edit/mark tasks complete
+
+Do **not** write code yet — only define the UI structure as a **scaffold**.
+
+---
+
+### 2. Produce a Scaffold
+Create a file named:
+\`\`\`
+ui/screens/todo.mock.json
 \`\`\`
 
-### Scaffold Format
+Only use **Component Scaffold JSON** (Stacks, Forms, Fields, Tables, Buttons).
 
-LUMA scaffolds are JSON files describing UI structure:
+---
 
-\`\`\`json
-{
-  "schemaVersion": "1.0.0",
-  "screen": {
-    "id": "my-screen",
-    "title": "My Screen",
-    "root": {
-      "id": "root",
-      "type": "Stack",
-      "direction": "vertical",
-      "children": [...]
-    }
-  },
-  "settings": {
-    "spacingScale": [0, 4, 8, 12, 16, 24, 32, 48, 64],
-    "minTouchTarget": {"w": 44, "h": 44},
-    "breakpoints": ["mobile", "tablet", "desktop"]
-  }
-}
+### 3. Validate with LUMA
+Run the full LUMA pipeline:
+
+\`\`\`
+luma ingest ui/screens/todo.mock.json
+luma layout ui/screens/todo.mock.json --viewports 320x640,768x1024
+luma keyboard ui/screens/todo.mock.json
+luma flow ui/screens/todo.mock.json --patterns form,table
+luma score .ui/runs/<run-id>
 \`\`\`
 
-### Node Types
+If **any** MUST rule fails or **overall score < 85**:
 
-- **Stack**: Linear layout (horizontal/vertical)
-- **Grid**: 2D grid layout
-- **Box**: Single container
-- **Text**: Text content
-- **Button**: Interactive button
-- **Field**: Form input field
-- **Form**: Complete form with fields and actions
-- **Table**: Data table with columns
+→ **Revise the scaffold, not the code.**
 
-### Workflow for AI Agents
+---
 
-1. **Create scaffold**: Design UI structure as JSON
-2. **Validate**: \`luma ingest scaffold.json\`
-3. **Check layout**: \`luma layout scaffold.json --viewports 320x640,1024x768\`
-4. **Verify keyboard flow**: \`luma keyboard scaffold.json\`
-5. **Validate patterns**: \`luma flow scaffold.json --patterns form,table\`
-6. **Get score**: \`luma score .ui/runs/<run-id>\`
-7. **Review report**: \`luma report .ui/runs/<run-id>\`
+### 4. Iterate Until Passing
+Repeat the scaffold → analyze → adjust cycle until:
 
-### Exit Codes
+- No blocking layout issues
+- Keyboard flow is linear and reachable
+- Patterns pass (especially Form.Basic & Table.Simple)
+- Score ≥ **85**
 
-- **0**: Success (all analyses pass)
-- **1**: Validation failed (critical issues)
-- **2**: Analysis warnings (non-critical issues)
-- **3**: Invalid usage (wrong arguments)
-- **4**: File I/O error
+This is the **design approval checkpoint**.
 
-### Scoring System
+---
 
-LUMA scores across 4 categories (0-100 each):
-- **Structural**: Node hierarchy and relationships
-- **Layout**: Responsive behavior and spacing
-- **Keyboard**: Tab order and focusable elements
-- **Patterns**: UX pattern compliance (MUST/SHOULD/MAY rules)
+### 5. Only Then Generate Code
+Once the scaffold is approved:
 
-**Pass criteria**: All category scores >= 80
+- Convert the scaffold to UI components
+- Use the scaffold as the **source of truth**
+- Do *not* change structure in code without updating scaffold + rerunning LUMA
 
-### Output Artifacts
+---
 
-All analysis outputs go to \`.ui/runs/<timestamp>/\`:
-- \`ingest.json\` - Validation results
-- \`layout_<viewport>.json\` - Per-viewport layouts
-- \`keyboard.json\` - Tab sequence and flow graph
-- \`flow.json\` - Pattern validation results
-- \`score.json\` - Aggregate scores
-- \`report.html\` - Human-readable summary
+## Key Rules
 
-### Important Rules
+| Do | Do Not |
+|---|---|
+| Design UI in scaffold form first | Jump straight to HTML/JSX |
+| Run \`luma score\` before coding | Ignore failing pattern rules |
+| Iterate until layout/flow are correct | Hardcode layout fixes in CSS later |
+| Keep scaffolds committed in VCS | Let scaffolds drift from implementation |
 
-- ✅ Create scaffolds for ALL new UI screens before coding
-- ✅ Run \`luma score\` to validate before merging
-- ✅ Keep scaffolds in version control alongside code
-- ✅ Use examples/ folder for reference scaffolds
-- ❌ Do NOT skip validation for "simple" UIs
-- ❌ Do NOT ignore keyboard flow issues
-- ❌ Do NOT bypass pattern validation
+---
 
-For more details, see README.md and QUICKSTART.md.`;
+## Initial Assignment (Start Here)
+
+**Task:** Create the UI scaffold for a TODO app main screen:
+- List of tasks (Table)
+- Button to add task
+- Form modal to create/edit task
+
+**Output only:** \`ui/screens/todo.mock.json\`  
+**Then run:** \`luma ingest\` → \`luma layout\` → \`luma keyboard\` → \`luma flow\` → \`luma score\`
+
+Continue refining until score ≥ **85**.
+
+---
+
+If you need help at any step:
+\`\`\`
+luma capabilities --json
+luma patterns --show Form.Basic --json
+luma patterns --show Table.Simple --json
+luma explain --topic layout-solver --json
+luma faq --json
+\`\`\`
+`;
 
 export const initCommand = new Command('init')
   .description('Initialize LUMA in the current project by creating/updating AGENTS.md')
@@ -138,7 +147,7 @@ export const initCommand = new Command('init')
     }
     
     // Check if LUMA section already exists
-    if (existingContent.includes('## UI Analysis with LUMA')) {
+    if (existingContent.includes('This project uses **LUMA (Layout & UX Mockup Analyzer)**')) {
       console.log('\x1b[33m⚠ LUMA section already exists in AGENTS.md\x1b[0m');
       console.log('No changes made. To update, manually edit AGENTS.md.');
       return;
@@ -151,8 +160,8 @@ export const initCommand = new Command('init')
       newContent = existingContent.trimEnd() + '\n\n' + agentsContent + '\n';
       console.log('\x1b[32m✓ Added LUMA section to existing AGENTS.md\x1b[0m');
     } else {
-      // Create new file
-      newContent = '# Agent Instructions\n\n' + agentsContent + '\n';
+      // Create new file - agentsContent already has the header
+      newContent = agentsContent + '\n';
       console.log('\x1b[32m✓ Created AGENTS.md with LUMA section\x1b[0m');
     }
     
