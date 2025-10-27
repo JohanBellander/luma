@@ -31,6 +31,13 @@ fi
 
 echo "Found Node.js $($NODE_CMD -v) ✓"
 
+# Check if LUMA is already installed
+if command -v luma &> /dev/null; then
+    echo "Existing LUMA installation detected"
+    echo "Uninstalling previous version..."
+    npm unlink -g luma 2>/dev/null || true
+fi
+
 # Clone repository
 TEMP_DIR=$(mktemp -d)
 cd "$TEMP_DIR"

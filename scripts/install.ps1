@@ -34,6 +34,19 @@ catch {
     exit 1
 }
 
+# Check if LUMA is already installed
+try {
+    $existingVersion = luma --version 2>$null
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "Existing LUMA installation detected" -ForegroundColor Yellow
+        Write-Host "Uninstalling previous version..." -ForegroundColor Cyan
+        npm unlink -g luma 2>$null
+    }
+}
+catch {
+    # Not installed, continue
+}
+
 # Create temporary directory
 $tempDir = Join-Path $env:TEMP "luma-install-$(Get-Random)"
 New-Item -ItemType Directory -Path $tempDir | Out-Null
