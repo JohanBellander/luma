@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1.0.0",
+  "screen": {
+    "id": "broken-form",
+    "title": "Broken Form Test",
+    "root": {
+      "id": "form",
+      "type": "Form",
+      "states": ["default"],
+      "fields": [
+        {
+          "id": "field1",
+          "type": "Field",
+          "label": "X",
+          "inputType": "text"
+        }
+      ],
+      "actions": []
+    }
+  }
+}
