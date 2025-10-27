@@ -10,6 +10,7 @@ import { createIngestCommand } from './cli/ingest.command.js';
 import { createLayoutCommand } from './cli/layout.command.js';
 import { createKeyboardCommand } from './cli/keyboard.command.js';
 import { createFlowCommand } from './cli/flow.command.js';
+import { createScoreCommand } from './cli/score.command.js';
 
 const program = new Command();
 
@@ -23,6 +24,7 @@ program.addCommand(createIngestCommand());
 program.addCommand(createLayoutCommand());
 program.addCommand(createKeyboardCommand());
 program.addCommand(createFlowCommand());
+program.addCommand(createScoreCommand());
 
 // Placeholder for commands to be added in Phase 2+
 program.parse(process.argv);
