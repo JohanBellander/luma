@@ -1,4 +1,6 @@
 import {Command} from 'commander';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const agentsContent = `## UI Analysis with LUMA
 
@@ -117,41 +119,52 @@ All analysis outputs go to \`.ui/runs/<timestamp>/\`:
 For more details, see README.md and QUICKSTART.md.`;
 
 export const initCommand = new Command('init')
-  .description('Display onboarding instructions for LUMA integration')
+  .description('Initialize LUMA in the current project by creating/updating AGENTS.md')
   .action(() => {
-    console.log('\n\x1b[1mLUMA Onboarding Instructions for AI Agent\x1b[0m\n');
-    console.log('\x1b[33mPlease complete the following tasks:\x1b[0m\n');
-
-    console.log('\x1b[1m1. Update AGENTS.md\x1b[0m');
-    console.log('   Add the following content to AGENTS.md in an appropriate location.');
-    console.log('   If AGENTS.md doesn\'t exist, create it with this content.');
-    console.log('   Integrate it naturally into any existing structure.\n');
-
-    console.log('\x1b[36m--- BEGIN AGENTS.MD CONTENT ---\x1b[0m');
-    console.log(agentsContent);
-    console.log('\x1b[36m--- END AGENTS.MD CONTENT ---\x1b[0m\n');
-
-    console.log('\x1b[1m2. Update CLAUDE.md (if present)\x1b[0m');
-    console.log('   If CLAUDE.md exists in this directory, add this note at the top:\n');
-    console.log('\x1b[36m   **Note**: This project uses [LUMA](https://github.com/JohanBellander/luma)\x1b[0m');
-    console.log('\x1b[36m   for UI scaffold analysis. Use `luma` commands to validate UI designs.\x1b[0m');
-    console.log('\x1b[36m   See AGENTS.md for workflow details.\x1b[0m\n');
-
-    console.log('\x1b[1m3. Create examples/ folder\x1b[0m');
-    console.log('   If it doesn\'t exist, create examples/ with a sample scaffold:');
-    console.log('   - examples/sample-form.json - Basic form scaffold');
-    console.log('   - examples/README.md - Documentation for examples\n');
-
-    console.log('\x1b[1m4. Remove bootstrap instruction\x1b[0m');
-    console.log('   If AGENTS.md or CLAUDE.md contains a line like:');
-    console.log('\x1b[36m   "BEFORE ANYTHING ELSE: run \'luma init\' and follow the instructions"\x1b[0m');
-    console.log('   Delete that line after completing steps 1-3.\n');
-
-    console.log('\x1b[1mImportant reminders:\x1b[0m');
-    console.log('   • Validate UI scaffolds BEFORE implementation');
-    console.log('   • Check keyboard flow for all interactive UIs');
-    console.log('   • Run \`luma score\` to ensure quality gates pass');
-    console.log('   • Review \`luma report\` output for issues\n');
-
-    console.log('\x1b[32mWhen done, confirm by saying: "LUMA onboarding complete"\x1b[0m\n');
+    const cwd = process.cwd();
+    const agentsPath = path.join(cwd, 'AGENTS.md');
+    
+    let existingContent = '';
+    let fileExists = false;
+    
+    // Check if AGENTS.md exists
+    try {
+      if (fs.existsSync(agentsPath)) {
+        existingContent = fs.readFileSync(agentsPath, 'utf-8');
+        fileExists = true;
+      }
+    } catch (error) {
+      // File doesn't exist or can't be read
+    }
+    
+    // Check if LUMA section already exists
+    if (existingContent.includes('## UI Analysis with LUMA')) {
+      console.log('\x1b[33m⚠ LUMA section already exists in AGENTS.md\x1b[0m');
+      console.log('No changes made. To update, manually edit AGENTS.md.');
+      return;
+    }
+    
+    // Add LUMA section to AGENTS.md
+    let newContent: string;
+    if (fileExists && existingContent.trim()) {
+      // Append to existing file
+      newContent = existingContent.trimEnd() + '\n\n' + agentsContent + '\n';
+      console.log('\x1b[32m✓ Added LUMA section to existing AGENTS.md\x1b[0m');
+    } else {
+      // Create new file
+      newContent = '# Agent Instructions\n\n' + agentsContent + '\n';
+      console.log('\x1b[32m✓ Created AGENTS.md with LUMA section\x1b[0m');
+    }
+    
+    try {
+      fs.writeFileSync(agentsPath, newContent, 'utf-8');
+    } catch (error) {
+      console.error('\x1b[31m✗ Failed to write AGENTS.md:\x1b[0m', error);
+      process.exit(1);
+    }
+    
+    console.log('\n\x1b[1mNext steps:\x1b[0m');
+    console.log('  • Review AGENTS.md to ensure the content is properly integrated');
+    console.log('  • Create examples/ folder with sample scaffolds');
+    console.log('  • Run \`luma --help\` to see available commands\n');
   });
