@@ -1,0 +1,42 @@
+{
+  "name": "luma",
+  "version": "1.0.0",
+  "description": "A CLI tool that evaluates UI scaffolds for structure, flow, and UX pattern fidelity without requiring a browser or CSS rendering.",
+  "main": "dist/index.js",
+  "type": "module",
+  "bin": {
+    "luma": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc && node build.js",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JohanBellander/luma.git"
+  },
+  "keywords": ["cli", "ui", "scaffold", "layout", "ux", "analysis"],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/JohanBellander/luma/issues"
+  },
+  "homepage": "https://github.com/JohanBellander/luma#readme",
+  "devDependencies": {
+    "@types/node": "^24.9.1",
+    "@typescript-eslint/eslint-plugin": "^8.46.2",
+    "@typescript-eslint/parser": "^8.46.2",
+    "commander": "^14.0.2",
+    "esbuild": "^0.25.11",
+    "eslint": "^9.38.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.4",
+    "zod": "^4.1.12"
+  }
+}

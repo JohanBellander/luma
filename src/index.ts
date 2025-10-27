@@ -1,0 +1,26 @@
+#!/usr/bin/env node
+
+/**
+ * LUMA - Layout & UX Mockup Analyzer
+ * Main entry point for the CLI
+ */
+
+import { Command } from 'commander';
+
+const program = new Command();
+
+program
+  .name('luma')
+  .description('Layout & UX Mockup Analyzer - CLI tool for evaluating UI scaffolds')
+  .version('1.0.0');
+
+// Placeholder for commands to be added in Phase 2+
+program.parse(process.argv);
+
+if (!process.argv.slice(2).length) {
+  program.outputHelp();
+}
+
+// Export types and utils for programmatic use
+export * from './types/index.js';
+export * from './utils/index.js';
