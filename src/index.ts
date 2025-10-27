@@ -6,6 +6,7 @@
  */
 
 import { Command } from 'commander';
+import { createIngestCommand } from './cli/ingest.command.js';
 
 const program = new Command();
 
@@ -13,6 +14,9 @@ program
   .name('luma')
   .description('Layout & UX Mockup Analyzer - CLI tool for evaluating UI scaffolds')
   .version('1.0.0');
+
+// Add commands
+program.addCommand(createIngestCommand());
 
 // Placeholder for commands to be added in Phase 2+
 program.parse(process.argv);

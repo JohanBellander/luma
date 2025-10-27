@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "2.0.0",
+  "screen": {
+    "id": "invalid",
+    "root": {
+      "id": "root",
+      "type": "Text",
+      "text": "This has an unsupported schema version"
+    }
+  },
+  "settings": {
+    "spacingScale": [8, 16],
+    "minTouchTarget": { "w": 44, "h": 44 },
+    "breakpoints": ["320x640"]
+  }
+}
