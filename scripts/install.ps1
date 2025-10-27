@@ -34,17 +34,23 @@ catch {
     exit 1
 }
 
-# Check if LUMA is already installed
+# Check if LUMA is already installed (even if broken)
+$lumaInstalled = $false
 try {
-    $existingVersion = luma --version 2>$null
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "Existing LUMA installation detected" -ForegroundColor Yellow
-        Write-Host "Uninstalling previous version..." -ForegroundColor Cyan
-        npm unlink -g luma 2>$null
+    # Check if luma command exists in npm global packages
+    $npmList = npm list -g --depth=0 luma 2>$null | Out-String
+    if ($npmList -match "luma@") {
+        $lumaInstalled = $true
     }
 }
 catch {
-    # Not installed, continue
+    # Continue
+}
+
+if ($lumaInstalled) {
+    Write-Host "Existing LUMA installation detected" -ForegroundColor Yellow
+    Write-Host "Uninstalling previous version..." -ForegroundColor Cyan
+    npm unlink -g luma 2>$null
 }
 
 # Create temporary directory
