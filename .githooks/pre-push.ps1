@@ -32,7 +32,7 @@ if ($currentVersion -eq $stagedVersion) {
     $newPatch = $patch + 1
     $newVersion = "$major.$minor.$newPatch"
     
-    Write-Host "📦 Auto-incrementing version: $currentVersion → $newVersion" -ForegroundColor Cyan
+    Write-Host "Auto-incrementing version: $currentVersion -> $newVersion" -ForegroundColor Cyan
     
     # Update package.json preserving formatting
     $packageContent = Get-Content $packageJsonPath -Raw
@@ -43,9 +43,9 @@ if ($currentVersion -eq $stagedVersion) {
     git add package.json
     git commit --amend --no-edit --no-verify
     
-    Write-Host "✓ Version bumped to $newVersion" -ForegroundColor Green
+    Write-Host "Version bumped to $newVersion" -ForegroundColor Green
 } else {
-    Write-Host "ℹ Version already updated manually: $currentVersion" -ForegroundColor Yellow
+    Write-Host "Version already updated manually: $currentVersion" -ForegroundColor Yellow
 }
 
 exit 0
