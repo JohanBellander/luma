@@ -1,5 +1,90 @@
 # Agent Instructions
 
+## Preflight: Before You Generate Scaffolds
+
+**IMPORTANT**: Before generating any LUMA scaffold JSON, consult the **Scaffold Contract**.
+
+### What is the Scaffold Contract?
+
+The Scaffold Contract defines exact rules AI agents must follow when generating scaffold JSON files. It ensures all generated scaffolds:
+- Have valid structure (`schemaVersion`, `screen.id`, `screen.root`)
+- Use correct node types with required fields
+- Follow spacing and layout conventions
+- Pass `luma ingest` validation
+
+### Accessing the Contract
+
+**Option 1: Command-line**
+```bash
+luma explain --topic scaffold-contract --json
+```
+
+**Option 2: Reference file**
+See `AGENT-RULES-SCAFFOLD.md` in the repository root.
+
+### Key Contract Rules
+
+- ✅ `schemaVersion` must be `"1.0.0"`
+- ✅ All node IDs must be unique
+- ✅ All spacing values (gap, padding) must be in `settings.spacingScale`
+- ✅ Forms must have both `fields[]` and `actions[]` arrays (non-empty)
+- ✅ Tables must have `title`, `columns[]`, and `responsive.strategy`
+- ✅ Output pure JSON (no comments, no markdown wrappers)
+
+### Generating Scaffolds with `scaffold new`
+
+**RECOMMENDED**: Use `luma scaffold new` to generate valid scaffolds from built-in patterns.
+
+```bash
+# Create a todo-list scaffold
+luma scaffold new --pattern todo-list --out todo.json
+
+# Create a login form
+luma scaffold new --pattern login-form --out login.json --title "Sign In"
+
+# Custom breakpoints
+luma scaffold new --pattern dashboard-grid --out dashboard.json --breakpoints "375x667,1920x1080"
+
+# Overwrite existing file
+luma scaffold new --pattern form-basic --out form.json --force
+```
+
+**Available patterns:**
+- `todo-list` - Table + Add Button
+- `empty-screen` - Minimal starting point
+- `form-basic` - Simple form with 2 fields
+- `table-simple` - Basic data table
+- `contact-form` - Contact form with validation
+- `data-table-with-actions` - Table with row actions
+- `modal-dialog` - Dialog with actions
+- `login-form` - Email + password login
+- `multi-step-form` - Multi-page form flow
+- `dashboard-grid` - Dashboard with cards
+
+### Workflow Example
+
+```bash
+# 1. Generate scaffold from pattern
+luma scaffold new --pattern contact-form --out contact.json
+
+# 2. Validate structure
+luma ingest contact.json
+
+# 3. Test layout at different viewports
+luma layout contact.json --viewports 320x640,768x1024
+
+# 4. Check keyboard navigation
+luma keyboard contact.json
+
+# 5. Validate form pattern compliance
+luma flow contact.json --patterns form
+
+# 6. Get overall score
+luma score contact.json
+```
+
+---
+
 ## Issue Tracking with bd (beads)
 
 **IMPORTANT**: This project uses **bd (beads)** for ALL issue tracking. Do NOT use markdown TODOs, task lists, or other tracking methods.
