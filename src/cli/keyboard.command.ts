@@ -45,7 +45,11 @@ export function createKeyboardCommand(): Command {
 
         // Output results
         if (options.json) {
-          console.log(JSON.stringify(output, null, 2));
+          const jsonOutput = {
+            ...output,
+            runFolder: runFolder
+          };
+          console.log(JSON.stringify(jsonOutput, null, 2));
         } else {
           logger.info(`Tab sequence (${output.sequence.length} focusable nodes):`);
           for (let i = 0; i < output.sequence.length; i++) {

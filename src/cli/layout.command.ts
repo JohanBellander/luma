@@ -64,7 +64,11 @@ export function createLayoutCommand(): Command {
 
         // Output results
         if (options.json) {
-          console.log(JSON.stringify(outputs, null, 2));
+          const jsonOutput = {
+            layouts: outputs,
+            runFolder: runFolder
+          };
+          console.log(JSON.stringify(jsonOutput, null, 2));
         } else {
           for (const output of outputs) {
             logger.info(`Viewport ${output.viewport}: ${output.frames.length} frames, ${output.issues.length} issues`);

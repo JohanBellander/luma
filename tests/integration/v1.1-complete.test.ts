@@ -282,13 +282,16 @@ describe('Integration: LUMA v1.1 Complete Workflow', () => {
       expect(ingest.valid).toBe(true);
       expect(ingest.issues.length).toBe(0);
       
+      // Get run folder from ingest output
+      runFolder = ingest.runFolder;
+      expect(runFolder).toBeDefined();
+      
       // Step 2: Layout (multiple viewports)
       execSync(
         `node dist/index.js layout ${goldenPath} --viewports 320x640,768x1024,1280x800`,
         { encoding: 'utf-8' }
       );
       
-      runFolder = getMostRecentRunFolder();
       ['320x640', '768x1024', '1280x800'].forEach(viewport => {
         const layoutPath = join(runFolder, `layout_${viewport}.json`);
         expect(existsSync(layoutPath)).toBe(true);
@@ -309,12 +312,27 @@ describe('Integration: LUMA v1.1 Complete Workflow', () => {
       expect(kbErrors.length).toBe(0);
       
       // Step 4: Flow patterns
-      execSync(`node dist/index.js flow ${goldenPath} --patterns table`, { encoding: 'utf-8' });
-      const flowPath = join(runFolder, 'flow.json');
+      const flowResult = execSync(
+        `node dist/index.js flow ${goldenPath} --patterns table --json`, 
+        { encoding: 'utf-8' }
+      );
+      const flowOutput = JSON.parse(flowResult);
+      
+      // Get runFolder from flow output (could be different from ingest if >5s elapsed)
+      const flowRunFolder = flowOutput.runFolder || runFolder;
+      const flowPath = join(flowRunFolder, 'flow.json');
       expect(existsSync(flowPath)).toBe(true);
       
       const flow = JSON.parse(readFileSync(flowPath, 'utf-8'));
+      expect(flow.patterns).toBeDefined();
+      expect(Array.isArray(flow.patterns)).toBe(true);
+      expect(flow.patterns.length).toBeGreaterThan(0);
+      
       const tablePattern = flow.patterns.find((p: any) => p.pattern === 'Table.Simple');
+      if (!tablePattern) {
+        // Debug: log what patterns we actually got
+        console.log('Available patterns:', flow.patterns.map((p: any) => p.pattern));
+      }
       expect(tablePattern).toBeDefined();
       expect(tablePattern.mustFailed).toBe(0);
       
@@ -524,11 +542,13 @@ describe('Integration: LUMA v1.1 Complete Workflow', () => {
       
       // Run full pipeline
       execSync(`node dist/index.js ingest ${scaffoldPath}`, { encoding: 'utf-8' });
+      
+      // Get the run folder created by ingest
+      const runFolder = getMostRecentRunFolder();
+      
       execSync(`node dist/index.js layout ${scaffoldPath} --viewports 768x1024`, { encoding: 'utf-8' });
       execSync(`node dist/index.js keyboard ${scaffoldPath}`, { encoding: 'utf-8' });
       execSync(`node dist/index.js flow ${scaffoldPath} --patterns table`, { encoding: 'utf-8' });
-      
-      const runFolder = getMostRecentRunFolder();
       execSync(`node dist/index.js score ${runFolder}`, { encoding: 'utf-8' });
       
       const reportPath = join(runFolder, 'report.html');

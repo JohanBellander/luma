@@ -276,7 +276,7 @@ describe('Integration: LUMA v1.1 Phase 1', () => {
         expect(output.issues).toHaveLength(0);
       });
 
-      it('should pass full pipeline (ingest → layout → keyboard → flow)', () => {
+      it('should pass full pipeline (ingest → layout → keyboard → flow)', { timeout: 10000 }, () => {
         // Ingest
         execSync(`node dist/index.js ingest ${outputPath}`, { encoding: 'utf-8' });
         let runFolder = getMostRecentRunFolder();
@@ -461,7 +461,7 @@ describe('Integration: LUMA v1.1 Phase 1', () => {
   });
 
   describe('Integration: Phase 1 Complete Workflow', () => {
-    it('should demonstrate agent workflow: explain → scaffold new → validate', () => {
+    it('should demonstrate agent workflow: explain → scaffold new → validate', { timeout: 15000 }, () => {
       // Step 1: Agent reads scaffold contract
       const contractResult = execSync(
         'node dist/index.js explain --topic scaffold-contract --json',

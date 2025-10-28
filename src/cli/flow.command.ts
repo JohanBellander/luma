@@ -48,7 +48,11 @@ export function createFlowCommand(): Command {
         if (!options.json) {
           console.log('[INFO] Flow analysis written to:', flowPath);
         } else {
-          console.log(JSON.stringify(output, null, 2));
+          const jsonOutput = {
+            ...output,
+            runFolder: runDir
+          };
+          console.log(JSON.stringify(jsonOutput, null, 2));
         }
 
         if (output.hasMustFailures) {

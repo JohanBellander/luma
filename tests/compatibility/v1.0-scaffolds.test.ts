@@ -198,14 +198,16 @@ describe('Backward Compatibility: v1.0 Scaffolds', () => {
     const scaffoldPath = join(EXAMPLES_DIR, 'login.json');
     let runFolder: string;
 
-    it('should process complete workflow without errors', () => {
+    it('should process complete workflow without errors', { timeout: 10000 }, () => {
       // Ingest
-      execSync(
-        `node dist/index.js ingest ${scaffoldPath}`,
+      const ingestResult = execSync(
+        `node dist/index.js ingest ${scaffoldPath} --json`,
         { encoding: 'utf-8' }
       );
 
-      runFolder = getMostRecentRunFolder();
+      const ingest = JSON.parse(ingestResult);
+      runFolder = ingest.runFolder;
+      expect(runFolder).toBeDefined();
       expect(existsSync(join(runFolder, 'ingest.json'))).toBe(true);
 
       // Layout

@@ -63,15 +63,16 @@ export function createIngestCommand(): Command {
 
         const enhancedIssues = enhanceIssues(result.issues, enhancementOptions, file, result.rawData);
 
+        // Create run folder
+        const runFolder = createRunFolder();
+        const outputPath = getRunFilePath(runFolder, 'ingest.json');
+
         // Create enhanced result
         const enhancedResult = {
           ...result,
           issues: enhancedIssues,
+          runFolder: runFolder, // Include run folder path for test automation
         };
-
-        // Create run folder
-        const runFolder = createRunFolder();
-        const outputPath = getRunFilePath(runFolder, 'ingest.json');
 
         // Write result to run folder
         writeFileSync(outputPath, JSON.stringify(enhancedResult, null, 2));

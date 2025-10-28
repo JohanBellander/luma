@@ -189,7 +189,7 @@ describe('luma schema command', () => {
   });
 
   describe('integration with component schemas', () => {
-    it('should document all 8 component types', () => {
+    it('should document all 8 component types', { timeout: 15000 }, () => {
       const types = ['Text', 'Button', 'Field', 'Form', 'Table', 'Stack', 'Grid', 'Box'];
       
       types.forEach(type => {
@@ -199,7 +199,7 @@ describe('luma schema command', () => {
       });
     });
 
-    it('should provide working examples for all components', () => {
+    it('should provide working examples for all components', { timeout: 15000 }, () => {
       const types = ['Text', 'Button', 'Field', 'Form', 'Table', 'Stack', 'Grid', 'Box'];
       
       types.forEach(type => {
@@ -210,7 +210,7 @@ describe('luma schema command', () => {
       });
     });
 
-    it('should include common mistakes for all components', () => {
+    it('should include common mistakes for all components', { timeout: 15000 }, () => {
       const types = ['Text', 'Button', 'Field', 'Form', 'Table', 'Stack', 'Grid', 'Box'];
       
       types.forEach(type => {

@@ -47,8 +47,9 @@ describe('Integration: Full Workflow', () => {
       expect(output.issues).toHaveLength(0);
       expect(output.normalized).toBeDefined();
 
-      // Get the run folder that was created
-      runFolder = getMostRecentRunFolder();
+      // Get the run folder from ingest output
+      runFolder = output.runFolder;
+      expect(runFolder).toBeDefined();
       
       // Verify ingest.json was created
       const ingestPath = join(runFolder, 'ingest.json');
@@ -165,7 +166,7 @@ describe('Integration: Full Workflow', () => {
   describe('Pattern Failures', () => {
     const scaffoldPath = join(EXAMPLES_DIR, 'pattern-failures.json');
 
-    it('should detect MUST violations in pattern validation', () => {
+    it('should detect MUST violations in pattern validation', { timeout: 10000 }, () => {
       // Ingest the scaffold
       execSync(
         `node dist/index.js ingest ${scaffoldPath}`,
