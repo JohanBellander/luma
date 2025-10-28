@@ -20,4 +20,6 @@ export interface Issue {
   details?: Record<string, unknown>; // arbitrary numeric/textual context
   source?: IssueSource; // for pattern-based issues
   suggestion?: string; // short actionable hint
+  expected?: string; // what was expected (e.g., "strategy ∈ {wrap, scroll, cards}")
+  found?: unknown; // what was actually found (can be null, string, number, etc.)
 }

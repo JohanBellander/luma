@@ -160,6 +160,9 @@ export function ingest(rawData: unknown): IngestOutput {
             id: 'missing-schema-version',
             severity: 'critical',
             message: 'Missing required field: schemaVersion',
+            jsonPointer: '/schemaVersion',
+            expected: '"1.0.0" or "1.1.0"',
+            found: undefined,
             suggestion: 'Add "schemaVersion": "1.0.0" to the scaffold',
           },
         ],
@@ -181,13 +184,75 @@ export function ingest(rawData: unknown): IngestOutput {
       // Convert Zod errors to Issues
       const zodError = result.error as ZodError;
       zodError.issues.forEach((err) => {
-        issues.push({
+        const issue: Issue = {
           id: 'validation-error',
           severity: 'error',
           message: err.message,
           jsonPointer: err.path.length > 0 ? '/' + err.path.join('/') : undefined,
           details: { code: err.code, path: err.path },
-        });
+        };
+
+        // Extract expected and found values based on error code
+        // Using type-safe access to error properties
+        const errAny = err as any;
+        
+        switch (err.code) {
+          case 'invalid_type':
+            issue.expected = errAny.expected;
+            issue.found = errAny.received;
+            break;
+          case 'too_small':
+            // Check minimum property to determine constraint
+            if (errAny.type === 'string') {
+              issue.expected = `minimum ${errAny.minimum} characters`;
+              issue.found = errAny.received !== undefined ? `${errAny.received} characters` : undefined;
+            } else if (errAny.type === 'array') {
+              issue.expected = `minimum ${errAny.minimum} items`;
+              issue.found = errAny.received !== undefined ? `${errAny.received} items` : 'empty array';
+            } else if (errAny.type === 'number') {
+              issue.expected = `>= ${errAny.minimum}`;
+              issue.found = errAny.received;
+            } else {
+              // Generic handling
+              issue.expected = `minimum ${errAny.minimum}`;
+              issue.found = errAny.received;
+            }
+            break;
+          case 'too_big':
+            if (errAny.type === 'string') {
+              issue.expected = `maximum ${errAny.maximum} characters`;
+              issue.found = errAny.received !== undefined ? `${errAny.received} characters` : undefined;
+            } else if (errAny.type === 'array') {
+              issue.expected = `maximum ${errAny.maximum} items`;
+              issue.found = errAny.received !== undefined ? `${errAny.received} items` : undefined;
+            } else if (errAny.type === 'number') {
+              issue.expected = `<= ${errAny.maximum}`;
+              issue.found = errAny.received;
+            } else {
+              // Generic handling
+              issue.expected = `maximum ${errAny.maximum}`;
+              issue.found = errAny.received;
+            }
+            break;
+          case 'invalid_union':
+            issue.expected = 'valid union member';
+            issue.found = 'none of the union members matched';
+            break;
+          default:
+            // For other error types (e.g., invalid_enum_value, invalid_literal)
+            // try to extract what we can
+            if (errAny.expected !== undefined) {
+              issue.expected = String(errAny.expected);
+            }
+            if (errAny.received !== undefined) {
+              issue.found = errAny.received;
+            }
+            if (errAny.options) {
+              issue.expected = `one of: ${errAny.options.join(', ')}`;
+            }
+        }
+
+        issues.push(issue);
       });
 
       return {

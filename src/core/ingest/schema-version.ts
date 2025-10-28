@@ -17,6 +17,9 @@ export function validateSchemaVersion(version: string): Issue | null {
       id: 'unsupported-schema-version',
       severity: 'critical',
       message: `Unsupported schema version: ${version}. Supported versions: ${SUPPORTED_VERSIONS.join(', ')}`,
+      jsonPointer: '/schemaVersion',
+      expected: SUPPORTED_VERSIONS.join(' or '),
+      found: version,
       suggestion: `Update schemaVersion to one of: ${SUPPORTED_VERSIONS.join(', ')}`,
     };
   }
