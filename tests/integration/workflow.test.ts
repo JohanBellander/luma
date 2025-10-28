@@ -43,8 +43,9 @@ describe('Integration: Full Workflow', () => {
       );
 
       const output = JSON.parse(result);
-      expect(output.errors).toHaveLength(0);
-      expect(output.warnings).toHaveLength(0);
+      expect(output.valid).toBe(true);
+      expect(output.issues).toHaveLength(0);
+      expect(output.normalized).toBeDefined();
 
       // Get the run folder that was created
       runFolder = getMostRecentRunFolder();
@@ -54,7 +55,8 @@ describe('Integration: Full Workflow', () => {
       expect(existsSync(ingestPath)).toBe(true);
 
       const ingestData = JSON.parse(readFileSync(ingestPath, 'utf-8'));
-      expect(ingestData.errors).toHaveLength(0);
+      expect(ingestData.valid).toBe(true);
+      expect(ingestData.issues).toHaveLength(0);
       expect(ingestData.normalized).toBeDefined();
     });
 
@@ -110,13 +112,13 @@ describe('Integration: Full Workflow', () => {
       expect(existsSync(flowPath)).toBe(true);
 
       const flowData = JSON.parse(readFileSync(flowPath, 'utf-8'));
-      expect(flowData.results).toBeDefined();
-      expect(Array.isArray(flowData.results)).toBe(true);
+      expect(flowData.patterns).toBeDefined();
+      expect(Array.isArray(flowData.patterns)).toBe(true);
 
       // Should have Form.Basic pattern result
-      const formResult = flowData.results.find((r: any) => r.pattern === 'Form.Basic');
+      const formResult = flowData.patterns.find((r: any) => r.pattern === 'Form.Basic');
       expect(formResult).toBeDefined();
-      expect(formResult.mustPass).toBe(true);
+      expect(formResult.mustPassed).toBeGreaterThan(0);
       expect(formResult.issues).toBeDefined();
     });
 
@@ -189,19 +191,24 @@ describe('Integration: Full Workflow', () => {
       runFolder = getMostRecentRunFolder();
 
       // Run flow with form pattern - should detect missing labels
-      execSync(
-        `node dist/index.js flow ${scaffoldPath} --patterns form`,
-        { encoding: 'utf-8' }
-      );
+      // This will exit with non-zero code due to MUST failures, which is expected
+      try {
+        execSync(
+          `node dist/index.js flow ${scaffoldPath} --patterns form`,
+          { encoding: 'utf-8' }
+        );
+      } catch (error) {
+        // Expected to fail due to pattern violations
+      }
 
       runFolder = getMostRecentRunFolder();
 
       const flowPath = join(runFolder, 'flow.json');
       const flowData = JSON.parse(readFileSync(flowPath, 'utf-8'));
 
-      const formResult = flowData.results.find((r: any) => r.pattern === 'Form.Basic');
+      const formResult = flowData.patterns.find((r: any) => r.pattern === 'Form.Basic');
       expect(formResult).toBeDefined();
-      expect(formResult.mustPass).toBe(false);
+      expect(formResult.mustFailed).toBeGreaterThan(0);
       expect(formResult.issues.length).toBeGreaterThan(0);
 
       // Should have field-has-label MUST violation

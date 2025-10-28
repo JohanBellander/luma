@@ -1,87 +1,70 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "1.0.0",
   "screen": {
     "id": "login-form",
-    "type": "stack",
-    "direction": "vertical",
-    "spacing": 16,
-    "children": [
-      {
-        "id": "form-header",
-        "type": "box",
-        "width": "100%",
-        "height": 60,
-        "children": [
-          {
-            "id": "title",
-            "type": "text",
-            "content": "Login",
-            "fontSize": 24,
-            "fontWeight": "bold"
-          }
-        ]
-      },
-      {
-        "id": "email-field",
-        "type": "field",
-        "label": "Email",
-        "placeholder": "Enter your email",
-        "required": true,
-        "helpText": "We'll never share your email"
-      },
-      {
-        "id": "password-field",
-        "type": "field",
-        "label": "Password",
-        "placeholder": "Enter your password",
-        "required": true,
-        "helpText": "At least 8 characters"
-      },
-      {
-        "id": "remember-checkbox",
-        "type": "field",
-        "label": "Remember me",
-        "fieldType": "checkbox"
-      },
-      {
-        "id": "form-actions",
-        "type": "stack",
-        "direction": "horizontal",
-        "spacing": 12,
-        "children": [
-          {
-            "id": "submit-button",
-            "type": "action",
-            "actionType": "primary",
-            "label": "Login",
-            "width": 120,
-            "height": 44
-          },
-          {
-            "id": "cancel-button",
-            "type": "action",
-            "actionType": "secondary",
-            "label": "Cancel",
-            "width": 120,
-            "height": 44
-          }
-        ]
-      },
-      {
-        "id": "error-state",
-        "type": "box",
-        "width": "100%",
-        "height": 40,
-        "visible": false,
-        "children": [
-          {
-            "id": "error-message",
-            "type": "text",
-            "content": "Invalid credentials",
-            "color": "#d73a49"
-          }
-        ]
-      }
-    ]
+    "title": "Login Form",
+    "root": {
+      "id": "root",
+      "type": "Stack",
+      "direction": "vertical",
+      "gap": 16,
+      "padding": 24,
+      "children": [
+        {
+          "id": "title",
+          "type": "Text",
+          "text": "Login",
+          "fontSize": 24
+        },
+        {
+          "id": "login-form",
+          "type": "Form",
+          "states": ["default"],
+          "fields": [
+            {
+              "id": "email-field",
+              "type": "Field",
+              "label": "Email",
+              "inputType": "email",
+              "required": true,
+              "helpText": "We'll never share your email"
+            },
+            {
+              "id": "password-field",
+              "type": "Field",
+              "label": "Password",
+              "inputType": "password",
+              "required": true,
+              "helpText": "At least 8 characters"
+            },
+            {
+              "id": "remember-checkbox",
+              "type": "Field",
+              "label": "Remember me",
+              "inputType": "text"
+            }
+          ],
+          "actions": [
+            {
+              "id": "submit-button",
+              "type": "Button",
+              "text": "Login",
+              "roleHint": "primary"
+            },
+            {
+              "id": "cancel-button",
+              "type": "Button",
+              "text": "Cancel",
+              "roleHint": "secondary"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "settings": {
+    "spacingScale": [4, 8, 12, 16, 24, 32],
+    "minTouchTarget": { "w": 44, "h": 44 },
+    "breakpoints": ["320x640", "768x1024", "1280x800"]
   }
 }

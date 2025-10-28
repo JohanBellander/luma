@@ -13,6 +13,7 @@ import {
   EXIT_VERSION_MISMATCH,
 } from '../utils/exit-codes.js';
 import { logger } from '../utils/logger.js';
+import { LogLevel } from '../utils/logger.js';
 
 export function createIngestCommand(): Command {
   const command = new Command('ingest');
@@ -23,6 +24,11 @@ export function createIngestCommand(): Command {
     .option('--json', 'Output result as JSON')
     .action((file: string, options: { json?: boolean }) => {
       try {
+        // Suppress INFO logs when using --json
+        if (options.json) {
+          logger.setLevel(LogLevel.ERROR);
+        }
+
         // Read the file
         const filePath = resolve(file);
         logger.info(`Reading scaffold from: ${filePath}`);

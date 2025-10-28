@@ -1,49 +1,60 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "1.0.0",
   "screen": {
     "id": "signup-form",
-    "type": "stack",
-    "direction": "vertical",
-    "spacing": 16,
-    "children": [
-      {
-        "id": "header",
-        "type": "box",
-        "width": "100%",
-        "height": 60,
-        "children": [
-          {
-            "id": "title",
-            "type": "text",
-            "content": "Sign Up",
-            "fontSize": 24
-          }
-        ]
-      },
-      {
-        "id": "name-field",
-        "type": "field",
-        "placeholder": "Enter your name"
-      },
-      {
-        "id": "email-field",
-        "type": "field",
-        "placeholder": "Enter your email"
-      },
-      {
-        "id": "password-field",
-        "type": "field",
-        "label": "Password",
-        "placeholder": "Enter password"
-      },
-      {
-        "id": "submit-button",
-        "type": "action",
-        "actionType": "primary",
-        "label": "Sign Up",
-        "width": 120,
-        "height": 44
-      }
-    ]
+    "title": "Sign Up",
+    "root": {
+      "id": "root",
+      "type": "Stack",
+      "direction": "vertical",
+      "gap": 16,
+      "padding": 24,
+      "children": [
+        {
+          "id": "title",
+          "type": "Text",
+          "text": "Sign Up",
+          "fontSize": 24
+        },
+        {
+          "id": "signup-form",
+          "type": "Form",
+          "states": ["default"],
+          "fields": [
+            {
+              "id": "name-field",
+              "type": "Field",
+              "label": " ",
+              "inputType": "text"
+            },
+            {
+              "id": "email-field",
+              "type": "Field",
+              "label": " ",
+              "inputType": "email"
+            },
+            {
+              "id": "password-field",
+              "type": "Field",
+              "label": "Password",
+              "inputType": "password"
+            }
+          ],
+          "actions": [
+            {
+              "id": "submit-button",
+              "type": "Button",
+              "text": "Sign Up",
+              "roleHint": "primary"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "settings": {
+    "spacingScale": [4, 8, 12, 16, 24, 32],
+    "minTouchTarget": { "w": 44, "h": 44 },
+    "breakpoints": ["320x640", "768x1024", "1280x800"]
   }
 }

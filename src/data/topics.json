@@ -199,5 +199,25 @@
       "2. Artifacts accumulate in latest run folder",
       "3. Run 'luma score <run-dir>' to aggregate results"
     ]
+  },
+  "scaffold-contract": {
+    "title": "Scaffold Contract",
+    "summary": "Deterministic rules for generating valid LUMA scaffolds.",
+    "details": [
+      "You are producing a LUMA Component Scaffold JSON.",
+      "",
+      "Hard rules:",
+      "- schemaVersion === \"1.0.0\"",
+      "- screen.id is a non-empty string",
+      "- screen.root is ONE node of type Stack|Grid|Box|Text|Button|Field|Form|Table",
+      "- Every node has: id, type (and required fields for its type)",
+      "- Form has fields[] (len ≥ 1) and actions[] (len ≥ 1)",
+      "- Table has title (non-empty), columns[] (len ≥ 1), responsive.strategy ∈ {wrap, scroll, cards}",
+      "- settings.spacingScale is an array of numbers",
+      "- settings.minTouchTarget is { \"w\": 44, \"h\": 44 } or larger",
+      "- settings.breakpoints are \"WxH\" strings, e.g. [\"320x640\",\"768x1024\"]",
+      "",
+      "Output MUST be a single JSON object. No comments. No markdown."
+    ]
   }
 }

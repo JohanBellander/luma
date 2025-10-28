@@ -3,10 +3,11 @@
  * Creates append-only directories at .ui/runs/<timestamp>/
  */
 
-import { mkdirSync, existsSync } from 'fs';
+import { mkdirSync, existsSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 
 const RUN_FOLDER_BASE = '.ui/runs';
+const RUN_FOLDER_REUSE_THRESHOLD_MS = 5000; // 5 seconds
 
 /**
  * Generate a timestamp string for run folders
@@ -26,11 +27,60 @@ export function generateTimestamp(): string {
 }
 
 /**
- * Create a new run folder and return its path
+ * Get the most recently created run folder, if one exists within the reuse threshold
  * @param baseDir - Base directory (defaults to current working directory)
- * @returns Absolute path to the created run folder
+ * @returns Path to the most recent run folder, or null if none exists or too old
+ */
+export function getMostRecentRunFolder(baseDir: string = process.cwd()): string | null {
+  const runsDir = join(baseDir, RUN_FOLDER_BASE);
+  
+  if (!existsSync(runsDir)) {
+    return null;
+  }
+
+  const folders = readdirSync(runsDir)
+    .map(name => join(runsDir, name))
+    .filter(path => {
+      try {
+        return statSync(path).isDirectory();
+      } catch {
+        return false;
+      }
+    })
+    .sort((a, b) => {
+      const statA = statSync(a);
+      const statB = statSync(b);
+      return statB.mtimeMs - statA.mtimeMs;
+    });
+
+  if (folders.length === 0) {
+    return null;
+  }
+
+  const mostRecent = folders[0];
+  const age = Date.now() - statSync(mostRecent).mtimeMs;
+
+  // Only reuse if created within the threshold
+  if (age <= RUN_FOLDER_REUSE_THRESHOLD_MS) {
+    return mostRecent;
+  }
+
+  return null;
+}
+
+/**
+ * Create a new run folder or reuse the most recent one if within threshold
+ * @param baseDir - Base directory (defaults to current working directory)
+ * @returns Absolute path to the run folder
  */
 export function createRunFolder(baseDir: string = process.cwd()): string {
+  // Try to reuse the most recent run folder
+  const recentFolder = getMostRecentRunFolder(baseDir);
+  if (recentFolder) {
+    return recentFolder;
+  }
+
+  // Create a new run folder
   const timestamp = generateTimestamp();
   const runFolderPath = join(baseDir, RUN_FOLDER_BASE, timestamp);
 
