@@ -7,7 +7,34 @@ This guide walks you through analyzing a UI scaffold with LUMA from start to fin
 - Node.js 18+ installed
 - LUMA installed (see [README.md](./README.md#installation))
 
-## Step 0: Agent Onboarding (Optional)
+## Step 0: Generate a Scaffold (Recommended - v1.1)
+
+**New in v1.1:** Instead of writing JSON manually, generate a valid scaffold from a pattern:
+
+```bash
+# Generate a todo-list scaffold
+luma scaffold new --pattern todo-list --out my-todo.json
+
+# Generate a login form
+luma scaffold new --pattern login-form --out login.json --title "Sign In"
+
+# Generate an empty scaffold to start from scratch
+luma scaffold new --pattern empty-screen --out blank.json
+```
+
+**Available patterns:** `todo-list`, `empty-screen`, `form-basic`, `table-simple`, `contact-form`, `data-table-with-actions`, `modal-dialog`, `login-form`, `multi-step-form`, `dashboard-grid`
+
+**Scaffold Contract:** Before creating scaffolds manually, review the contract:
+```bash
+luma explain --topic scaffold-contract
+```
+
+This ensures your scaffold follows all validation rules. You can also view the golden template:
+```bash
+luma explain --topic golden-template
+```
+
+## Step 0a: Agent Onboarding (Optional)
 
 If you're an AI agent integrating LUMA into a project, run:
 
@@ -18,6 +45,13 @@ luma init
 This displays instructions for adding LUMA workflow documentation to AGENTS.md and CLAUDE.md files.
 
 ## Step 1: Prepare Your Scaffold
+
+**Option A: Use scaffold generation (recommended)**
+```bash
+luma scaffold new --pattern login-form --out my-form.json
+```
+
+**Option B: Create manually**
 
 Create a simple form scaffold in `my-form.json`:
 
@@ -72,6 +106,32 @@ luma ingest my-form.json
 ```
 
 Check `.ui/runs/<timestamp>/ingest.json` for detailed results.
+
+### Enhanced Error Messages (v1.1)
+
+If validation fails, LUMA now shows **one critical error at a time** with actionable guidance:
+
+```bash
+luma ingest broken.json
+
+# Example error output:
+# ✗ Validation failed
+# 
+# Error at /screen/root/children/0
+# Expected: "text" property (required for Text nodes)
+# Found: "content" property
+# 
+# Suggested fix:
+# {
+#   "type": "Text",
+#   "text": "Your content here"  ← Use "text" instead of "content"
+# }
+```
+
+**Tip:** To see all errors at once, use `--all-issues`:
+```bash
+luma ingest broken.json --all-issues
+```
 
 ## Step 3: Compute Layout
 
@@ -208,12 +268,38 @@ luma patterns --list
 # See Form.Basic MUST/SHOULD rules
 luma patterns --show form
 
+# Explain the scaffold contract (v1.1)
+luma explain --topic scaffold-contract
+
+# View the golden template (v1.1)
+luma explain --topic golden-template
+
 # Explain scoring system
 luma explain --topic scoring
 
 # Get help with common questions
 luma faq
 ```
+
+## Working with Scaffold Patterns (v1.1)
+
+Generate scaffolds quickly from built-in patterns:
+
+```bash
+# Generate a contact form
+luma scaffold new --pattern contact-form --out contact.json
+
+# Generate with custom title
+luma scaffold new --pattern dashboard-grid --out dash.json --title "Analytics Dashboard"
+
+# Generate with custom breakpoints
+luma scaffold new --pattern table-simple --out table.json --breakpoints "375x667,1920x1080"
+
+# Overwrite existing file
+luma scaffold new --pattern form-basic --out form.json --force
+```
+
+All generated scaffolds pass `luma ingest` validation automatically.
 
 ## Custom Scoring Weights
 

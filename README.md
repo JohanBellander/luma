@@ -14,10 +14,11 @@ LUMA analyzes early-stage UI mockups defined in **Component Scaffold JSON** form
 
 ## Status
 
-✅ **v1.0 Complete** — All core features implemented. See [LUMA-SPEC.md](./LUMA-SPEC.md) for full specification.
+✅ **v1.1 Released** — Enhanced AI agent support, scaffold generation, and improved error reporting. See [CHANGELOG.md](./CHANGELOG.md) for details.
 
 ## Features
 
+### Core Analysis (v1.0)
 - ✅ Headless layout simulation (no browser required)
 - ✅ Keyboard navigation analysis
 - ✅ UX pattern validation (GOV.UK Form.Basic, IBM Carbon Table.Simple)
@@ -27,6 +28,13 @@ LUMA analyzes early-stage UI mockups defined in **Component Scaffold JSON** form
 - ✅ HTML report generation
 - ✅ Self-description commands for introspection
 - ✅ Deterministic, reproducible results
+
+### AI Agent Enhancements (v1.1)
+- ✅ **Scaffold generation** — `luma scaffold new` with 10 built-in patterns
+- ✅ **Scaffold contract** — Deterministic rules for scaffold creation
+- ✅ **Enhanced error messages** — Context-aware suggestions with fix guidance
+- ✅ **Golden template** — Reference scaffold for learning structure
+- ✅ **Agent quickstart guide** — Comprehensive onboarding documentation
 
 ## Installation
 
@@ -60,32 +68,38 @@ npm link  # Makes 'luma' command available globally
 ## Quick Start
 
 ```bash
-# Validate a scaffold
-luma ingest examples/happy-form.json
+# Generate a scaffold from a pattern (v1.1)
+luma scaffold new --pattern todo-list --out todo.json
 
-## Quick Start
-
-```bash
-# First time? Get onboarding instructions for agents
-luma init
-
-# Analyze your scaffold
-luma ingest scaffold.json
+# Validate the scaffold
+luma ingest todo.json
 
 # Compute layout at multiple viewports
-luma layout examples/happy-form.json --viewports 320x640,1024x768
+luma layout todo.json --viewports 320x640,1024x768
 
 # Check keyboard flow
-luma keyboard examples/happy-form.json
+luma keyboard todo.json
 
 # Validate UX patterns
-luma flow examples/happy-form.json --patterns form
+luma flow todo.json --patterns form
 
 # Generate overall score
 luma score .ui/runs/<run-id>
 
 # Create HTML report
 luma report .ui/runs/<run-id>
+```
+
+**New to LUMA?**
+```bash
+# Get AI agent onboarding instructions
+luma init
+
+# See the scaffold contract (rules for creating scaffolds)
+luma explain --topic scaffold-contract
+
+# View the golden template (reference example)
+luma explain --topic golden-template
 ```
 
 See [QUICKSTART.md](./QUICKSTART.md) for a detailed walkthrough.
@@ -114,6 +128,28 @@ See [QUICKSTART.md](./QUICKSTART.md) for a detailed walkthrough.
 - `luma explain --topic <name> [--json]` — Explain LUMA concepts
 - `luma faq [--json]` — Frequently asked questions
 
+### Scaffold Generation (v1.1)
+
+- `luma scaffold new --pattern <name> --out <file>` — Generate scaffold from pattern
+
+**Available patterns:**
+- `todo-list` — Table with Add button (default golden template)
+- `empty-screen` — Minimal valid scaffold
+- `form-basic` — Simple form with 2 fields
+- `table-simple` — Basic data table
+- `contact-form` — Contact form with validation
+- `data-table-with-actions` — Table with row actions
+- `modal-dialog` — Dialog with action buttons
+- `login-form` — Email + password login
+- `multi-step-form` — Multi-page form flow
+- `dashboard-grid` — Dashboard with cards
+
+**Options:**
+- `--title <string>` — Custom screen title
+- `--screen-id <id>` — Custom screen ID
+- `--breakpoints <list>` — Custom breakpoints (e.g., "375x667,1920x1080")
+- `--force` — Overwrite existing file
+
 ## Output Artifacts
 
 All analysis commands write results to `.ui/runs/<timestamp>/`:
@@ -124,6 +160,24 @@ All analysis commands write results to `.ui/runs/<timestamp>/`:
 - `flow.json` — Pattern validation results
 - `score.json` — Category scores and pass/fail result
 - `report.html` — Visual summary report (optional)
+
+### Enhanced Error Reporting (v1.1)
+
+By default, `luma ingest` shows **one error at a time** with actionable fix suggestions:
+
+```bash
+luma ingest broken.json
+# Shows the most critical blocking issue with:
+# - Exact JSON pointer location
+# - What was expected vs. what was found
+# - Suggested fix with code snippet
+
+# To see all errors at once:
+luma ingest broken.json --all-issues
+
+# To disable fix suggestions:
+luma ingest broken.json --no-suggest
+```
 
 ## Scoring
 
@@ -172,8 +226,11 @@ npm run lint         # Check code style
 
 - [LUMA-SPEC.md](./LUMA-SPEC.md) — Complete specification
 - [QUICKSTART.md](./QUICKSTART.md) — Step-by-step tutorial
-- [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md) — Development roadmap
 - [AGENTS.md](./AGENTS.md) — AI agent instructions
+- [AI-AGENT-QUICKSTART.md](./AI-AGENT-QUICKSTART.md) — Agent onboarding guide (v1.1)
+- [AGENT-RULES-SCAFFOLD.md](./AGENT-RULES-SCAFFOLD.md) — Scaffold contract reference (v1.1)
+- [CHANGELOG.md](./CHANGELOG.md) — Version history
+- [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md) — Development roadmap
 
 ## Test Coverage
 
