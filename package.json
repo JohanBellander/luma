@@ -11,6 +11,7 @@
     "dist/**/*",
     "README.md",
     "QUICKSTART.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {
