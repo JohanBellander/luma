@@ -273,22 +273,25 @@ describe('Integration: LUMA v1.1 Complete Workflow', () => {
       // Verify golden template exists
       expect(existsSync(goldenPath)).toBe(true);
       
+      // Create a deterministic run folder for this test
+      runFolder = join(TEST_OUTPUT_DIR, 'golden-template-run');
+      if (existsSync(runFolder)) {
+        rmSync(runFolder, { recursive: true, force: true });
+      }
+      mkdirSync(runFolder, { recursive: true });
+      
       // Step 1: Ingest
       const ingestResult = execSync(
-        `node dist/index.js ingest ${goldenPath} --json`,
+        `node dist/index.js ingest ${goldenPath} --run-folder ${runFolder} --json`,
         { encoding: 'utf-8' }
       );
       const ingest = JSON.parse(ingestResult);
       expect(ingest.valid).toBe(true);
       expect(ingest.issues.length).toBe(0);
       
-      // Get run folder from ingest output
-      runFolder = ingest.runFolder;
-      expect(runFolder).toBeDefined();
-      
       // Step 2: Layout (multiple viewports)
       execSync(
-        `node dist/index.js layout ${goldenPath} --viewports 320x640,768x1024,1280x800`,
+        `node dist/index.js layout ${goldenPath} --run-folder ${runFolder} --viewports 320x640,768x1024,1280x800`,
         { encoding: 'utf-8' }
       );
       
@@ -302,7 +305,7 @@ describe('Integration: LUMA v1.1 Complete Workflow', () => {
       });
       
       // Step 3: Keyboard
-      execSync(`node dist/index.js keyboard ${goldenPath}`, { encoding: 'utf-8' });
+      execSync(`node dist/index.js keyboard ${goldenPath} --run-folder ${runFolder}`, { encoding: 'utf-8' });
       const keyboardPath = join(runFolder, 'keyboard.json');
       expect(existsSync(keyboardPath)).toBe(true);
       
@@ -313,14 +316,14 @@ describe('Integration: LUMA v1.1 Complete Workflow', () => {
       
       // Step 4: Flow patterns
       const flowResult = execSync(
-        `node dist/index.js flow ${goldenPath} --patterns table --json`, 
+        `node dist/index.js flow ${goldenPath} --run-folder ${runFolder} --patterns table --json`, 
         { encoding: 'utf-8' }
       );
       const flowOutput = JSON.parse(flowResult);
       
-      // Get runFolder from flow output (could be different from ingest if >5s elapsed)
-      const flowRunFolder = flowOutput.runFolder || runFolder;
-      const flowPath = join(flowRunFolder, 'flow.json');
+      // Verify flow output uses the same run folder
+      expect(flowOutput.runFolder).toBe(runFolder);
+      const flowPath = join(runFolder, 'flow.json');
       expect(existsSync(flowPath)).toBe(true);
       
       const flow = JSON.parse(readFileSync(flowPath, 'utf-8'));

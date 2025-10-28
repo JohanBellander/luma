@@ -29,7 +29,8 @@ export function createLayoutCommand(): Command {
     .argument('<file>', 'Path to scaffold JSON file')
     .option('--viewports <viewports>', 'Comma-separated viewport sizes (e.g., "320x640,768x1024")', '320x640,768x1024')
     .option('--json', 'Output results as JSON to stdout')
-    .action(async (file: string, options: { viewports: string; json?: boolean }) => {
+    .option('--run-folder <path>', 'Explicit run folder path (for deterministic testing)')
+    .action(async (file: string, options: { viewports: string; json?: boolean; runFolder?: string }) => {
       try {
         // Read scaffold file
         const scaffoldText = readFileSync(file, 'utf-8');
@@ -40,7 +41,7 @@ export function createLayoutCommand(): Command {
         const viewports = viewportStrings.map(parseViewport);
 
         // Create run folder for this execution
-        const runFolder = createRunFolder();
+        const runFolder = createRunFolder(process.cwd(), options.runFolder);
 
         // Compute layout for each viewport
         const outputs: LayoutOutput[] = [];

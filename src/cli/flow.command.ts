@@ -15,7 +15,8 @@ export function createFlowCommand(): Command {
     .argument('<file>', 'Path to scaffold JSON file')
     .requiredOption('--patterns <list>', 'Comma-separated list of patterns')
     .option('--json', 'Output JSON only')
-    .action(async (file: string, options: { patterns: string; json?: boolean }) => {
+    .option('--run-folder <path>', 'Explicit run folder path (for deterministic testing)')
+    .action(async (file: string, options: { patterns: string; json?: boolean; runFolder?: string }) => {
       try {
         const patternNames = options.patterns.split(',').map(p => p.trim());
         const patterns: Pattern[] = [];
@@ -41,7 +42,7 @@ export function createFlowCommand(): Command {
         const scaffold = result.normalized as Scaffold;
         const output = validatePatterns(patterns, scaffold.screen.root);
 
-        const runDir = createRunFolder();
+        const runDir = createRunFolder(process.cwd(), options.runFolder);
         const flowPath = getRunFilePath(runDir, 'flow.json');
         writeFileSync(flowPath, JSON.stringify(output, null, 2));
 

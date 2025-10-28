@@ -28,7 +28,8 @@ export function createKeyboardCommand(): Command {
     .option('--state <state>', 'Form state to analyze (e.g., "default", "error")')
     .option('--viewport <width>', 'Viewport width for responsive overrides (e.g., "320")', parseInt)
     .option('--json', 'Output results as JSON to stdout')
-    .action(async (file: string, options: { state?: string; viewport?: number; json?: boolean }) => {
+    .option('--run-folder <path>', 'Explicit run folder path (for deterministic testing)')
+    .action(async (file: string, options: { state?: string; viewport?: number; json?: boolean; runFolder?: string }) => {
       try {
         // Read scaffold file
         const scaffoldText = readFileSync(file, 'utf-8');
@@ -38,7 +39,7 @@ export function createKeyboardCommand(): Command {
         const output = analyzeKeyboardFlow(scaffold, options.viewport, options.state);
 
         // Create run folder and write output
-        const runFolder = createRunFolder();
+        const runFolder = createRunFolder(process.cwd(), options.runFolder);
         const outputPath = getRunFilePath(runFolder, 'keyboard.json');
         writeFileSync(outputPath, JSON.stringify(output, null, 2), 'utf-8');
         logger.info(`Keyboard analysis written to: ${outputPath}`);

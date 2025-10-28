@@ -1,44 +1,45 @@
 /**
  * Integration tests for LUMA full workflow
- * Tests the current implementation which auto-generates run folders
+ * Tests the commands working together with deterministic run folders
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { execSync } from 'child_process';
-import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
+import { readFileSync, existsSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
 
 const EXAMPLES_DIR = join(process.cwd(), 'examples');
-const RUNS_DIR = join(process.cwd(), '.ui', 'runs');
-
-/**
- * Get the most recently created run folder
- */
-function getMostRecentRunFolder(): string {
-  if (!existsSync(RUNS_DIR)) {
-    throw new Error('No run folders found');
-  }
-  
-  const folders = readdirSync(RUNS_DIR)
-    .map(name => join(RUNS_DIR, name))
-    .filter(path => statSync(path).isDirectory())
-    .sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs);
-  
-  if (folders.length === 0) {
-    throw new Error('No run folders found');
-  }
-  
-  return folders[0];
-}
+const TEST_OUTPUT_DIR = join(process.cwd(), 'test-output', 'workflow');
 
 describe('Integration: Full Workflow', () => {
+  beforeAll(() => {
+    // Create test output directory
+    if (!existsSync(TEST_OUTPUT_DIR)) {
+      mkdirSync(TEST_OUTPUT_DIR, { recursive: true });
+    }
+  });
+
+  afterAll(() => {
+    // Clean up test output directory
+    if (existsSync(TEST_OUTPUT_DIR)) {
+      rmSync(TEST_OUTPUT_DIR, { recursive: true, force: true });
+    }
+  });
+
   describe('Happy Path: Valid Form', () => {
     const scaffoldPath = join(EXAMPLES_DIR, 'happy-form.json');
     let runFolder: string;
 
     it('should complete ingest without errors', () => {
+      // Create deterministic run folder for this test suite
+      runFolder = join(TEST_OUTPUT_DIR, 'happy-form-run');
+      if (existsSync(runFolder)) {
+        rmSync(runFolder, { recursive: true, force: true });
+      }
+      mkdirSync(runFolder, { recursive: true });
+
       const result = execSync(
-        `node dist/index.js ingest ${scaffoldPath} --json`,
+        `node dist/index.js ingest ${scaffoldPath} --run-folder ${runFolder} --json`,
         { encoding: 'utf-8' }
       );
 
@@ -47,9 +48,8 @@ describe('Integration: Full Workflow', () => {
       expect(output.issues).toHaveLength(0);
       expect(output.normalized).toBeDefined();
 
-      // Get the run folder from ingest output
-      runFolder = output.runFolder;
-      expect(runFolder).toBeDefined();
+      // Verify the run folder matches
+      expect(output.runFolder).toBe(runFolder);
       
       // Verify ingest.json was created
       const ingestPath = join(runFolder, 'ingest.json');
@@ -63,11 +63,9 @@ describe('Integration: Full Workflow', () => {
 
     it('should complete layout for multiple viewports', () => {
       execSync(
-        `node dist/index.js layout ${scaffoldPath} --viewports 320x640,1024x768`,
+        `node dist/index.js layout ${scaffoldPath} --run-folder ${runFolder} --viewports 320x640,1024x768`,
         { encoding: 'utf-8' }
       );
-
-      runFolder = getMostRecentRunFolder();
 
       // Verify layout files were created
       const layout320 = join(runFolder, 'layout_320x640.json');
@@ -84,11 +82,9 @@ describe('Integration: Full Workflow', () => {
 
     it('should complete keyboard analysis', () => {
       execSync(
-        `node dist/index.js keyboard ${scaffoldPath}`,
+        `node dist/index.js keyboard ${scaffoldPath} --run-folder ${runFolder}`,
         { encoding: 'utf-8' }
       );
-
-      runFolder = getMostRecentRunFolder();
 
       // Verify keyboard.json was created
       const keyboardPath = join(runFolder, 'keyboard.json');
@@ -102,11 +98,9 @@ describe('Integration: Full Workflow', () => {
 
     it('should complete flow pattern validation', () => {
       execSync(
-        `node dist/index.js flow ${scaffoldPath} --patterns form`,
+        `node dist/index.js flow ${scaffoldPath} --run-folder ${runFolder} --patterns form`,
         { encoding: 'utf-8' }
       );
-
-      runFolder = getMostRecentRunFolder();
 
       // Verify flow.json was created
       const flowPath = join(runFolder, 'flow.json');
@@ -124,8 +118,6 @@ describe('Integration: Full Workflow', () => {
     });
 
     it('should complete scoring with pass result', () => {
-      runFolder = getMostRecentRunFolder();
-      
       execSync(
         `node dist/index.js score ${runFolder}`,
         { encoding: 'utf-8' }
@@ -147,7 +139,6 @@ describe('Integration: Full Workflow', () => {
     });
 
     it('should generate HTML report', () => {
-      runFolder = getMostRecentRunFolder();
       const reportPath = join(runFolder, 'report.html');
       
       execSync(
@@ -165,44 +156,44 @@ describe('Integration: Full Workflow', () => {
 
   describe('Pattern Failures', () => {
     const scaffoldPath = join(EXAMPLES_DIR, 'pattern-failures.json');
+    let runFolder: string;
 
     it('should detect MUST violations in pattern validation', { timeout: 10000 }, () => {
+      // Create deterministic run folder for this test
+      runFolder = join(TEST_OUTPUT_DIR, 'pattern-failures-run');
+      if (existsSync(runFolder)) {
+        rmSync(runFolder, { recursive: true, force: true });
+      }
+      mkdirSync(runFolder, { recursive: true });
+
       // Ingest the scaffold
       execSync(
-        `node dist/index.js ingest ${scaffoldPath}`,
+        `node dist/index.js ingest ${scaffoldPath} --run-folder ${runFolder}`,
         { encoding: 'utf-8' }
       );
-
-      let runFolder = getMostRecentRunFolder();
 
       // Run layout
       execSync(
-        `node dist/index.js layout ${scaffoldPath} --viewports 1024x768`,
+        `node dist/index.js layout ${scaffoldPath} --run-folder ${runFolder} --viewports 1024x768`,
         { encoding: 'utf-8' }
       );
-
-      runFolder = getMostRecentRunFolder();
 
       // Run keyboard
       execSync(
-        `node dist/index.js keyboard ${scaffoldPath}`,
+        `node dist/index.js keyboard ${scaffoldPath} --run-folder ${runFolder}`,
         { encoding: 'utf-8' }
       );
-
-      runFolder = getMostRecentRunFolder();
 
       // Run flow with form pattern - should detect missing labels
       // This will exit with non-zero code due to MUST failures, which is expected
       try {
         execSync(
-          `node dist/index.js flow ${scaffoldPath} --patterns form`,
+          `node dist/index.js flow ${scaffoldPath} --run-folder ${runFolder} --patterns form`,
           { encoding: 'utf-8' }
         );
       } catch (error) {
         // Expected to fail due to pattern violations
       }
-
-      runFolder = getMostRecentRunFolder();
 
       const flowPath = join(runFolder, 'flow.json');
       const flowData = JSON.parse(readFileSync(flowPath, 'utf-8'));

@@ -26,11 +26,13 @@ export function createIngestCommand(): Command {
     .option('--all-issues', 'Show all validation issues instead of just the most blocking one')
     .option('--no-suggest', 'Suppress fix suggestions')
     .option('--format <type>', 'Output format: concise or verbose', 'concise')
+    .option('--run-folder <path>', 'Explicit run folder path (for deterministic testing)')
     .action((file: string, options: { 
       json?: boolean;
       allIssues?: boolean;
       suggest?: boolean;
       format?: string;
+      runFolder?: string;
     }) => {
       try {
         // Suppress INFO logs when using --json
@@ -64,7 +66,7 @@ export function createIngestCommand(): Command {
         const enhancedIssues = enhanceIssues(result.issues, enhancementOptions, file, result.rawData);
 
         // Create run folder
-        const runFolder = createRunFolder();
+        const runFolder = createRunFolder(process.cwd(), options.runFolder);
         const outputPath = getRunFilePath(runFolder, 'ingest.json');
 
         // Create enhanced result

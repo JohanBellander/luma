@@ -71,9 +71,18 @@ export function getMostRecentRunFolder(baseDir: string = process.cwd()): string 
 /**
  * Create a new run folder or reuse the most recent one if within threshold
  * @param baseDir - Base directory (defaults to current working directory)
+ * @param explicitPath - If provided, use this exact path instead of creating/reusing
  * @returns Absolute path to the run folder
  */
-export function createRunFolder(baseDir: string = process.cwd()): string {
+export function createRunFolder(baseDir: string = process.cwd(), explicitPath?: string): string {
+  // If explicit path provided, use it directly
+  if (explicitPath) {
+    if (!existsSync(explicitPath)) {
+      mkdirSync(explicitPath, { recursive: true });
+    }
+    return explicitPath;
+  }
+
   // Try to reuse the most recent run folder
   const recentFolder = getMostRecentRunFolder(baseDir);
   if (recentFolder) {
