@@ -6,6 +6,7 @@ import { Command } from 'commander';
 import { readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { ingest } from '../core/ingest/ingest.js';
+import { enhanceIssues, formatIssuesForConsole, type ErrorEnhancementOptions } from '../core/ingest/error-enhancer.js';
 import { createRunFolder, getRunFilePath } from '../utils/run-folder.js';
 import {
   EXIT_SUCCESS,
@@ -22,11 +23,25 @@ export function createIngestCommand(): Command {
     .description('Validate and normalize a scaffold JSON file')
     .argument('<file>', 'Path to the scaffold JSON file')
     .option('--json', 'Output result as JSON')
-    .action((file: string, options: { json?: boolean }) => {
+    .option('--all-issues', 'Show all validation issues instead of just the most blocking one')
+    .option('--no-suggest', 'Suppress fix suggestions')
+    .option('--format <type>', 'Output format: concise or verbose', 'concise')
+    .action((file: string, options: { 
+      json?: boolean;
+      allIssues?: boolean;
+      suggest?: boolean;
+      format?: string;
+    }) => {
       try {
         // Suppress INFO logs when using --json
         if (options.json) {
           logger.setLevel(LogLevel.ERROR);
+        }
+
+        // Validate format option
+        if (options.format && !['concise', 'verbose'].includes(options.format)) {
+          console.error('Error: --format must be either "concise" or "verbose"');
+          process.exit(EXIT_INVALID_INPUT);
         }
 
         // Read the file
@@ -39,30 +54,39 @@ export function createIngestCommand(): Command {
         // Run ingest
         const result = ingest(rawData);
 
+        // Enhance errors with suggestions and nextAction
+        const enhancementOptions: ErrorEnhancementOptions = {
+          allIssues: options.allIssues,
+          noSuggest: options.suggest === false, // Commander converts --no-suggest to suggest: false
+          format: (options.format as 'concise' | 'verbose') || 'concise',
+        };
+
+        const enhancedIssues = enhanceIssues(result.issues, enhancementOptions, file);
+
+        // Create enhanced result
+        const enhancedResult = {
+          ...result,
+          issues: enhancedIssues,
+        };
+
         // Create run folder
         const runFolder = createRunFolder();
         const outputPath = getRunFilePath(runFolder, 'ingest.json');
 
         // Write result to run folder
-        writeFileSync(outputPath, JSON.stringify(result, null, 2));
+        writeFileSync(outputPath, JSON.stringify(enhancedResult, null, 2));
         logger.info(`Ingest result written to: ${outputPath}`);
 
         // Output to console
         if (options.json) {
-          console.log(JSON.stringify(result, null, 2));
+          console.log(JSON.stringify(enhancedResult, null, 2));
         } else {
           console.log(`\nIngest ${result.valid ? 'PASSED' : 'FAILED'}`);
-          console.log(`Issues: ${result.issues.length}`);
+          console.log(`Issues: ${enhancedIssues.length}${options.allIssues ? '' : ' (showing most blocking)'}`);
 
-          if (result.issues.length > 0) {
+          if (enhancedIssues.length > 0) {
             console.log('\nIssues found:');
-            result.issues.forEach((issue) => {
-              console.log(
-                `  [${issue.severity.toUpperCase()}] ${issue.id}: ${issue.message}`
-              );
-              if (issue.nodeId) console.log(`    Node: ${issue.nodeId}`);
-              if (issue.suggestion) console.log(`    → ${issue.suggestion}`);
-            });
+            console.log(formatIssuesForConsole(enhancedIssues, enhancementOptions));
           }
 
           console.log(`\nResults saved to: ${outputPath}`);
