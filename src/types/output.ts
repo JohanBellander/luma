@@ -9,6 +9,7 @@ export interface IngestOutput {
   valid: boolean;
   normalized?: unknown; // Normalized scaffold
   issues: Issue[];
+  rawData?: unknown; // Original data for error enhancement
 }
 
 export interface LayoutOutput {

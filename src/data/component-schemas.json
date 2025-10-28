@@ -1,0 +1,885 @@
+{
+  "Text": {
+    "description": "Display text content with optional styling",
+    "properties": {
+      "id": {
+        "type": "string",
+        "required": true,
+        "description": "Unique identifier for the component"
+      },
+      "type": {
+        "type": "string",
+        "required": true,
+        "description": "Must be 'Text'"
+      },
+      "text": {
+        "type": "string",
+        "required": true,
+        "description": "Content to display"
+      },
+      "fontSize": {
+        "type": "number",
+        "required": false,
+        "description": "Font size in pixels (default: 16)"
+      },
+      "maxLines": {
+        "type": "number",
+        "required": false,
+        "description": "Maximum number of lines before truncation"
+      },
+      "intrinsicTextWidth": {
+        "type": "number",
+        "required": false,
+        "description": "Single-line width hint for layout calculations"
+      },
+      "visible": {
+        "type": "boolean",
+        "required": false,
+        "description": "Visibility flag (default: true)"
+      },
+      "widthPolicy": {
+        "type": "string",
+        "required": false,
+        "description": "Width sizing policy: 'hug' | 'fill' | 'fixed' (default: 'hug')"
+      },
+      "heightPolicy": {
+        "type": "string",
+        "required": false,
+        "description": "Height sizing policy: 'hug' | 'fill' | 'fixed' (default: 'hug')"
+      },
+      "minSize": {
+        "type": "object",
+        "required": false,
+        "description": "Minimum size constraint: {w?: number, h?: number}"
+      },
+      "maxSize": {
+        "type": "object",
+        "required": false,
+        "description": "Maximum size constraint: {w?: number, h?: number}"
+      },
+      "at": {
+        "type": "object",
+        "required": false,
+        "description": "Responsive overrides keyed by '<=N' or '>=N'"
+      }
+    },
+    "required": ["id", "type", "text"],
+    "commonMistakes": [
+      "Using 'content' instead of 'text'",
+      "Using 'label' instead of 'text'",
+      "Using 'fontWeight' (not supported, use fontSize only)",
+      "Forgetting to set 'text' (it's required)"
+    ],
+    "examples": [
+      {
+        "name": "Simple text",
+        "code": {
+          "id": "title",
+          "type": "Text",
+          "text": "Hello World"
+        }
+      },
+      {
+        "name": "Styled heading",
+        "code": {
+          "id": "heading",
+          "type": "Text",
+          "text": "Welcome",
+          "fontSize": 24
+        }
+      },
+      {
+        "name": "Truncated text",
+        "code": {
+          "id": "description",
+          "type": "Text",
+          "text": "This is a long description that might need truncation",
+          "maxLines": 2
+        }
+      }
+    ]
+  },
+  "Button": {
+    "description": "Interactive button element with optional text and role hint",
+    "properties": {
+      "id": {
+        "type": "string",
+        "required": true,
+        "description": "Unique identifier for the component"
+      },
+      "type": {
+        "type": "string",
+        "required": true,
+        "description": "Must be 'Button'"
+      },
+      "text": {
+        "type": "string",
+        "required": false,
+        "description": "Button label (if absent, treated as icon-only)"
+      },
+      "focusable": {
+        "type": "boolean",
+        "required": false,
+        "description": "Whether button can receive focus (default: true)"
+      },
+      "tabIndex": {
+        "type": "number",
+        "required": false,
+        "description": "Tab order index (non-zero values discouraged)"
+      },
+      "roleHint": {
+        "type": "string",
+        "required": false,
+        "description": "Visual role hint: 'primary' | 'secondary' | 'danger' | 'link'"
+      },
+      "visible": {
+        "type": "boolean",
+        "required": false,
+        "description": "Visibility flag (default: true)"
+      },
+      "widthPolicy": {
+        "type": "string",
+        "required": false,
+        "description": "Width sizing policy: 'hug' | 'fill' | 'fixed' (default: 'hug')"
+      },
+      "heightPolicy": {
+        "type": "string",
+        "required": false,
+        "description": "Height sizing policy: 'hug' | 'fill' | 'fixed' (default: 'hug')"
+      },
+      "minSize": {
+        "type": "object",
+        "required": false,
+        "description": "Minimum size constraint: {w?: number, h?: number}"
+      },
+      "maxSize": {
+        "type": "object",
+        "required": false,
+        "description": "Maximum size constraint: {w?: number, h?: number}"
+      },
+      "at": {
+        "type": "object",
+        "required": false,
+        "description": "Responsive overrides keyed by '<=N' or '>=N'"
+      }
+    },
+    "required": ["id", "type"],
+    "commonMistakes": [
+      "Using 'label' instead of 'text'",
+      "Using 'variant' instead of 'roleHint'",
+      "Setting non-zero tabIndex (should use default tab order)",
+      "Forgetting 'text' for visible buttons (icon-only should be intentional)"
+    ],
+    "examples": [
+      {
+        "name": "Primary button",
+        "code": {
+          "id": "submit-btn",
+          "type": "Button",
+          "text": "Submit",
+          "roleHint": "primary"
+        }
+      },
+      {
+        "name": "Secondary button",
+        "code": {
+          "id": "cancel-btn",
+          "type": "Button",
+          "text": "Cancel",
+          "roleHint": "secondary"
+        }
+      },
+      {
+        "name": "Danger button",
+        "code": {
+          "id": "delete-btn",
+          "type": "Button",
+          "text": "Delete",
+          "roleHint": "danger"
+        }
+      }
+    ]
+  },
+  "Field": {
+    "description": "Form input field with label and validation",
+    "properties": {
+      "id": {
+        "type": "string",
+        "required": true,
+        "description": "Unique identifier for the component"
+      },
+      "type": {
+        "type": "string",
+        "required": true,
+        "description": "Must be 'Field'"
+      },
+      "label": {
+        "type": "string",
+        "required": true,
+        "description": "Field label (must be non-empty)"
+      },
+      "inputType": {
+        "type": "string",
+        "required": false,
+        "description": "Input type: 'text' | 'email' | 'password' | 'number' | 'date' (default: 'text')"
+      },
+      "required": {
+        "type": "boolean",
+        "required": false,
+        "description": "Whether field is required (default: false)"
+      },
+      "helpText": {
+        "type": "string",
+        "required": false,
+        "description": "Helper text shown below the field"
+      },
+      "errorText": {
+        "type": "string",
+        "required": false,
+        "description": "Error message text"
+      },
+      "focusable": {
+        "type": "boolean",
+        "required": false,
+        "description": "Whether field can receive focus (default: true)"
+      },
+      "visible": {
+        "type": "boolean",
+        "required": false,
+        "description": "Visibility flag (default: true)"
+      },
+      "widthPolicy": {
+        "type": "string",
+        "required": false,
+        "description": "Width sizing policy: 'hug' | 'fill' | 'fixed' (default: 'hug')"
+      },
+      "heightPolicy": {
+        "type": "string",
+        "required": false,
+        "description": "Height sizing policy: 'hug' | 'fill' | 'fixed' (default: 'hug')"
+      },
+      "minSize": {
+        "type": "object",
+        "required": false,
+        "description": "Minimum size constraint: {w?: number, h?: number}"
+      },
+      "maxSize": {
+        "type": "object",
+        "required": false,
+        "description": "Maximum size constraint: {w?: number, h?: number}"
+      },
+      "at": {
+        "type": "object",
+        "required": false,
+        "description": "Responsive overrides keyed by '<=N' or '>=N'"
+      }
+    },
+    "required": ["id", "type", "label"],
+    "commonMistakes": [
+      "Empty label string (must be non-empty)",
+      "Using 'placeholder' instead of 'label'",
+      "Using invalid inputType values",
+      "Forgetting to set 'required' for mandatory fields"
+    ],
+    "examples": [
+      {
+        "name": "Email field",
+        "code": {
+          "id": "email",
+          "type": "Field",
+          "label": "Email",
+          "inputType": "email",
+          "required": true,
+          "helpText": "We'll never share your email"
+        }
+      },
+      {
+        "name": "Password field",
+        "code": {
+          "id": "password",
+          "type": "Field",
+          "label": "Password",
+          "inputType": "password",
+          "required": true,
+          "helpText": "At least 8 characters"
+        }
+      },
+      {
+        "name": "Optional text field",
+        "code": {
+          "id": "phone",
+          "type": "Field",
+          "label": "Phone Number",
+          "inputType": "text"
+        }
+      }
+    ]
+  },
+  "Form": {
+    "description": "Form container with fields and action buttons",
+    "properties": {
+      "id": {
+        "type": "string",
+        "required": true,
+        "description": "Unique identifier for the component"
+      },
+      "type": {
+        "type": "string",
+        "required": true,
+        "description": "Must be 'Form'"
+      },
+      "title": {
+        "type": "string",
+        "required": false,
+        "description": "Optional form title"
+      },
+      "fields": {
+        "type": "array",
+        "required": true,
+        "description": "Array of Field components (length ≥ 1)"
+      },
+      "actions": {
+        "type": "array",
+        "required": true,
+        "description": "Array of Button components (length ≥ 1)"
+      },
+      "states": {
+        "type": "array",
+        "required": true,
+        "description": "Form states (must include 'default', include 'error' if any field has errorText)"
+      },
+      "visible": {
+        "type": "boolean",
+        "required": false,
+        "description": "Visibility flag (default: true)"
+      },
+      "widthPolicy": {
+        "type": "string",
+        "required": false,
+        "description": "Width sizing policy: 'hug' | 'fill' | 'fixed' (default: 'hug')"
+      },
+      "heightPolicy": {
+        "type": "string",
+        "required": false,
+        "description": "Height sizing policy: 'hug' | 'fill' | 'fixed' (default: 'hug')"
+      },
+      "minSize": {
+        "type": "object",
+        "required": false,
+        "description": "Minimum size constraint: {w?: number, h?: number}"
+      },
+      "maxSize": {
+        "type": "object",
+        "required": false,
+        "description": "Maximum size constraint: {w?: number, h?: number}"
+      },
+      "at": {
+        "type": "object",
+        "required": false,
+        "description": "Responsive overrides keyed by '<=N' or '>=N'"
+      }
+    },
+    "required": ["id", "type", "fields", "actions", "states"],
+    "commonMistakes": [
+      "Empty fields array (must have at least 1 field)",
+      "Empty actions array (must have at least 1 button)",
+      "Missing 'default' in states array",
+      "Having errorText in fields but not including 'error' in states",
+      "Using object instead of array for fields or actions"
+    ],
+    "examples": [
+      {
+        "name": "Login form",
+        "code": {
+          "id": "login-form",
+          "type": "Form",
+          "states": ["default"],
+          "fields": [
+            {
+              "id": "email-field",
+              "type": "Field",
+              "label": "Email",
+              "inputType": "email",
+              "required": true
+            },
+            {
+              "id": "password-field",
+              "type": "Field",
+              "label": "Password",
+              "inputType": "password",
+              "required": true
+            }
+          ],
+          "actions": [
+            {
+              "id": "submit-button",
+              "type": "Button",
+              "text": "Login",
+              "roleHint": "primary"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "Table": {
+    "description": "Data table with responsive behavior",
+    "properties": {
+      "id": {
+        "type": "string",
+        "required": true,
+        "description": "Unique identifier for the component"
+      },
+      "type": {
+        "type": "string",
+        "required": true,
+        "description": "Must be 'Table'"
+      },
+      "title": {
+        "type": "string",
+        "required": true,
+        "description": "Table title (must be non-empty)"
+      },
+      "columns": {
+        "type": "array",
+        "required": true,
+        "description": "Array of column names as strings (length ≥ 1)"
+      },
+      "rows": {
+        "type": "number",
+        "required": false,
+        "description": "Number of rows (density heuristic)"
+      },
+      "responsive": {
+        "type": "object",
+        "required": true,
+        "description": "Responsive behavior configuration with 'strategy' and optional 'minColumnWidth'"
+      },
+      "states": {
+        "type": "array",
+        "required": false,
+        "description": "Table states (recommended: 'default', 'empty', 'loading')"
+      },
+      "visible": {
+        "type": "boolean",
+        "required": false,
+        "description": "Visibility flag (default: true)"
+      },
+      "widthPolicy": {
+        "type": "string",
+        "required": false,
+        "description": "Width sizing policy: 'hug' | 'fill' | 'fixed' (default: 'hug')"
+      },
+      "heightPolicy": {
+        "type": "string",
+        "required": false,
+        "description": "Height sizing policy: 'hug' | 'fill' | 'fixed' (default: 'hug')"
+      },
+      "minSize": {
+        "type": "object",
+        "required": false,
+        "description": "Minimum size constraint: {w?: number, h?: number}"
+      },
+      "maxSize": {
+        "type": "object",
+        "required": false,
+        "description": "Maximum size constraint: {w?: number, h?: number}"
+      },
+      "at": {
+        "type": "object",
+        "required": false,
+        "description": "Responsive overrides keyed by '<=N' or '>=N'"
+      }
+    },
+    "required": ["id", "type", "title", "columns", "responsive"],
+    "commonMistakes": [
+      "Using object array for columns instead of string array",
+      "Empty columns array (must have at least 1 column)",
+      "Empty title string",
+      "Missing 'responsive' configuration",
+      "Invalid responsive.strategy (must be 'wrap' | 'scroll' | 'cards')"
+    ],
+    "examples": [
+      {
+        "name": "Simple table",
+        "code": {
+          "id": "users-table",
+          "type": "Table",
+          "title": "Users",
+          "columns": ["Name", "Email", "Role"],
+          "rows": 5,
+          "responsive": {
+            "strategy": "scroll"
+          }
+        }
+      },
+      {
+        "name": "Responsive table with card view",
+        "code": {
+          "id": "products-table",
+          "type": "Table",
+          "title": "Products",
+          "columns": ["Product", "Price", "Stock"],
+          "responsive": {
+            "strategy": "cards",
+            "minColumnWidth": 120
+          },
+          "states": ["default", "empty"]
+        }
+      }
+    ]
+  },
+  "Stack": {
+    "description": "Linear layout container (vertical or horizontal)",
+    "properties": {
+      "id": {
+        "type": "string",
+        "required": true,
+        "description": "Unique identifier for the component"
+      },
+      "type": {
+        "type": "string",
+        "required": true,
+        "description": "Must be 'Stack'"
+      },
+      "direction": {
+        "type": "string",
+        "required": true,
+        "description": "Layout direction: 'vertical' | 'horizontal'"
+      },
+      "gap": {
+        "type": "number",
+        "required": false,
+        "description": "Space between children in pixels (default: 0)"
+      },
+      "padding": {
+        "type": "number",
+        "required": false,
+        "description": "Internal padding in pixels (default: 0)"
+      },
+      "align": {
+        "type": "string",
+        "required": false,
+        "description": "Cross-axis alignment: 'start' | 'center' | 'end' | 'stretch' (default: 'start')"
+      },
+      "wrap": {
+        "type": "boolean",
+        "required": false,
+        "description": "Allow wrapping (only applies to horizontal direction, default: false)"
+      },
+      "children": {
+        "type": "array",
+        "required": true,
+        "description": "Array of child components (any node type)"
+      },
+      "visible": {
+        "type": "boolean",
+        "required": false,
+        "description": "Visibility flag (default: true)"
+      },
+      "widthPolicy": {
+        "type": "string",
+        "required": false,
+        "description": "Width sizing policy: 'hug' | 'fill' | 'fixed' (default: 'hug')"
+      },
+      "heightPolicy": {
+        "type": "string",
+        "required": false,
+        "description": "Height sizing policy: 'hug' | 'fill' | 'fixed' (default: 'hug')"
+      },
+      "minSize": {
+        "type": "object",
+        "required": false,
+        "description": "Minimum size constraint: {w?: number, h?: number}"
+      },
+      "maxSize": {
+        "type": "object",
+        "required": false,
+        "description": "Maximum size constraint: {w?: number, h?: number}"
+      },
+      "at": {
+        "type": "object",
+        "required": false,
+        "description": "Responsive overrides keyed by '<=N' or '>=N'"
+      }
+    },
+    "required": ["id", "type", "direction", "children"],
+    "commonMistakes": [
+      "Missing direction property",
+      "Empty children array",
+      "Using 'wrap' with vertical direction (only works with horizontal)",
+      "Forgetting to set gap for spacing between items"
+    ],
+    "examples": [
+      {
+        "name": "Vertical stack",
+        "code": {
+          "id": "v-stack",
+          "type": "Stack",
+          "direction": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "id": "text1",
+              "type": "Text",
+              "text": "First item"
+            },
+            {
+              "id": "text2",
+              "type": "Text",
+              "text": "Second item"
+            }
+          ]
+        }
+      },
+      {
+        "name": "Horizontal toolbar",
+        "code": {
+          "id": "toolbar",
+          "type": "Stack",
+          "direction": "horizontal",
+          "gap": 8,
+          "padding": 12,
+          "children": [
+            {
+              "id": "btn1",
+              "type": "Button",
+              "text": "Save"
+            },
+            {
+              "id": "btn2",
+              "type": "Button",
+              "text": "Cancel"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "Grid": {
+    "description": "Grid layout container with automatic responsive columns",
+    "properties": {
+      "id": {
+        "type": "string",
+        "required": true,
+        "description": "Unique identifier for the component"
+      },
+      "type": {
+        "type": "string",
+        "required": true,
+        "description": "Must be 'Grid'"
+      },
+      "columns": {
+        "type": "number",
+        "required": true,
+        "description": "Intended maximum number of columns"
+      },
+      "gap": {
+        "type": "number",
+        "required": false,
+        "description": "Space between grid items in pixels (default: 0)"
+      },
+      "minColWidth": {
+        "type": "number",
+        "required": false,
+        "description": "Minimum column width - allows column reduction on small viewports"
+      },
+      "children": {
+        "type": "array",
+        "required": true,
+        "description": "Array of child components (any node type)"
+      },
+      "visible": {
+        "type": "boolean",
+        "required": false,
+        "description": "Visibility flag (default: true)"
+      },
+      "widthPolicy": {
+        "type": "string",
+        "required": false,
+        "description": "Width sizing policy: 'hug' | 'fill' | 'fixed' (default: 'hug')"
+      },
+      "heightPolicy": {
+        "type": "string",
+        "required": false,
+        "description": "Height sizing policy: 'hug' | 'fill' | 'fixed' (default: 'hug')"
+      },
+      "minSize": {
+        "type": "object",
+        "required": false,
+        "description": "Minimum size constraint: {w?: number, h?: number}"
+      },
+      "maxSize": {
+        "type": "object",
+        "required": false,
+        "description": "Maximum size constraint: {w?: number, h?: number}"
+      },
+      "at": {
+        "type": "object",
+        "required": false,
+        "description": "Responsive overrides keyed by '<=N' or '>=N'"
+      }
+    },
+    "required": ["id", "type", "columns", "children"],
+    "commonMistakes": [
+      "Missing columns property",
+      "Empty children array",
+      "Setting columns to 0 or negative value",
+      "Not using minColWidth for responsive behavior"
+    ],
+    "examples": [
+      {
+        "name": "Simple 2-column grid",
+        "code": {
+          "id": "grid",
+          "type": "Grid",
+          "columns": 2,
+          "gap": 16,
+          "children": [
+            {
+              "id": "item1",
+              "type": "Text",
+              "text": "Item 1"
+            },
+            {
+              "id": "item2",
+              "type": "Text",
+              "text": "Item 2"
+            },
+            {
+              "id": "item3",
+              "type": "Text",
+              "text": "Item 3"
+            }
+          ]
+        }
+      },
+      {
+        "name": "Responsive grid",
+        "code": {
+          "id": "responsive-grid",
+          "type": "Grid",
+          "columns": 4,
+          "gap": 12,
+          "minColWidth": 150,
+          "children": [
+            {
+              "id": "card1",
+              "type": "Box",
+              "padding": 16,
+              "child": {
+                "id": "card1-text",
+                "type": "Text",
+                "text": "Card 1"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "Box": {
+    "description": "Single-child container with padding",
+    "properties": {
+      "id": {
+        "type": "string",
+        "required": true,
+        "description": "Unique identifier for the component"
+      },
+      "type": {
+        "type": "string",
+        "required": true,
+        "description": "Must be 'Box'"
+      },
+      "padding": {
+        "type": "number",
+        "required": false,
+        "description": "Internal padding in pixels (default: 0)"
+      },
+      "child": {
+        "type": "object",
+        "required": false,
+        "description": "Single child component (any node type)"
+      },
+      "visible": {
+        "type": "boolean",
+        "required": false,
+        "description": "Visibility flag (default: true)"
+      },
+      "widthPolicy": {
+        "type": "string",
+        "required": false,
+        "description": "Width sizing policy: 'hug' | 'fill' | 'fixed' (default: 'hug')"
+      },
+      "heightPolicy": {
+        "type": "string",
+        "required": false,
+        "description": "Height sizing policy: 'hug' | 'fill' | 'fixed' (default: 'hug')"
+      },
+      "minSize": {
+        "type": "object",
+        "required": false,
+        "description": "Minimum size constraint: {w?: number, h?: number}"
+      },
+      "maxSize": {
+        "type": "object",
+        "required": false,
+        "description": "Maximum size constraint: {w?: number, h?: number}"
+      },
+      "at": {
+        "type": "object",
+        "required": false,
+        "description": "Responsive overrides keyed by '<=N' or '>=N'"
+      }
+    },
+    "required": ["id", "type"],
+    "commonMistakes": [
+      "Using 'children' array instead of 'child' (Box has single child)",
+      "Nesting Box without adding padding (use for spacing/margins)",
+      "Using Box when Stack or Grid would be more appropriate"
+    ],
+    "examples": [
+      {
+        "name": "Padded container",
+        "code": {
+          "id": "container",
+          "type": "Box",
+          "padding": 24,
+          "child": {
+            "id": "content",
+            "type": "Text",
+            "text": "Padded content"
+          }
+        }
+      },
+      {
+        "name": "Card wrapper",
+        "code": {
+          "id": "card",
+          "type": "Box",
+          "padding": 16,
+          "widthPolicy": "fill",
+          "child": {
+            "id": "card-stack",
+            "type": "Stack",
+            "direction": "vertical",
+            "gap": 8,
+            "children": [
+              {
+                "id": "title",
+                "type": "Text",
+                "text": "Card Title",
+                "fontSize": 18
+              },
+              {
+                "id": "description",
+                "type": "Text",
+                "text": "Card description"
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

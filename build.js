@@ -5,6 +5,7 @@ import { copyFileSync, mkdirSync } from 'fs';
 mkdirSync('dist/data', { recursive: true });
 copyFileSync('src/data/topics.json', 'dist/data/topics.json');
 copyFileSync('src/data/faq.json', 'dist/data/faq.json');
+copyFileSync('src/data/component-schemas.json', 'dist/data/component-schemas.json');
 
 await build({
   entryPoints: ['dist/index.js'],

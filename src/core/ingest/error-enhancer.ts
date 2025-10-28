@@ -18,6 +18,133 @@ export interface ErrorEnhancementOptions {
 }
 
 /**
+ * Common property name mistakes and their corrections
+ */
+const PROPERTY_NAME_CORRECTIONS: Record<string, Record<string, string>> = {
+  Text: {
+    content: 'text',
+    label: 'text',
+    value: 'text',
+    fontWeight: 'fontSize (fontWeight not supported)',
+  },
+  Button: {
+    label: 'text',
+    content: 'text',
+    variant: 'roleHint',
+    type: 'roleHint',
+    style: 'roleHint',
+  },
+  Field: {
+    type: 'inputType',
+    name: 'label',
+    placeholder: 'helpText',
+    error: 'errorText',
+    validation: 'required',
+  },
+  Table: {
+    headers: 'columns',
+    cols: 'columns',
+    header: 'title',
+    name: 'title',
+  },
+  Form: {
+    buttons: 'actions',
+    inputs: 'fields',
+    name: 'title',
+  },
+  Stack: {
+    orientation: 'direction',
+    spacing: 'gap',
+  },
+  Grid: {
+    cols: 'columns',
+    spacing: 'gap',
+  },
+};
+
+/**
+ * Valid node types for union error messages
+ */
+const VALID_NODE_TYPES = [
+  'Stack',
+  'Grid',
+  'Box',
+  'Text',
+  'Button',
+  'Field',
+  'Form',
+  'Table',
+];
+
+/**
+ * Extract component type from JSON pointer
+ */
+function getComponentTypeFromPointer(pointer: string, data?: any): string | undefined {
+  if (!pointer) return undefined;
+
+  // Check for explicit type in path (e.g., /screen/root/type)
+  if (pointer.includes('/type')) {
+    const parts = pointer.split('/');
+    const typeIndex = parts.indexOf('type');
+    if (typeIndex > 0 && data) {
+      try {
+        // Navigate to parent object
+        let obj = data;
+        for (let i = 1; i < typeIndex; i++) {
+          obj = obj[parts[i]];
+          if (!obj) break;
+        }
+        if (obj && obj.type) {
+          return obj.type;
+        }
+      } catch {
+        // Ignore navigation errors
+      }
+    }
+  }
+
+  // Check for component-specific paths
+  if (pointer.includes('/fields')) return 'Form';
+  if (pointer.includes('/actions')) return 'Form';
+  if (pointer.includes('/columns')) return 'Table';
+  if (pointer.includes('/children')) return 'Stack or Grid';
+  if (pointer.includes('/child')) return 'Box';
+
+  return undefined;
+}
+
+/**
+ * Detect wrong property name and suggest correction
+ */
+function detectPropertyNameError(
+  pointer: string,
+  componentType?: string,
+  actualData?: any
+): { wrongProp: string; correctProp: string } | undefined {
+  if (!pointer || !actualData) return undefined;
+
+  const parts = pointer.split('/');
+  const propertyName = parts[parts.length - 1];
+
+  // Try to find correction for known component types
+  if (componentType && PROPERTY_NAME_CORRECTIONS[componentType]) {
+    const correction = PROPERTY_NAME_CORRECTIONS[componentType][propertyName];
+    if (correction) {
+      return { wrongProp: propertyName, correctProp: correction };
+    }
+  }
+
+  // Try all component types if type is unknown
+  for (const corrections of Object.values(PROPERTY_NAME_CORRECTIONS)) {
+    if (corrections[propertyName]) {
+      return { wrongProp: propertyName, correctProp: corrections[propertyName] };
+    }
+  }
+
+  return undefined;
+}
+
+/**
  * Priority order for issue types (higher = more blocking)
  */
 const issuePriority: Record<string, number> = {
@@ -65,7 +192,7 @@ function sortIssuesByPriority(issues: Issue[]): Issue[] {
 /**
  * Generate a suggestion for a validation error
  */
-function generateSuggestion(issue: Issue): string | undefined {
+function generateSuggestion(issue: Issue, actualData?: any): string | undefined {
   // Skip if issue already has a suggestion
   if (issue.suggestion) return issue.suggestion;
 
@@ -82,57 +209,140 @@ function generateSuggestion(issue: Issue): string | undefined {
       const pointer = issue.jsonPointer || '';
       const msg = issue.message.toLowerCase();
 
+      // Detect wrong property names
+      const details = issue.details as any;
+      const componentType = getComponentTypeFromPointer(pointer, actualData);
+      const propError = detectPropertyNameError(pointer, componentType, actualData);
+      
+      if (propError) {
+        return `Property '${propError.wrongProp}' is not valid. Use '${propError.correctProp}' instead`;
+      }
+
+      // Handle union errors with specific component type lists
+      if (msg.includes('invalid_union') || issue.found === 'none of the union members matched') {
+        if (pointer.includes('/root') || pointer.includes('/child') || pointer.includes('/children')) {
+          return `Expected a valid node type. Must be one of: ${VALID_NODE_TYPES.join(', ')}. Check that the 'type' property is set correctly.`;
+        }
+      }
+
+      // Handle invalid_type errors with specific details
+      if (details?.code === 'invalid_type') {
+        const parts = pointer.split('/');
+        const fieldName = parts[parts.length - 1];
+        
+        if (issue.expected && issue.found) {
+          // Special case for arrays vs objects
+          if (issue.expected.includes('array') && issue.found === 'object') {
+            if (fieldName === 'columns') {
+              return `Table.columns expects a string array like ["Name", "Email", "Phone"], not an array of objects`;
+            }
+            return `Property '${fieldName}' expects an array, not an object`;
+          }
+          
+          if (issue.expected.includes('object') && issue.found === 'array') {
+            return `Property '${fieldName}' expects an object, not an array`;
+          }
+
+          return `Property '${fieldName}' expects type ${issue.expected}, but got ${issue.found}`;
+        }
+      }
+
       // Missing required field
       if (msg.includes('required') || msg.includes('missing')) {
         if (pointer.includes('responsive/strategy')) {
-          return '"responsive": { "strategy": "scroll", "minColumnWidth": 160 }';
+          return 'Table requires: "responsive": { "strategy": "scroll", "minColumnWidth": 160 }';
         }
-        if (pointer.includes('title')) {
-          return '"title": "Your Table Title"';
+        if (pointer.includes('title') && pointer.includes('table')) {
+          return 'Table.title is required: "title": "Your Table Title"';
+        }
+        if (pointer.includes('title') && pointer.includes('form')) {
+          return 'Form.title is optional but recommended: "title": "Your Form Title"';
+        }
+        if (pointer.includes('label') && pointer.includes('field')) {
+          return 'Field.label is required and cannot be empty: "label": "Field Label"';
         }
         if (pointer.includes('fields')) {
-          return 'Add at least one Field to the fields array';
+          return 'Form.fields must be a non-empty array: "fields": [{ "type": "Field", "id": "f1", "label": "Name" }]';
         }
         if (pointer.includes('actions')) {
-          return 'Add at least one Button to the actions array';
+          return 'Form.actions must be a non-empty array: "actions": [{ "type": "Button", "id": "submit", "text": "Submit" }]';
         }
         if (pointer.includes('states') && pointer.includes('form')) {
-          return '"states": ["default"]';
+          return 'Form.states is required: "states": ["default"]';
         }
         if (pointer.includes('columns') && pointer.includes('table')) {
-          return '"columns": ["Column 1", "Column 2"]';
+          return 'Table.columns must be a non-empty string array: "columns": ["Column 1", "Column 2"]';
+        }
+        if (pointer.includes('text')) {
+          return 'Text.text is required: "text": "Your text content"';
+        }
+        if (pointer.includes('direction')) {
+          return 'Stack.direction is required: "direction": "vertical" or "horizontal"';
         }
         // Generic missing field
         if (issue.expected) {
           const fieldName = pointer.split('/').pop() || 'field';
-          return `Add missing "${fieldName}" property`;
+          return `Required property '${fieldName}' is missing. Type: ${issue.expected}`;
         }
       }
 
       // Invalid enum value
-      if (msg.includes('invalid enum') || msg.includes('invalid_enum_value')) {
+      if (msg.includes('invalid enum') || msg.includes('invalid_enum_value') || details?.code === 'invalid_enum_value') {
         if (issue.expected && issue.expected.includes('one of:')) {
-          return `Use ${issue.expected}`;
+          return `Invalid value. ${issue.expected}`;
+        }
+        // Extract enum options from details if available
+        if (details?.options) {
+          const options = Array.isArray(details.options) ? details.options.join(', ') : details.options;
+          return `Invalid enum value. Must be one of: ${options}`;
+        }
+      }
+
+      // Invalid literal
+      if (details?.code === 'invalid_literal') {
+        if (details?.expected) {
+          return `Expected literal value: ${details.expected}`;
         }
       }
 
       // Invalid type
       if (msg.includes('invalid type') || msg.includes('expected')) {
         if (issue.expected) {
-          return `Ensure this value is of type: ${issue.expected}`;
+          return `Value must be of type: ${issue.expected}`;
         }
       }
 
       // Array too small
       if (msg.includes('array') && (msg.includes('must have') || msg.includes('minimum'))) {
         const fieldName = pointer.split('/').pop() || 'array';
-        return `Add more items to the ${fieldName} array to meet minimum requirements`;
+        if (fieldName === 'fields') {
+          return 'Form must have at least one Field in the fields array';
+        }
+        if (fieldName === 'actions') {
+          return 'Form must have at least one Button in the actions array';
+        }
+        if (fieldName === 'columns') {
+          return 'Table must have at least one column in the columns array';
+        }
+        if (fieldName === 'states') {
+          return 'Form.states must include at least "default"';
+        }
+        return `Array '${fieldName}' must have at least one item`;
       }
 
       // String too short
       if (msg.includes('cannot be empty') || (msg.includes('string') && msg.includes('minimum'))) {
         const fieldName = pointer.split('/').pop() || 'field';
-        return `Provide a non-empty value for "${fieldName}"`;
+        return `Property '${fieldName}' cannot be empty. Provide a non-empty string value`;
+      }
+
+      // Unrecognized property (Zod's unrecognized_keys)
+      if (details?.code === 'unrecognized_keys' || msg.includes('unrecognized')) {
+        if (details?.keys && Array.isArray(details.keys)) {
+          const keys = details.keys.join(', ');
+          const componentHint = componentType ? ` in ${componentType}` : '';
+          return `Unrecognized properties${componentHint}: ${keys}. Check spelling or remove these properties`;
+        }
       }
 
       break;
@@ -182,12 +392,17 @@ function generateNextAction(issue: Issue, filePath?: string): string {
 /**
  * Enhance a single issue with suggestion and nextAction
  */
-export function enhanceIssue(issue: Issue, options: ErrorEnhancementOptions = {}, filePath?: string): Issue {
+export function enhanceIssue(
+  issue: Issue,
+  options: ErrorEnhancementOptions = {},
+  filePath?: string,
+  actualData?: any
+): Issue {
   const enhanced: Issue = { ...issue };
 
   // Add suggestion if not suppressed and not already present
   if (!options.noSuggest && !enhanced.suggestion) {
-    const suggestion = generateSuggestion(issue);
+    const suggestion = generateSuggestion(issue, actualData);
     if (suggestion) {
       enhanced.suggestion = suggestion;
     }
@@ -211,7 +426,8 @@ export function enhanceIssue(issue: Issue, options: ErrorEnhancementOptions = {}
 export function enhanceIssues(
   issues: Issue[],
   options: ErrorEnhancementOptions = {},
-  filePath?: string
+  filePath?: string,
+  actualData?: any
 ): Issue[] {
   if (issues.length === 0) {
     return [];
@@ -224,7 +440,7 @@ export function enhanceIssues(
   const toEnhance = options.allIssues ? sorted : [sorted[0]];
 
   // Enhance each issue
-  return toEnhance.map((issue) => enhanceIssue(issue, options, filePath));
+  return toEnhance.map((issue) => enhanceIssue(issue, options, filePath, actualData));
 }
 
 /**

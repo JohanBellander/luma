@@ -184,18 +184,39 @@ export function ingest(rawData: unknown): IngestOutput {
       // Convert Zod errors to Issues
       const zodError = result.error as ZodError;
       zodError.issues.forEach((err) => {
+        // Build a more descriptive message
+        let enhancedMessage = err.message;
+        const errAny = err as any;
+
+        // Enhance message based on error code
+        if (err.code === 'invalid_union') {
+          enhancedMessage = 'Invalid input: none of the union members matched';
+        } else if (err.code === 'invalid_type') {
+          enhancedMessage = `Invalid type: expected ${errAny.expected}, received ${errAny.received}`;
+        } else if (err.code === 'too_small') {
+          if (errAny.type === 'array') {
+            enhancedMessage = `Array must have at least ${errAny.minimum} item(s)`;
+          } else if (errAny.type === 'string') {
+            enhancedMessage = `String must have at least ${errAny.minimum} character(s)`;
+          }
+        } else if (err.code === 'unrecognized_keys') {
+          if (errAny.keys) {
+            enhancedMessage = `Unrecognized keys in object: ${errAny.keys.join(', ')}`;
+          }
+        } else if (errAny.options && Array.isArray(errAny.options)) {
+          // Handle enum-like errors (invalid literal, invalid enum, etc.)
+          enhancedMessage = `Invalid value. Expected one of: ${errAny.options.join(', ')}`;
+        }
+
         const issue: Issue = {
           id: 'validation-error',
           severity: 'error',
-          message: err.message,
+          message: enhancedMessage,
           jsonPointer: err.path.length > 0 ? '/' + err.path.join('/') : undefined,
           details: { code: err.code, path: err.path },
         };
 
         // Extract expected and found values based on error code
-        // Using type-safe access to error properties
-        const errAny = err as any;
-        
         switch (err.code) {
           case 'invalid_type':
             issue.expected = errAny.expected;
@@ -238,17 +259,28 @@ export function ingest(rawData: unknown): IngestOutput {
             issue.expected = 'valid union member';
             issue.found = 'none of the union members matched';
             break;
+          case 'unrecognized_keys':
+            if (errAny.keys) {
+              issue.expected = 'valid properties only';
+              issue.found = `unrecognized: ${errAny.keys.join(', ')}`;
+              // Store keys in details for later use
+              (issue.details as any).keys = errAny.keys;
+            }
+            break;
           default:
-            // For other error types (e.g., invalid_enum_value, invalid_literal)
-            // try to extract what we can
-            if (errAny.expected !== undefined) {
-              issue.expected = String(errAny.expected);
-            }
-            if (errAny.received !== undefined) {
-              issue.found = errAny.received;
-            }
-            if (errAny.options) {
+            // For other error types (e.g., invalid enum, literals)
+            // Check for options array (enum-like errors)
+            if (errAny.options && Array.isArray(errAny.options)) {
               issue.expected = `one of: ${errAny.options.join(', ')}`;
+              issue.found = errAny.received;
+            } else {
+              // Generic fallback
+              if (errAny.expected !== undefined) {
+                issue.expected = String(errAny.expected);
+              }
+              if (errAny.received !== undefined) {
+                issue.found = errAny.received;
+              }
             }
         }
 
@@ -258,6 +290,7 @@ export function ingest(rawData: unknown): IngestOutput {
       return {
         valid: false,
         issues,
+        rawData: data, // Store raw data for error enhancement
       };
     }
 

@@ -61,7 +61,7 @@ export function createIngestCommand(): Command {
           format: (options.format as 'concise' | 'verbose') || 'concise',
         };
 
-        const enhancedIssues = enhanceIssues(result.issues, enhancementOptions, file);
+        const enhancedIssues = enhanceIssues(result.issues, enhancementOptions, file, result.rawData);
 
         // Create enhanced result
         const enhancedResult = {

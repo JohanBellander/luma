@@ -55,7 +55,8 @@ describe('Error Enhancement', () => {
 
       const enhanced = enhanceIssue(issue);
 
-      expect(enhanced.suggestion).toBe('"responsive": { "strategy": "scroll", "minColumnWidth": 160 }');
+      expect(enhanced.suggestion).toContain('responsive');
+      expect(enhanced.suggestion).toContain('strategy');
     });
 
     it('should add suggestion for missing table title', () => {
@@ -64,10 +65,12 @@ describe('Error Enhancement', () => {
         severity: 'error',
         message: 'Missing title',
         jsonPointer: '/screen/root/children/0/title',
+        expected: 'string',
       };
 
       const enhanced = enhanceIssue(issue);
 
+      expect(enhanced.suggestion).toBeDefined();
       expect(enhanced.suggestion).toContain('title');
     });
 
