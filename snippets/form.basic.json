@@ -1,0 +1,35 @@
+{
+  "id": "basic-form",
+  "type": "Form",
+  "states": ["default"],
+  "fields": [
+    {
+      "id": "name-field",
+      "type": "Field",
+      "label": "Name",
+      "inputType": "text",
+      "required": true
+    },
+    {
+      "id": "email-field",
+      "type": "Field",
+      "label": "Email",
+      "inputType": "email",
+      "required": true
+    }
+  ],
+  "actions": [
+    {
+      "id": "submit-button",
+      "type": "Button",
+      "text": "Submit",
+      "roleHint": "primary"
+    },
+    {
+      "id": "cancel-button",
+      "type": "Button",
+      "text": "Cancel",
+      "roleHint": "secondary"
+    }
+  ]
+}

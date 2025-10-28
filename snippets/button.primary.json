@@ -1,0 +1,6 @@
+{
+  "id": "primary-button",
+  "type": "Button",
+  "text": "Submit",
+  "roleHint": "primary"
+}

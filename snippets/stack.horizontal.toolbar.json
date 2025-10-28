@@ -1,0 +1,9 @@
+{
+  "id": "toolbar",
+  "type": "Stack",
+  "direction": "horizontal",
+  "gap": 8,
+  "padding": 12,
+  "align": "center",
+  "children": []
+}

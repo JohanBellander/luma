@@ -1,0 +1,63 @@
+{
+  "version": "1.1.0",
+  "description": "LUMA reusable component snippets for rapid scaffold composition",
+  "snippets": [
+    {
+      "name": "stack.vertical",
+      "file": "stack.vertical.json",
+      "description": "Vertical stack container with standard gap and alignment",
+      "category": "layout",
+      "keywords": ["stack", "vertical", "container", "layout"]
+    },
+    {
+      "name": "stack.horizontal.toolbar",
+      "file": "stack.horizontal.toolbar.json",
+      "description": "Horizontal toolbar with centered alignment and compact spacing",
+      "category": "layout",
+      "keywords": ["stack", "horizontal", "toolbar", "navigation"]
+    },
+    {
+      "name": "form.basic",
+      "file": "form.basic.json",
+      "description": "Basic form with name and email fields, submit and cancel actions",
+      "category": "pattern",
+      "keywords": ["form", "fields", "actions", "input"]
+    },
+    {
+      "name": "table.simple",
+      "file": "table.simple.json",
+      "description": "Simple data table with scroll strategy for responsive behavior",
+      "category": "pattern",
+      "keywords": ["table", "data", "grid", "responsive"]
+    },
+    {
+      "name": "button.primary",
+      "file": "button.primary.json",
+      "description": "Primary action button with standard styling",
+      "category": "component",
+      "keywords": ["button", "primary", "action", "submit"]
+    },
+    {
+      "name": "field.email",
+      "file": "field.email.json",
+      "description": "Email input field with validation and help text",
+      "category": "component",
+      "keywords": ["field", "email", "input", "form"]
+    }
+  ],
+  "usage": {
+    "description": "Snippets are reusable JSON fragments that can be used as building blocks for scaffolds",
+    "examples": [
+      "Copy snippet content directly into your scaffold JSON",
+      "Modify id, text, and other properties as needed",
+      "Combine multiple snippets to build complex UIs",
+      "Use as starting points for custom components"
+    ],
+    "tips": [
+      "Always ensure unique IDs when using multiple snippets",
+      "Adjust gap and padding values to match your design system",
+      "Combine stack snippets to create complex layouts",
+      "Use form.basic as a template and add/remove fields as needed"
+    ]
+  }
+}

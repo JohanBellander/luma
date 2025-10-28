@@ -1,0 +1,8 @@
+{
+  "id": "email-field",
+  "type": "Field",
+  "label": "Email",
+  "inputType": "email",
+  "required": true,
+  "helpText": "We'll never share your email"
+}
