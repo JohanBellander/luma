@@ -99,13 +99,73 @@ This is the **design approval checkpoint**.
 
 ---
 
-### 5. Only Then Generate Code
+### 5. Implementation Phase - CRITICAL COMPLIANCE RULES
 
-Once the scaffold is approved:
+**🚨 SCAFFOLD FIDELITY REQUIREMENTS:**
 
-- Convert the scaffold to UI components (React, Vue, HTML, etc.)
-- Use the scaffold as the **source of truth** for structure
-- Do *not* change structure in code without updating scaffold + rerunning LUMA
+Once the scaffold is approved (score ≥ 85), follow these **mandatory** rules:
+
+**1. Component Mapping Rule**
+- Every HTML/JSX element MUST map 1:1 to a scaffold component
+- If scaffold has 5 components → implementation has exactly 5 components
+- **NO additional UI elements** beyond the scaffold definition
+
+**2. ID Preservation Rule**
+- All scaffold component IDs MUST be preserved exactly in implementation
+- Example: \`"id": "contact-form"\` → \`<form id="contact-form">\`
+- No renaming, no omitting IDs
+
+**3. Structure Immutability Rule**
+- The component hierarchy cannot change during implementation
+- If scaffold shows Stack > Text > Button > Form → code follows exactly
+- No reordering, no nesting changes
+
+**4. Feature Freeze Rule**
+- NO additional functionality beyond scaffold definition
+- If scaffold doesn't include a "delete" button → don't implement delete
+- If scaffold has 3 form fields → implement exactly 3 fields
+
+**❌ FORBIDDEN DURING IMPLEMENTATION:**
+- Adding components not in scaffold (e.g., extra buttons, fields, tables)
+- Adding form fields not defined in scaffold
+- Changing component hierarchy or order
+- Implementing features that didn't pass LUMA validation
+- Using non-scaffold approaches when validation fails
+
+**✅ ALLOWED DURING IMPLEMENTATION:**
+- Styling (colors, fonts, spacing) per design system
+- Accessibility attributes (aria-labels, roles, etc.)
+- Event handlers for interactions defined by scaffold components
+- CSS classes for styling (but not structural changes)
+
+---
+
+## ⚠️ Common Pitfalls to Avoid
+
+**1. "Helpful Additions"**
+- ❌ "Users probably want a cancel button, let me add that"
+- ✅ "Scaffold doesn't include cancel, so I won't implement it"
+
+**2. "Technical Workarounds"**
+- ❌ "Table validation failed, I'll use an HTML table instead"
+- ✅ "Table failed validation, I need to fix the scaffold first"
+
+**3. "Obvious Missing Pieces"**
+- ❌ "Obviously need a contact list, even though scaffold doesn't show it"
+- ✅ "If it's not in the approved scaffold, it doesn't get implemented"
+
+**4. "Scope Creep During Implementation"**
+- ❌ Adding extra fields, buttons, or sections while coding
+- ✅ Stop implementation, update scaffold, re-validate, then code
+
+**If You Want to Add Features:**
+1. STOP implementation
+2. Update the scaffold JSON with new components
+3. Re-run full LUMA pipeline: \`ingest → layout → keyboard → flow → score\`
+4. Get new approval (score ≥ 85)
+5. THEN implement the expanded scaffold
+
+**Never implement features that haven't passed LUMA validation.**
 
 ---
 
@@ -116,6 +176,9 @@ Once the scaffold is approved:
 | Design UI in scaffold form first | Jump straight to HTML/JSX |
 | Run \`luma score\` before coding | Ignore failing pattern rules |
 | Use \`luma scaffold new\` for quick starts | Write invalid JSON manually |
+| **Implement ONLY what's in approved scaffold** | **Add features during implementation** |
+| **Map scaffold components 1:1 to HTML** | **Add extra form fields, buttons, or sections** |
+| **Preserve all scaffold component IDs** | **Rename or omit scaffold-defined IDs** |
 | Iterate until layout/flow are correct | Hardcode layout fixes in CSS later |
 | Keep scaffolds committed in VCS | Let scaffolds drift from implementation |
 
