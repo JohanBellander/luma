@@ -18,6 +18,7 @@ import { createExplainCommand } from './cli/explain.command.js';
 import { createFaqCommand } from './cli/faq.command.js';
 import { createReportCommand } from './cli/report.command.js';
 import { initCommand } from './cli/init.command.js';
+import { createScaffoldCommand } from './cli/scaffold.command.js';
 
 const program = new Command();
 
@@ -28,6 +29,7 @@ program
 
 // Add commands
 program.addCommand(initCommand);
+program.addCommand(createScaffoldCommand());
 program.addCommand(createIngestCommand());
 program.addCommand(createLayoutCommand());
 program.addCommand(createKeyboardCommand());
