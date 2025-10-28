@@ -66,6 +66,21 @@ Store scaffolds in a dedicated folder like:
 - \`design/scaffolds/\`
 - \`mockups/\`
 
+**FUNCTIONAL COMPLETENESS CHECK:**
+
+Before finalizing your scaffold, verify EVERY interactive element has a complete workflow:
+
+- [ ] Every Button has a defined action target (Form, another screen, etc.)
+- [ ] Every Form has defined fields and submission behavior
+- [ ] No "dead-end" interactions (buttons that lead nowhere)
+
+**Common Incomplete Patterns to Avoid:**
+- ❌ Button without target: "Add Contact" button with no form definition
+- ❌ Form without submission: Contact form with no save workflow
+- ✅ Complete workflow: Button → opens Form → Form has fields and actions
+
+**If ANY interactive element lacks a target or workflow → Add missing components to scaffold**
+
 ---
 
 ### 3. Validate with LUMA
@@ -96,6 +111,44 @@ Repeat the scaffold → analyze → adjust cycle until:
 - Overall score ≥ **85**
 
 This is the **design approval checkpoint**.
+
+---
+
+### 4.5. PRE-IMPLEMENTATION CHECKPOINT
+
+🛑 **MANDATORY REVIEW - Complete BEFORE writing ANY code:**
+
+**Functional Completeness Audit:**
+1. List EVERY component in your approved scaffold
+2. For each interactive component (Button, Field), verify its action target exists
+3. Check for workflow gaps or "dead-end" interactions
+
+**Example Audit:**
+\`\`\`
+Component Inventory:
+├── title (Text)
+├── add-contact-btn (Button) → Target: ??? ❌ MISSING FORM
+├── contact-table (Table)
+└── [Need to add: contact-form]
+\`\`\`
+
+**Critical Questions:**
+- Can I implement every button's action using ONLY scaffold components?
+- Does every interactive element have a complete workflow?
+- Are there any "obvious but missing" features?
+
+**🚨 CHECKPOINT FAILURE = Scaffold is incomplete**
+
+If you answer "no" to any question:
+1. 🛑 DO NOT start implementation
+2. 📝 Update scaffold with missing components
+3. 🔄 Re-run LUMA validation (ingest → layout → keyboard → flow → score)
+4. ✅ Only proceed when score ≥ 85 AND all workflows complete
+
+**Red Flag Thoughts During This Review:**
+- "I'll need to add a modal to make this button work" → ❌ STOP, update scaffold
+- "Users will expect a form here" → ❌ STOP, update scaffold
+- "This obviously needs..." → ❌ STOP, update scaffold
 
 ---
 
@@ -150,13 +203,32 @@ Once the scaffold is approved (score ≥ 85), follow these **mandatory** rules:
 - ❌ "Table validation failed, I'll use an HTML table instead"
 - ✅ "Table failed validation, I need to fix the scaffold first"
 
-**3. "Obvious Missing Pieces"**
-- ❌ "Obviously need a contact list, even though scaffold doesn't show it"
-- ✅ "If it's not in the approved scaffold, it doesn't get implemented"
+**3. "Obvious Missing Pieces" - MAJOR VIOLATION**
+- ❌ "Obviously need a contact form for the Add Contact button"
+- ❌ "Users will expect a modal when clicking this button"
+- ❌ "The button is useless without a form, so I'll add one"
+- ✅ "Button exists but form is missing → scaffold is incomplete → update scaffold first"
 
 **4. "Scope Creep During Implementation"**
 - ❌ Adding extra fields, buttons, or sections while coding
 - ✅ Stop implementation, update scaffold, re-validate, then code
+
+**🚨 RED FLAG PHRASES - Stop Immediately if You Think:**
+- "Obviously need..."
+- "Users will expect..."
+- "This button should..."
+- "To make this work, I'll add..."
+- "For better UX, let me..."
+- "I'll just quickly add..."
+
+**When you catch yourself using these phrases → You are about to violate scaffold fidelity**
+
+**Correct Response When You Catch a Red Flag:**
+1. STOP implementation immediately
+2. Identify what's missing in the scaffold
+3. Update scaffold JSON with needed components
+4. Re-run LUMA validation pipeline
+5. Resume implementation only after approval (score ≥ 85)
 
 **If You Want to Add Features:**
 1. STOP implementation
@@ -216,6 +288,31 @@ luma flow <file> --patterns form,table       # Validate UX patterns
 luma score <run-folder>                      # Get overall score
 luma report <run-folder> --out report.html   # Generate visual report
 \`\`\`
+
+---
+
+## Real-World Example: The Modal Form Violation
+
+**What Happened:**
+An agent created a CRM scaffold with:
+- Title text
+- "Add Contact" button
+- Contact table
+
+During implementation, the agent added a contact form modal to make the button functional, even though no form was in the scaffold.
+
+**Why This Was Wrong:**
+- ❌ Violated Component Mapping Rule (3 components → 4+ elements)
+- ❌ Violated Feature Freeze Rule (modal not in scaffold)
+- ❌ Added functionality that hadn't passed LUMA validation
+
+**What Should Have Happened:**
+1. **At Step 4.5 (Pre-Implementation Checkpoint)**: Agent should have noticed "Add Contact" button has no target form
+2. **Correct Action**: STOP, update scaffold to include the contact form
+3. **Re-validate**: Run LUMA pipeline on updated scaffold
+4. **Then Implement**: Build the approved scaffold including the form
+
+**Key Lesson:** Never add components during implementation to "make things work" - always ensure complete workflows are in the approved scaffold first.
 `;
 
 export const initCommand = new Command('init')
