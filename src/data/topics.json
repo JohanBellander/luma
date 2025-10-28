@@ -219,5 +219,40 @@
       "",
       "Output MUST be a single JSON object. No comments. No markdown."
     ]
+  },
+  "golden-template": {
+    "title": "Golden Template",
+    "summary": "A pre-validated scaffold example for reference and base generation.",
+    "details": [
+      "The Golden Template is a minimal, valid scaffold that passes all LUMA validations.",
+      "",
+      "Location: templates/golden.todo.mock.json",
+      "",
+      "Structure:",
+      "- Root: Stack (vertical, gap: 16, padding: 24)",
+      "- Children:",
+      "  - Text (title \"Todos\", fontSize: 24)",
+      "  - Stack (horizontal toolbar with Button \"Add task\")",
+      "  - Table (3 columns: Task, Status, Due Date)",
+      "",
+      "Table configuration:",
+      "- responsive.strategy: \"scroll\"",
+      "- minColumnWidth: 160",
+      "",
+      "Settings:",
+      "- spacingScale: [4, 8, 12, 16, 24, 32]",
+      "- minTouchTarget: { w: 44, h: 44 }",
+      "- breakpoints: [\"320x640\", \"768x1024\", \"1280x800\"]",
+      "",
+      "Validation status:",
+      "- Passes: luma ingest (exit 0)",
+      "- Passes: luma layout --viewports 320x640 (no overflow or below-fold issues)",
+      "- Passes: luma flow --patterns table (all MUST rules)",
+      "",
+      "Use this as:",
+      "- A reference for valid scaffold structure",
+      "- A starting point for new scaffolds",
+      "- A validation baseline"
+    ]
   }
 }
