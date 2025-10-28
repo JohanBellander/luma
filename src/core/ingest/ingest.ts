@@ -184,6 +184,47 @@ export function ingest(rawData: unknown): IngestOutput {
       // Convert Zod errors to Issues
       const zodError = result.error as ZodError;
       zodError.issues.forEach((err) => {
+        // Special handling for invalid_union errors - extract nested unrecognized_keys
+        if (err.code === 'invalid_union' && 'errors' in err && Array.isArray((err as any).errors)) {
+          const unionErrors = (err as any).errors;
+          // Find unrecognized_keys errors from the union attempts
+          const unrecognizedKeysMap = new Map<string, Set<string>>();
+          
+          unionErrors.forEach((unionErr: any) => {
+            if (Array.isArray(unionErr)) {
+              unionErr.forEach((nestedErr: any) => {
+                if (nestedErr.code === 'unrecognized_keys' && nestedErr.keys && nestedErr.keys.length > 0) {
+                  const pathKey = nestedErr.path.join('/');
+                  if (!unrecognizedKeysMap.has(pathKey)) {
+                    unrecognizedKeysMap.set(pathKey, new Set());
+                  }
+                  nestedErr.keys.forEach((k: string) => unrecognizedKeysMap.get(pathKey)!.add(k));
+                }
+              });
+            }
+          });
+
+          // If we found unrecognized keys, create deduplicated issues for them
+          if (unrecognizedKeysMap.size > 0) {
+            unrecognizedKeysMap.forEach((keys, pathKey) => {
+              const fullPath = err.path.concat(pathKey.split('/').filter(p => p.length > 0));
+              const keysArray = Array.from(keys);
+              const issue: Issue = {
+                id: 'validation-error',
+                severity: 'error',
+                message: `Unrecognized keys in object: ${keysArray.join(', ')}`,
+                jsonPointer: fullPath.length > 0 ? '/' + fullPath.join('/') : undefined,
+                details: { code: 'unrecognized_keys', path: fullPath, keys: keysArray },
+                expected: 'valid properties only',
+                found: `unrecognized: ${keysArray.join(', ')}`,
+              };
+              issues.push(issue);
+            });
+            // Don't add the generic union error since we have specific ones
+            return;
+          }
+        }
+
         // Build a more descriptive message
         let enhancedMessage = err.message;
         const errAny = err as any;

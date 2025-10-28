@@ -80,7 +80,22 @@ const VALID_NODE_TYPES = [
  * Extract component type from JSON pointer
  */
 function getComponentTypeFromPointer(pointer: string, data?: any): string | undefined {
-  if (!pointer) return undefined;
+  if (!pointer || !data) return undefined;
+
+  // Try to navigate to the object at this pointer and check its type
+  try {
+    const parts = pointer.split('/').filter(p => p.length > 0);
+    let obj = data;
+    for (const part of parts) {
+      obj = obj[part];
+      if (!obj) break;
+    }
+    if (obj && typeof obj === 'object' && obj.type) {
+      return obj.type;
+    }
+  } catch {
+    // Ignore navigation errors
+  }
 
   // Check for explicit type in path (e.g., /screen/root/type)
   if (pointer.includes('/type')) {
@@ -339,6 +354,19 @@ function generateSuggestion(issue: Issue, actualData?: any): string | undefined 
       // Unrecognized property (Zod's unrecognized_keys)
       if (details?.code === 'unrecognized_keys' || msg.includes('unrecognized')) {
         if (details?.keys && Array.isArray(details.keys)) {
+          // Check if we have a specific correction for any of the unrecognized keys
+          if (componentType && PROPERTY_NAME_CORRECTIONS[componentType]) {
+            const corrections = PROPERTY_NAME_CORRECTIONS[componentType];
+            const correctedKeys = details.keys.map((key: string) => {
+              const correction = corrections[key];
+              if (correction) {
+                return `'${key}' (use '${correction}' instead)`;
+              }
+              return `'${key}'`;
+            });
+            return `Unrecognized properties in ${componentType}: ${correctedKeys.join(', ')}. Check spelling or remove these properties`;
+          }
+          
           const keys = details.keys.join(', ');
           const componentHint = componentType ? ` in ${componentType}` : '';
           return `Unrecognized properties${componentHint}: ${keys}. Check spelling or remove these properties`;

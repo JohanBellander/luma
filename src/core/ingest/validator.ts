@@ -25,7 +25,7 @@ export const stackNodeSchema = baseNodeSchema.extend({
   align: z.enum(['start', 'center', 'end', 'stretch']).optional().default('start'),
   wrap: z.boolean().optional().default(false),
   children: z.lazy(() => z.array(nodeSchema)),
-});
+}).strict();
 
 // Grid node schema
 export const gridNodeSchema = baseNodeSchema.extend({
@@ -34,14 +34,14 @@ export const gridNodeSchema = baseNodeSchema.extend({
   gap: z.number().optional().default(0),
   minColWidth: z.number().optional(),
   children: z.lazy(() => z.array(nodeSchema)),
-});
+}).strict();
 
 // Box node schema
 export const boxNodeSchema = baseNodeSchema.extend({
   type: z.literal('Box'),
   padding: z.number().optional().default(0),
   child: z.lazy(() => nodeSchema.optional()),
-});
+}).strict();
 
 // Text node schema
 export const textNodeSchema = baseNodeSchema.extend({
@@ -50,7 +50,7 @@ export const textNodeSchema = baseNodeSchema.extend({
   fontSize: z.number().optional().default(16),
   maxLines: z.number().optional(),
   intrinsicTextWidth: z.number().optional(),
-});
+}).strict();
 
 // Button node schema
 export const buttonNodeSchema = baseNodeSchema.extend({
@@ -59,7 +59,7 @@ export const buttonNodeSchema = baseNodeSchema.extend({
   focusable: z.boolean().optional().default(true),
   tabIndex: z.number().optional(),
   roleHint: z.enum(['primary', 'secondary', 'danger', 'link']).optional(),
-});
+}).strict();
 
 // Field node schema
 export const fieldNodeSchema = baseNodeSchema.extend({
@@ -70,7 +70,7 @@ export const fieldNodeSchema = baseNodeSchema.extend({
   helpText: z.string().optional(),
   errorText: z.string().optional(),
   focusable: z.boolean().optional().default(true),
-});
+}).strict();
 
 // Form node schema
 export const formNodeSchema = baseNodeSchema.extend({
@@ -79,13 +79,13 @@ export const formNodeSchema = baseNodeSchema.extend({
   fields: z.array(fieldNodeSchema).min(1, 'Form must have at least one field'),
   actions: z.array(buttonNodeSchema).min(1, 'Form must have at least one action'),
   states: z.array(z.string()).min(1, 'Form must include at least "default" state'),
-});
+}).strict();
 
 // Table node schema
 const tableResponsiveSchema = z.object({
   strategy: z.enum(['wrap', 'scroll', 'cards']),
   minColumnWidth: z.number().optional(),
-});
+}).strict();
 
 export const tableNodeSchema = baseNodeSchema.extend({
   type: z.literal('Table'),
@@ -94,7 +94,7 @@ export const tableNodeSchema = baseNodeSchema.extend({
   rows: z.number().optional(),
   responsive: tableResponsiveSchema,
   states: z.array(z.string()).optional(),
-});
+}).strict();
 
 // Union of all node types
 export const nodeSchema: z.ZodType<any> = z.union([
