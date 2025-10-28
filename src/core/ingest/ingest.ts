@@ -184,43 +184,145 @@ export function ingest(rawData: unknown): IngestOutput {
       // Convert Zod errors to Issues
       const zodError = result.error as ZodError;
       zodError.issues.forEach((err) => {
-        // Special handling for invalid_union errors - extract nested unrecognized_keys
+        // Special handling for invalid_union errors - extract nested specific errors
         if (err.code === 'invalid_union' && 'errors' in err && Array.isArray((err as any).errors)) {
           const unionErrors = (err as any).errors;
-          // Find unrecognized_keys errors from the union attempts
-          const unrecognizedKeysMap = new Map<string, Set<string>>();
+          
+          // Check if this is a discriminator error (no matching union member)
+          const note = (err as any).note;
+          if (unionErrors.length === 0 || note === 'No matching discriminator') {
+            // This is a discriminator mismatch - keep the union error
+            const fullPath = err.path.length > 0 ? '/' + err.path.join('/') : undefined;
+            issues.push({
+              id: 'validation-error',
+              severity: 'error',
+              message: err.message,
+              jsonPointer: fullPath,
+              found: 'none of the union members matched',
+              details: { code: err.code, path: err.path },
+            });
+            return;
+          }
+          
+          // Check if ALL union members failed on the 'type' discriminator
+          // This indicates an invalid type value (e.g., type: 'InvalidType')
+          const allFailedOnType = unionErrors.every((unionErr: any) => {
+            if (!Array.isArray(unionErr) || unionErr.length === 0) return false;
+            const firstError = unionErr[0];
+            return firstError.path && firstError.path.length > 0 && firstError.path[firstError.path.length - 1] === 'type';
+          });
+          
+          if (allFailedOnType) {
+            // Create a union error for invalid discriminator
+            const fullPath = err.path.length > 0 ? '/' + err.path.join('/') : undefined;
+            issues.push({
+              id: 'validation-error',
+              severity: 'error',
+              message: 'Invalid node type',
+              jsonPointer: fullPath,
+              found: 'none of the union members matched',
+              details: { code: err.code, path: err.path },
+            });
+            return;
+          }
+          
+          // Collect all nested errors from union attempts
+          const nestedErrorsMap = new Map<string, any[]>();
           
           unionErrors.forEach((unionErr: any) => {
             if (Array.isArray(unionErr)) {
               unionErr.forEach((nestedErr: any) => {
-                if (nestedErr.code === 'unrecognized_keys' && nestedErr.keys && nestedErr.keys.length > 0) {
-                  const pathKey = nestedErr.path.join('/');
-                  if (!unrecognizedKeysMap.has(pathKey)) {
-                    unrecognizedKeysMap.set(pathKey, new Set());
-                  }
-                  nestedErr.keys.forEach((k: string) => unrecognizedKeysMap.get(pathKey)!.add(k));
+                const pathKey = nestedErr.path.join('/');
+                if (!nestedErrorsMap.has(pathKey)) {
+                  nestedErrorsMap.set(pathKey, []);
                 }
+                nestedErrorsMap.get(pathKey)!.push(nestedErr);
               });
             }
           });
 
-          // If we found unrecognized keys, create deduplicated issues for them
-          if (unrecognizedKeysMap.size > 0) {
-            unrecognizedKeysMap.forEach((keys, pathKey) => {
+          // Process errors by path - prioritize most useful error types
+          const extractedIssues: Issue[] = [];
+          nestedErrorsMap.forEach((errors, pathKey) => {
+            // Priority order: unrecognized_keys > invalid_type > invalid_enum_value > invalid_value > too_small > others
+            const priorityOrder = ['unrecognized_keys', 'invalid_type', 'invalid_enum_value', 'invalid_value', 'invalid_literal', 'too_small', 'too_big'];
+            
+            // Find the highest priority error
+            let selectedError: any = null;
+            for (const priority of priorityOrder) {
+              selectedError = errors.find(e => e.code === priority);
+              if (selectedError) break;
+            }
+            if (!selectedError) selectedError = errors[0];
+            
+            if (selectedError) {
               const fullPath = err.path.concat(pathKey.split('/').filter(p => p.length > 0));
-              const keysArray = Array.from(keys);
+              const errAny = selectedError;
+              
+              // Build issue based on error type
+              let enhancedMessage = selectedError.message;
               const issue: Issue = {
                 id: 'validation-error',
                 severity: 'error',
-                message: `Unrecognized keys in object: ${keysArray.join(', ')}`,
+                message: enhancedMessage,
                 jsonPointer: fullPath.length > 0 ? '/' + fullPath.join('/') : undefined,
-                details: { code: 'unrecognized_keys', path: fullPath, keys: keysArray },
-                expected: 'valid properties only',
-                found: `unrecognized: ${keysArray.join(', ')}`,
+                details: { code: selectedError.code, path: fullPath },
               };
-              issues.push(issue);
-            });
-            // Don't add the generic union error since we have specific ones
+
+              // Customize based on error code
+              switch (selectedError.code) {
+                case 'unrecognized_keys':
+                  if (errAny.keys) {
+                    issue.message = `Unrecognized keys in object: ${errAny.keys.join(', ')}`;
+                    issue.expected = 'valid properties only';
+                    issue.found = `unrecognized: ${errAny.keys.join(', ')}`;
+                    (issue.details as any).keys = errAny.keys;
+                  }
+                  break;
+                case 'invalid_type':
+                  issue.message = `Invalid type: expected ${errAny.expected}, received ${errAny.received}`;
+                  issue.expected = errAny.expected;
+                  issue.found = errAny.received;
+                  break;
+                case 'too_small':
+                  if (errAny.type === 'array') {
+                    issue.message = `Array must have at least ${errAny.minimum} item(s)`;
+                    issue.expected = `minimum ${errAny.minimum} items`;
+                    issue.found = `${errAny.received || 0} items`;
+                  } else if (errAny.type === 'string') {
+                    issue.message = `String must have at least ${errAny.minimum} character(s)`;
+                    issue.expected = `minimum ${errAny.minimum} characters`;
+                    issue.found = `${errAny.received || 0} characters`;
+                  }
+                  break;
+                case 'invalid_enum_value':
+                case 'invalid_literal':
+                case 'invalid_value':  // Handle z.enum errors
+                  if (errAny.options && Array.isArray(errAny.options)) {
+                    issue.message = `Invalid value. Expected one of: ${errAny.options.join(', ')}`;
+                    issue.expected = `one of: ${errAny.options.join(', ')}`;
+                    issue.found = errAny.received;
+                    (issue.details as any).options = errAny.options;
+                  } else if (errAny.values && Array.isArray(errAny.values)) {
+                    // z.enum uses 'values' instead of 'options'
+                    issue.message = `Invalid value. Expected one of: ${errAny.values.join(', ')}`;
+                    issue.expected = `one of: ${errAny.values.join(', ')}`;
+                    issue.found = errAny.received;
+                    (issue.details as any).options = errAny.values;
+                  } else if (errAny.expected) {
+                    issue.expected = String(errAny.expected);
+                    issue.found = errAny.received;
+                  }
+                  break;
+              }
+              
+              extractedIssues.push(issue);
+            }
+          });
+
+          // If we extracted specific errors, use them instead of the generic union error
+          if (extractedIssues.length > 0) {
+            issues.push(...extractedIssues);
             return;
           }
         }
@@ -310,10 +412,16 @@ export function ingest(rawData: unknown): IngestOutput {
             break;
           default:
             // For other error types (e.g., invalid enum, literals)
-            // Check for options array (enum-like errors)
+            // Check for options or values array (enum-like errors)
             if (errAny.options && Array.isArray(errAny.options)) {
               issue.expected = `one of: ${errAny.options.join(', ')}`;
               issue.found = errAny.received;
+              (issue.details as any).options = errAny.options;
+            } else if (errAny.values && Array.isArray(errAny.values)) {
+              // z.enum uses 'values' instead of 'options'
+              issue.expected = `one of: ${errAny.values.join(', ')}`;
+              issue.found = errAny.received;
+              (issue.details as any).options = errAny.values;
             } else {
               // Generic fallback
               if (errAny.expected !== undefined) {

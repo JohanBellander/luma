@@ -78,13 +78,17 @@ const VALID_NODE_TYPES = [
 
 /**
  * Extract component type from JSON pointer
+ * For errors like unrecognized_keys, pointer points to the object itself (e.g., /screen/root)
+ * For errors like invalid_type, pointer points to the property (e.g., /screen/root/text)
  */
 function getComponentTypeFromPointer(pointer: string, data?: any): string | undefined {
   if (!pointer || !data) return undefined;
 
-  // Try to navigate to the object at this pointer and check its type
   try {
     const parts = pointer.split('/').filter(p => p.length > 0);
+    if (parts.length === 0) return undefined;
+    
+    // First, try navigating to the pointer itself and checking for .type
     let obj = data;
     for (const part of parts) {
       obj = obj[part];
@@ -93,35 +97,26 @@ function getComponentTypeFromPointer(pointer: string, data?: any): string | unde
     if (obj && typeof obj === 'object' && obj.type) {
       return obj.type;
     }
-  } catch {
-    // Ignore navigation errors
-  }
-
-  // Check for explicit type in path (e.g., /screen/root/type)
-  if (pointer.includes('/type')) {
-    const parts = pointer.split('/');
-    const typeIndex = parts.indexOf('type');
-    if (typeIndex > 0 && data) {
-      try {
-        // Navigate to parent object
-        let obj = data;
-        for (let i = 1; i < typeIndex; i++) {
-          obj = obj[parts[i]];
-          if (!obj) break;
-        }
-        if (obj && obj.type) {
-          return obj.type;
-        }
-      } catch {
-        // Ignore navigation errors
+    
+    // If that didn't work, try navigating to parent (for property-level errors)
+    if (parts.length > 1) {
+      obj = data;
+      for (let i = 0; i < parts.length - 1; i++) {
+        obj = obj[parts[i]];
+        if (!obj) break;
+      }
+      if (obj && typeof obj === 'object' && obj.type) {
+        return obj.type;
       }
     }
+  } catch {
+    // Ignore navigation errors
   }
 
   // Check for component-specific paths
   if (pointer.includes('/fields')) return 'Form';
   if (pointer.includes('/actions')) return 'Form';
-  if (pointer.includes('/columns')) return 'Table';
+  if (pointer.includes('/columns') && !pointer.includes('/Grid')) return 'Table';
   if (pointer.includes('/children')) return 'Stack or Grid';
   if (pointer.includes('/child')) return 'Box';
 
@@ -245,7 +240,47 @@ function generateSuggestion(issue: Issue, actualData?: any): string | undefined 
         const parts = pointer.split('/');
         const fieldName = parts[parts.length - 1];
         
-        if (issue.expected && issue.found) {
+        if (issue.expected && (issue.found !== undefined || issue.found === undefined)) {
+          // Special handling for missing fields (found === 'undefined' or found === undefined)
+          if (issue.found === 'undefined' || issue.found === undefined) {
+            // Field-specific missing field messages
+            if (fieldName === 'text' && componentType === 'Text') {
+              return 'Text.text is required: "text": "Your text content"';
+            }
+            if (fieldName === 'text' && componentType === 'Button') {
+              return 'Button.text is required: "text": "Button Label"';
+            }
+            if (fieldName === 'title' && componentType === 'Table') {
+              return 'Table.title is required: "title": "Your Table Title"';
+            }
+            if (fieldName === 'title' && componentType === 'Form') {
+              return 'Form.title is optional but recommended: "title": "Your Form Title"';
+            }
+            if (fieldName === 'label' && componentType === 'Field') {
+              return 'Field.label is required: "label": "Field Label"';
+            }
+            if (fieldName === 'direction' && componentType === 'Stack') {
+              return 'Stack.direction is required: "direction": "vertical" or "horizontal"';
+            }
+            if (fieldName === 'columns' && componentType === 'Grid') {
+              return 'Grid.columns is required: "columns": 2';
+            }
+            if (fieldName === 'columns' && componentType === 'Table') {
+              return 'Table.columns must be a non-empty string array: "columns": ["Column 1", "Column 2"]';
+            }
+            if (fieldName === 'fields' && componentType === 'Form') {
+              return 'Form.fields must be a non-empty array: "fields": [{ "type": "Field", "id": "f1", "label": "Name" }]';
+            }
+            if (fieldName === 'actions' && componentType === 'Form') {
+              return 'Form.actions must be a non-empty array: "actions": [{ "type": "Button", "id": "submit", "text": "Submit" }]';
+            }
+            if (fieldName === 'children' && (componentType === 'Stack' || componentType === 'Grid')) {
+              return `${componentType}.children is required: "children": []`;
+            }
+            // Generic missing field message
+            return `Required property '${fieldName}' is missing. Type: ${issue.expected}`;
+          }
+          
           // Special case for arrays vs objects
           if (issue.expected.includes('array') && issue.found === 'object') {
             if (fieldName === 'columns') {
@@ -302,7 +337,24 @@ function generateSuggestion(issue: Issue, actualData?: any): string | undefined 
       }
 
       // Invalid enum value
-      if (msg.includes('invalid enum') || msg.includes('invalid_enum_value') || details?.code === 'invalid_enum_value') {
+      if (msg.includes('invalid enum') || msg.includes('invalid_enum_value') || msg.includes('invalid_value') || details?.code === 'invalid_enum_value' || details?.code === 'invalid_value') {
+        const parts = pointer.split('/');
+        const fieldName = parts[parts.length - 1];
+        
+        // Field-specific enum messages
+        if (fieldName === 'direction' && componentType === 'Stack') {
+          return 'Stack.direction must be "vertical" or "horizontal"';
+        }
+        if (fieldName === 'roleHint' && componentType === 'Button') {
+          return 'Button.roleHint must be one of: "primary", "secondary", "danger"';
+        }
+        if (fieldName === 'inputType' && componentType === 'Field') {
+          return 'Field.inputType must be one of: "text", "email", "password", "number", "tel", "url"';
+        }
+        if (fieldName === 'strategy' && pointer.includes('responsive')) {
+          return 'responsive.strategy must be one of: "scroll", "stack", "hide"';
+        }
+        
         if (issue.expected && issue.expected.includes('one of:')) {
           return `Invalid value. ${issue.expected}`;
         }
@@ -328,20 +380,27 @@ function generateSuggestion(issue: Issue, actualData?: any): string | undefined 
       }
 
       // Array too small
-      if (msg.includes('array') && (msg.includes('must have') || msg.includes('minimum'))) {
+      if (msg.includes('array') && (msg.includes('must have') || msg.includes('minimum')) || details?.code === 'too_small') {
         const fieldName = pointer.split('/').pop() || 'array';
-        if (fieldName === 'fields') {
+        
+        // Field-specific array size messages
+        if (fieldName === 'fields' && componentType === 'Form') {
           return 'Form must have at least one Field in the fields array';
         }
-        if (fieldName === 'actions') {
+        if (fieldName === 'actions' && componentType === 'Form') {
           return 'Form must have at least one Button in the actions array';
         }
-        if (fieldName === 'columns') {
+        if (fieldName === 'columns' && componentType === 'Table') {
           return 'Table must have at least one column in the columns array';
         }
-        if (fieldName === 'states') {
+        if (fieldName === 'states' && componentType === 'Form') {
           return 'Form.states must include at least "default"';
         }
+        if (fieldName === 'children' && (componentType === 'Stack' || componentType === 'Grid')) {
+          return `${componentType} must have at least one child in the children array`;
+        }
+        
+        // Generic array size message
         return `Array '${fieldName}' must have at least one item`;
       }
 
