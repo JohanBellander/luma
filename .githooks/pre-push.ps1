@@ -4,7 +4,10 @@
 $ErrorActionPreference = 'Stop'
 
 # Get current version from package.json
-$packageJsonPath = Join-Path $PSScriptRoot '..' 'package.json'
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$repoRoot = Split-Path -Parent $scriptDir
+$packageJsonPath = Join-Path -Path $repoRoot -ChildPath 'package.json'
+
 $packageJson = Get-Content $packageJsonPath -Raw | ConvertFrom-Json
 $currentVersion = $packageJson.version
 
