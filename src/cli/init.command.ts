@@ -18,50 +18,65 @@ Do **not** generate JSX/HTML/CSS until LUMA says the scaffold is ready.
 
 ## Design & Development Workflow (Follow Exactly)
 
-### 0. Read This File First
-Before generating anything, confirm you understand:
-- Scaffold JSON format
-- LUMA commands
-- Pattern rules
-- Evaluation flow
+### 0. Preflight: Understand the Contract
 
-If unsure → call:
+Before generating any scaffold, read the canonical contract:
 \`\`\`
-luma explain --topic workflow --json
+luma explain --topic scaffold-contract --json
+\`\`\`
+
+This defines the exact rules for valid scaffolds. You can also use the golden template as reference:
+\`\`\`
+luma explain --topic golden-template --json
+\`\`\`
+
+For new scaffolds, you can generate from patterns instead of writing JSON manually:
+\`\`\`
+luma scaffold new --pattern todo-list --out ui/screens/my-screen.mock.json
+luma scaffold new --pattern empty-screen --out ui/screens/base.mock.json
 \`\`\`
 
 ---
 
 ### 1. Start with a UI Goal
 
-For this project, begin by designing a **simple TODO application** with:
-
-- A screen to view tasks
-- A form to create tasks
-- A way to edit/mark tasks complete
+Identify the screen you need to design. Examples:
+- Data table with filtering
+- Multi-step form
+- Dashboard with widgets
+- Login/authentication screen
+- Settings panel
 
 Do **not** write code yet — only define the UI structure as a **scaffold**.
 
 ---
 
 ### 2. Produce a Scaffold
-Create a file named:
+
+**Option A: Generate from pattern**
 \`\`\`
-ui/screens/todo.mock.json
+luma scaffold new --pattern <pattern-name> --out ui/screens/<screen>.mock.json
 \`\`\`
 
-Only use **Component Scaffold JSON** (Stacks, Forms, Fields, Tables, Buttons).
+**Option B: Write JSON manually**
+Create a file in \`ui/screens/<screen>.mock.json\` using **Component Scaffold JSON** format (Stacks, Forms, Fields, Tables, Buttons, etc.).
+
+Store scaffolds in a dedicated folder like:
+- \`ui/screens/\`
+- \`design/scaffolds/\`
+- \`mockups/\`
 
 ---
 
 ### 3. Validate with LUMA
+
 Run the full LUMA pipeline:
 
 \`\`\`
-luma ingest ui/screens/todo.mock.json
-luma layout ui/screens/todo.mock.json --viewports 320x640,768x1024
-luma keyboard ui/screens/todo.mock.json
-luma flow ui/screens/todo.mock.json --patterns form,table
+luma ingest ui/screens/<screen>.mock.json
+luma layout ui/screens/<screen>.mock.json --viewports 320x640,768x1024
+luma keyboard ui/screens/<screen>.mock.json
+luma flow ui/screens/<screen>.mock.json --patterns form,table
 luma score .ui/runs/<run-id>
 \`\`\`
 
@@ -72,22 +87,24 @@ If **any** MUST rule fails or **overall score < 85**:
 ---
 
 ### 4. Iterate Until Passing
+
 Repeat the scaffold → analyze → adjust cycle until:
 
-- No blocking layout issues
-- Keyboard flow is linear and reachable
-- Patterns pass (especially Form.Basic & Table.Simple)
-- Score ≥ **85**
+- No blocking layout issues (overflow, spacing violations)
+- Keyboard flow is linear and all interactive elements reachable
+- Patterns pass their MUST rules (especially Form.Basic & Table.Simple)
+- Overall score ≥ **85**
 
 This is the **design approval checkpoint**.
 
 ---
 
 ### 5. Only Then Generate Code
+
 Once the scaffold is approved:
 
-- Convert the scaffold to UI components
-- Use the scaffold as the **source of truth**
+- Convert the scaffold to UI components (React, Vue, HTML, etc.)
+- Use the scaffold as the **source of truth** for structure
 - Do *not* change structure in code without updating scaffold + rerunning LUMA
 
 ---
@@ -98,32 +115,43 @@ Once the scaffold is approved:
 |---|---|
 | Design UI in scaffold form first | Jump straight to HTML/JSX |
 | Run \`luma score\` before coding | Ignore failing pattern rules |
+| Use \`luma scaffold new\` for quick starts | Write invalid JSON manually |
 | Iterate until layout/flow are correct | Hardcode layout fixes in CSS later |
 | Keep scaffolds committed in VCS | Let scaffolds drift from implementation |
 
 ---
 
-## Initial Assignment (Start Here)
+## Quick Reference
 
-**Task:** Create the UI scaffold for a TODO app main screen:
-- List of tasks (Table)
-- Button to add task
-- Form modal to create/edit task
-
-**Output only:** \`ui/screens/todo.mock.json\`  
-**Then run:** \`luma ingest\` → \`luma layout\` → \`luma keyboard\` → \`luma flow\` → \`luma score\`
-
-Continue refining until score ≥ **85**.
-
----
-
-If you need help at any step:
+**Get help:**
 \`\`\`
-luma capabilities --json
-luma patterns --show Form.Basic --json
-luma patterns --show Table.Simple --json
-luma explain --topic layout-solver --json
-luma faq --json
+luma capabilities --json              # List all commands
+luma explain --topic <topic> --json   # Detailed explanations
+luma faq --json                       # Common questions
+luma patterns --json                  # Available pattern validators
+\`\`\`
+
+**Common topics:**
+- \`workflow\` - End-to-end process
+- \`scaffold-contract\` - Valid scaffold rules
+- \`golden-template\` - Reference example
+- \`layout-solver\` - How layout works
+- \`scoring\` - How scores are calculated
+
+**Scaffold generation:**
+\`\`\`
+luma scaffold new --pattern todo-list --out <file>
+luma scaffold new --pattern empty-screen --out <file>
+\`\`\`
+
+**Validation pipeline:**
+\`\`\`
+luma ingest <file>                           # Validate structure
+luma layout <file> --viewports 320x640       # Check responsive layout
+luma keyboard <file>                         # Analyze tab flow
+luma flow <file> --patterns form,table       # Validate UX patterns
+luma score <run-folder>                      # Get overall score
+luma report <run-folder> --out report.html   # Generate visual report
 \`\`\`
 `;
 
