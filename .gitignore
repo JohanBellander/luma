@@ -34,3 +34,14 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.log
+temp-*.json
+test-*.js
+test-*/
+
+# Package tarballs (generated on publish)
+*.tgz
+
+# Generated reports (outputs from luma commands)
+report.html
+test-report.html
+*-report.html
