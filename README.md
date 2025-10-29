@@ -3,7 +3,9 @@
 > TL;DR: Generate a scaffold, validate structure/flow/responsiveness headlessly, then implement real UI only after it scores clean.
 
 ## Purpose
-LUMA is an opinionated, staged workflow for AI agents:
+LUMA is an opinionated, staged workflow for AI agents with the purpose of creating better UI designs.
+
+> ⚠️ Alpha Status: This project is in active development. The core features well, but expect changes. Use for development/internal projects first.
 
 1. Scaffold Creation – Start from patterns to produce a strictly structured JSON screen (no ad‑hoc freeform markup).
 2. Validation Loop – Refine the scaffold using until structural, accessibility, and pattern criteria pass.
