@@ -61,6 +61,26 @@ luma scaffold new --pattern form-basic --out form.json --force
 - `multi-step-form` - Multi-page form flow
 - `dashboard-grid` - Dashboard with cards
 
+### When to Use Pattern Generation vs Manual Creation
+
+**Use `luma scaffold new` (Pattern) when:**
+- Starting a new project
+- Learning LUMA component schemas
+- Building common UI patterns (forms, tables, lists)
+- Need a valid starting point
+
+**Write JSON manually when:**
+- You understand component schemas well
+- Building custom/unique layouts
+- Combining multiple patterns
+- Need fine-grained control over every property
+
+**Recommended Workflow:**
+1. Generate from pattern: `luma scaffold new --pattern form-basic --out form.json`
+2. Customize the generated JSON for your needs
+3. Validate iteratively with `luma ingest form.json`
+4. Run full pipeline once structure is correct
+
 ### Workflow Example
 
 ```bash
