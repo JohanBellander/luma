@@ -39,7 +39,7 @@ npm install && npm run build && npm link
 ```
 Requires Node.js ≥ 18.
 
-## Quick Start (Init → Generate → Analyze → Score)
+## Quick Start
 
 ```powershell
 # Initialize a new project (creates AGENTS.md with usage instructions)
@@ -59,5 +59,5 @@ ISC
 
 ## Contributing
 
-PRs welcome: https://github.com/JohanBellander/luma. Use `bd create` for new issues.
+PRs welcome: https://github.com/JohanBellander/luma.
 
