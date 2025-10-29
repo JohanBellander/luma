@@ -150,6 +150,5 @@ luma explain --topic scaffold-contract --json
 ```
 
 For more information, see:
-- `LUMA-SPEC.md` — Full LUMA v1.0 specification
-- `LUMA-ADDITIONS-SPEC-v1.1.md` — v1.1 enhancements
+- `SPECIFICATION.md` — Unified v1.1 specification
 - `examples/` — Valid scaffold examples

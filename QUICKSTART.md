@@ -374,10 +374,10 @@ luma layout examples/overflow-table.json --viewports 320x640
 
 ## Next Steps
 
-- Read the [full specification (v1.1)](./LUMA-SPEC-v1.1.md)
-- Explore [pattern definitions](./LUMA-SPEC-v1.1.md#7-ux-pattern-library)
-- Learn about [scoring formulas](./LUMA-SPEC-v1.1.md#8-scoring--thresholds)
-- Understand [exit codes](./LUMA-SPEC-v1.1.md#10-exit-codes)
+- Read the [full specification](./SPECIFICATION.md)
+- Explore [pattern definitions](./SPECIFICATION.md#7-ux-pattern-library)
+- Learn about [scoring formulas](./SPECIFICATION.md#8-scoring--thresholds)
+- Understand [exit codes](./SPECIFICATION.md#10-exit-codes)
 - Review [AGENTS.md](./AGENTS.md) if you're an AI agent integrating LUMA.
 
 ## Troubleshooting
@@ -407,4 +407,4 @@ luma faq                 # Frequently asked questions
 luma explain --topic     # Topic-based explanations
 ```
 
-For more information, see the [README](./README.md) or the [v1.1 specification](./LUMA-SPEC-v1.1.md).
+For more information, see the [README](./README.md) or the [specification](./SPECIFICATION.md).

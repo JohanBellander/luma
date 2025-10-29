@@ -11,19 +11,6 @@ LUMA is an opinionated, staged workflow for AI agents:
 
 This enforced order reduces wasted UI rework: semantics and interaction are locked in early; visual layer comes last.
 
-### Workflow Snapshot
-```
-	┌────────────────┐   ┌─────────────────────┐   ┌────────────────────┐
-	│ Scaffold New   │→→│ Validate & Iterate   │→→│ Implement UI Layer  │
-	│ (patterns)     │   │ ingest/layout/flow   │   │ code + styling     │
-	└────────────────┘   │ keyboard/score pass  │   └────────────────────┘
-								 └──────────▲──────────┘
-												│ refine until
-												│ score ≥85 & no MUST failures
-```
-
-It runs headless (no DOM/CSS) for speed, determinism, and easy CI integration.
-
 ## What It Evaluates
 
 - Layout structure (Stacks, Grids, spacing, sizing policies)
@@ -59,7 +46,7 @@ luma init
 
 ## Documentation
 
-- [SPECIFICATION.md](./LUMA-SPEC-v1.1.md) — Full data & behavior spec
+- [SPECIFICATION.md](./SPECIFICATION.md) — Full data & behavior spec
 - [QUICKSTART.md](./QUICKSTART.md) — Step-by-step workflow & chaining
 - [AGENT-RULES-SCAFFOLD.md](./AGENT-RULES-SCAFFOLD.md) — Scaffold contract (spacing scale, required fields)
 - [CHANGELOG.md](./CHANGELOG.md) — Version history
