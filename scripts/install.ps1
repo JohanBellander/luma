@@ -1,5 +1,14 @@
 #!/usr/bin/env pwsh
 # LUMA Installation Script for Windows (PowerShell)
+# Optional branch selection:
+#   $env:LUMA_BRANCH = 'develop'; irm https://raw.githubusercontent.com/JohanBellander/luma/master/scripts/install.ps1 | iex
+# Or pass -Branch when invoking saved script locally.
+
+param(
+    [string]$Branch = $env:LUMA_BRANCH
+)
+
+if (-not $Branch -or $Branch.Trim() -eq '') { $Branch = 'master' }
 
 $ErrorActionPreference = "Stop"
 
@@ -61,8 +70,8 @@ try {
     Set-Location $tempDir
     
     # Clone repository
-    Write-Host "Cloning LUMA repository..." -ForegroundColor Cyan
-    git clone https://github.com/JohanBellander/luma.git
+    Write-Host "Cloning LUMA repository (branch: $Branch)..." -ForegroundColor Cyan
+    git clone --branch $Branch --single-branch https://github.com/JohanBellander/luma.git
     Set-Location luma
     
     # Install dependencies

@@ -31,6 +31,13 @@ irm https://raw.githubusercontent.com/JohanBellander/luma/master/scripts/install
 ```bash
 curl -fsSL https://raw.githubusercontent.com/JohanBellander/luma/master/scripts/install.sh | bash
 ```
+**Develop branch (latest in-progress features):**
+```powershell
+$env:LUMA_BRANCH='develop'; irm https://raw.githubusercontent.com/JohanBellander/luma/master/scripts/install.ps1 | iex
+```
+```bash
+LUMA_BRANCH=develop curl -fsSL https://raw.githubusercontent.com/JohanBellander/luma/master/scripts/install.sh | bash
+```
 Or from source:
 ```bash
 git clone https://github.com/JohanBellander/luma.git
