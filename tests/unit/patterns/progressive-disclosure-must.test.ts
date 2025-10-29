@@ -4,6 +4,8 @@
 
 import { describe, it, expect } from 'vitest';
 import { ProgressiveDisclosure } from '../../../src/core/patterns/progressive-disclosure.js';
+import { validatePattern } from '../../../src/core/patterns/validator.js';
+import { getPattern } from '../../../src/core/patterns/pattern-registry.js';
 import type { Node, StackNode, ButtonNode, BoxNode, TextNode } from '../../../src/types/node.js';
 
 describe('Progressive Disclosure MUST rules', () => {
@@ -51,10 +53,17 @@ describe('Progressive Disclosure MUST rules', () => {
         ],
       };
 
-      // Validate pattern
-      const mustIssues = ProgressiveDisclosure.must.flatMap((rule) => rule.check(root));
+      // Validate pattern using the recommended high-level API
+      const pattern = getPattern('Progressive.Disclosure');
+      expect(pattern).toBeDefined();
       
-      expect(mustIssues).toHaveLength(0);
+      const result = validatePattern(pattern!, root);
+      
+      // Expect: mustFailed=0 shouldFailed=0 no PD issues IDs
+      expect(result.mustFailed).toBe(0);
+      expect(result.shouldFailed).toBe(0);
+      expect(result.issues).toHaveLength(0);
+      expect(result.pattern).toBe('Progressive.Disclosure');
     });
   });
 
