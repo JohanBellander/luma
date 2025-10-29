@@ -1,18 +1,28 @@
 # LUMA — Layout & UX Mockup Analyzer
 
+> TL;DR: Generate a scaffold, validate structure/flow/responsiveness headlessly, then implement real UI only after it scores clean.
+
 ## Purpose
-LUMA lets you quickly validate raw UI scaffolds (simple JSON describing screens) before investing in full UI implementation. It answers:
+LUMA is an opinionated, staged workflow for AI agents:
 
-| Question | Command |
-|----------|---------|
-| Is my scaffold structurally valid? | `luma ingest` |
-| Does layout behave at target viewports? | `luma layout` |
-| Is keyboard navigation orderly & reachable? | `luma keyboard` |
-| Do I follow required UX pattern rules? | `luma flow` |
-| What is the overall quality score? | `luma score` |
-| Can I see a human-readable summary? | `luma report` |
+1. Scaffold Creation – Start from patterns to produce a strictly structured JSON screen (no ad‑hoc freeform markup).
+2. Validation Loop – Refine the scaffold using until structural, accessibility, and pattern criteria pass.
+3. UI Implementation – Only after the scaffold is clean the AI Agent can translate it into actual UI code/styles. LUMA purposefully stays headless so iteration happens before visual polish.
 
-It runs headless (no DOM/CSS) for speed and determinism—ideal for CI and early design iteration.
+This enforced order reduces wasted UI rework: semantics and interaction are locked in early; visual layer comes last.
+
+### Workflow Snapshot
+```
+	┌────────────────┐   ┌─────────────────────┐   ┌────────────────────┐
+	│ Scaffold New   │→→│ Validate & Iterate   │→→│ Implement UI Layer  │
+	│ (patterns)     │   │ ingest/layout/flow   │   │ code + styling     │
+	└────────────────┘   │ keyboard/score pass  │   └────────────────────┘
+								 └──────────▲──────────┘
+												│ refine until
+												│ score ≥85 & no MUST failures
+```
+
+It runs headless (no DOM/CSS) for speed, determinism, and easy CI integration.
 
 ## What It Evaluates
 
