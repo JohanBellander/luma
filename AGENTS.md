@@ -123,6 +123,113 @@ This means you ran commands separately. Re-run as a chained command.
 
 ---
 
+## Complete Minimal Valid Scaffold Example
+
+Before writing complex scaffolds, start with this minimal working example that passes all validation checks.
+
+### Minimal Scaffold JSON
+
+This example demonstrates:
+- All required scaffold sections (`schemaVersion`, `screen`, `settings`)
+- Correct component property names (`text` for Text/Button, not `label`)
+- Valid spacing values (all in `spacingScale`)
+- Proper touch targets (minSize for buttons)
+- String format for breakpoints (`"WxH"`, not objects)
+
+```json
+{
+  "schemaVersion": "1.0.0",
+  "screen": {
+    "id": "minimal-example",
+    "title": "Minimal Example",
+    "root": {
+      "id": "root-stack",
+      "type": "Stack",
+      "direction": "vertical",
+      "gap": 16,
+      "padding": 24,
+      "children": [
+        {
+          "id": "welcome-text",
+          "type": "Text",
+          "text": "Welcome to LUMA"
+        },
+        {
+          "id": "description-text",
+          "type": "Text",
+          "text": "This is a minimal valid scaffold example"
+        },
+        {
+          "id": "action-button",
+          "type": "Button",
+          "text": "Get Started",
+          "roleHint": "primary",
+          "minSize": {
+            "w": 44,
+            "h": 44
+          }
+        }
+      ]
+    }
+  },
+  "settings": {
+    "spacingScale": [4, 8, 12, 16, 24, 32, 48],
+    "minTouchTarget": {
+      "w": 44,
+      "h": 44
+    },
+    "breakpoints": ["320x640", "768x1024", "1280x800"]
+  }
+}
+```
+
+### Key Elements Explained
+
+**schemaVersion**: Must be `"1.0.0"` (string, not number)
+
+**screen.root**: The root node (usually a Stack or Grid container)
+- `direction`: `"vertical"` or `"horizontal"`
+- `gap`: Space between children (must be in `spacingScale`)
+- `padding`: Inner padding (must be in `spacingScale`)
+- `children`: Array of child nodes
+
+**Text components**: Use `text` property (not `content` or `label`)
+
+**Button components**:
+- Use `text` property (not `label`)
+- Use `roleHint` property (not `variant` or `role`)
+- Set `minSize: {w: 44, h: 44}` to meet touch target requirements
+
+**settings.spacingScale**: All `gap` and `padding` values must exist in this array
+
+**settings.breakpoints**: String array format `"WxH"` (e.g., `"320x640"`), not objects
+
+### Testing the Example
+
+**1. Validate structure:**
+```bash
+luma ingest minimal-example.json
+```
+
+**2. Check layout at different viewports:**
+```bash
+luma layout minimal-example.json --viewports 320x640,768x1024
+```
+
+**3. Verify keyboard navigation:**
+```bash
+luma keyboard minimal-example.json
+```
+
+**Expected Results:**
+- Ingest: PASSED, 0 issues
+- Layout: 0 issues (no overflow, valid spacing)
+- Keyboard: 1 focusable node (action-button), correct tab sequence
+
+**Note on Flow/Patterns:** Flow analysis requires specific patterns (`Form.Basic`, `Table.Simple`). This minimal example doesn't use those patterns, so flow analysis is not applicable.
+
+---
+
 ## Component Schema Quick Reference
 
 Before writing scaffold JSON, learn valid component properties to avoid trial-and-error.
