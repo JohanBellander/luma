@@ -3,6 +3,10 @@ set -e
 
 echo "Installing LUMA - Layout & UX Mockup Analyzer..."
 
+# Branch selection priority: LUMA_BRANCH env var > first arg > default master
+BRANCH="${LUMA_BRANCH:-${1:-master}}"
+echo "Using branch: $BRANCH"
+
 # Check for Node.js - try multiple methods for cross-platform compatibility
 # Try direct execution first (most reliable on Windows)
 if node -v &> /dev/null 2>&1; then
@@ -41,8 +45,8 @@ fi
 # Clone repository
 TEMP_DIR=$(mktemp -d)
 cd "$TEMP_DIR"
-echo "Cloning LUMA repository..."
-git clone https://github.com/JohanBellander/luma.git
+echo "Cloning LUMA repository (branch: $BRANCH)..."
+git clone --branch "$BRANCH" --single-branch https://github.com/JohanBellander/luma.git
 cd luma
 
 # Install dependencies
