@@ -1,6 +1,6 @@
 {
   "name": "luma",
-  "version": "1.1.22",
+  "version": "1.1.23",
   "description": "A CLI tool that evaluates UI scaffolds for structure, flow, and UX pattern fidelity without requiring a browser or CSS rendering.",
   "main": "dist/index.js",
   "type": "module",
@@ -30,7 +30,14 @@
     "type": "git",
     "url": "git+https://github.com/JohanBellander/luma.git"
   },
-  "keywords": ["cli", "ui", "scaffold", "layout", "ux", "analysis"],
+  "keywords": [
+    "cli",
+    "ui",
+    "scaffold",
+    "layout",
+    "ux",
+    "analysis"
+  ],
   "author": "",
   "license": "ISC",
   "bugs": {
