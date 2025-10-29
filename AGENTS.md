@@ -83,6 +83,44 @@ luma flow contact.json --patterns form
 luma score contact.json
 ```
 
+### Running Complete Pipeline (Same Run Folder)
+
+**IMPORTANT**: Chain commands so they write to the same run folder.
+
+Each LUMA command creates a new timestamped run folder. When commands are run separately, scoring fails because artifacts are scattered across different folders. To ensure all artifacts are in the same run folder, chain commands together.
+
+**Windows PowerShell:**
+```powershell
+luma ingest contact.json; `
+luma layout contact.json --viewports 320x640,768x1024; `
+luma keyboard contact.json; `
+luma flow contact.json --patterns form
+```
+
+**macOS/Linux:**
+```bash
+luma ingest contact.json && \
+luma layout contact.json --viewports 320x640,768x1024 && \
+luma keyboard contact.json && \
+luma flow contact.json --patterns form
+```
+
+Then score the run:
+```bash
+luma score .ui/runs/<run-id>
+```
+
+**Why This Matters:**
+- Each command creates a new run folder with a timestamp
+- Scoring requires all artifacts (ingest.json, layout.json, keyboard.json, etc.) in the same folder
+- Chaining ensures sequential execution in the same run
+
+**Common Error:**
+```
+Error: .ui/runs/20251029-070139-805/keyboard.json not found
+```
+This means you ran commands separately. Re-run as a chained command.
+
 ---
 
 ## Issue Tracking with bd (beads)
