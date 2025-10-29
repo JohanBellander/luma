@@ -14,6 +14,18 @@ const baseNodeSchema = z.object({
   minSize: z.object({ w: z.number().optional(), h: z.number().optional() }).optional(),
   maxSize: z.object({ w: z.number().optional(), h: z.number().optional() }).optional(),
   at: z.record(z.string(), z.any()).optional(), // Responsive overrides
+  behaviors: z
+    .object({
+      disclosure: z
+        .object({
+          collapsible: z.boolean(),
+          defaultState: z.enum(['collapsed', 'expanded']).optional(),
+          controlsId: z.string().optional(),
+          ariaSummaryText: z.string().optional(),
+        })
+        .optional(),
+    })
+    .optional(),
 });
 
 // Stack node schema
