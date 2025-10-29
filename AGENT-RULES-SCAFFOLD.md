@@ -45,22 +45,23 @@ Output MUST be a single JSON object. No comments. No markdown.
 - Optional: `fontSize`, `maxLines`
 
 ### Button
-- Required: `type`, `id`, `label` (non-empty string)
-- Optional: `role` (`"primary"`, `"secondary"`, `"danger"`, `"link"`)
+- Required: `type`, `id`
+- Optional: `text` (string), `roleHint` (`"primary"`, `"secondary"`, `"danger"`, `"link"`), `focusable` (boolean), `tabIndex` (number)
 
 ### Field
-- Required: `type`, `id`, `label` (non-empty string), `fieldType` (`"text"`, `"email"`, `"password"`, `"number"`, `"tel"`, `"date"`, `"checkbox"`)
-- Optional: `required` (boolean), `placeholder`
+- Required: `type`, `id`, `label` (non-empty string)
+- Optional: `inputType` (`"text"`, `"email"`, `"password"`, `"number"`, `"date"`), `required` (boolean), `helpText` (string), `errorText` (string), `focusable` (boolean)
 
 ### Form
-- Required: `type`, `id`, `fields` (array, len ≥ 1), `actions` (array, len ≥ 1)
+- Required: `type`, `id`, `fields` (array, len ≥ 1), `actions` (array, len ≥ 1), `states` (array, len ≥ 1, must include `"default"`)
 - Actions must be Button nodes
 - Fields must be Field nodes
+- Optional: `title` (string)
 
 ### Table
 - Required: `type`, `id`, `title` (non-empty string), `columns` (array, len ≥ 1), `responsive` object with `strategy` (`"wrap"`, `"scroll"`, or `"cards"`)
-- Each column must have: `key` (string), `label` (string)
-- Optional: `responsive.minColumnWidth` (number)
+- `columns` is a string array: `["Name", "Email", "Role"]`
+- Optional: `responsive.minColumnWidth` (number), `rows` (number), `states` (array of strings)
 
 ---
 
@@ -108,8 +109,8 @@ Output MUST be a single JSON object. No comments. No markdown.
         {
           "type": "Button",
           "id": "action-button",
-          "label": "Click Me",
-          "role": "primary"
+          "text": "Click Me",
+          "roleHint": "primary"
         }
       ]
     }
