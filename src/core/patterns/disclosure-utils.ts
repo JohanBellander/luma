@@ -4,6 +4,7 @@
 
 import type { Node, ButtonNode, TextNode } from '../../types/node.js';
 import { traversePreOrder } from '../keyboard/traversal.js';
+import { findDisclosureControl } from './disclosure-inference.js';
 
 /**
  * Find the control node associated with a collapsible section.
@@ -58,79 +59,7 @@ export function findControl(
   }
   
   // No explicit controlsId - attempt proximity inference
-  return inferControl(node, parentChildren);
-}
-
-/**
- * Infer the control node using proximity rules.
- * Per spec Section 3.2.3: search order is:
- * 1. Preceding sibling
- * 2. Following sibling
- * 3. First child if it's a header/container
- */
-function inferControl(
-  node: Node,
-  parentChildren: Node[] | undefined
-): ButtonNode | null {
-  if (!parentChildren) {
-    return null;
-  }
-  
-  const nodeIndex = parentChildren.findIndex((n) => n.id === node.id);
-  if (nodeIndex === -1) {
-    return null;
-  }
-  
-  // Keywords for control identification (case-insensitive)
-  const keywords = /\b(show|hide|expand|collapse|advanced|details|more)\b/i;
-  
-  // Helper to check if a node is a valid control candidate
-  const isCandidate = (n: Node): boolean => {
-    if (n.type !== 'Button') return false;
-    if (n.visible === false) return false;
-    
-    const btn = n as ButtonNode;
-    
-    // Check button text for keywords
-    if (btn.text && keywords.test(btn.text)) {
-      return true;
-    }
-    
-    // Check affordances
-    const affordances = n.affordances || [];
-    if (affordances.includes('chevron') || affordances.includes('details')) {
-      return true;
-    }
-    
-    return false;
-  };
-  
-  // 1. Search preceding siblings (reverse order - closest first)
-  for (let i = nodeIndex - 1; i >= 0; i--) {
-    const sibling = parentChildren[i];
-    if (isCandidate(sibling)) {
-      return sibling as ButtonNode;
-    }
-  }
-  
-  // 2. Search following siblings (forward order - closest first)
-  for (let i = nodeIndex + 1; i < parentChildren.length; i++) {
-    const sibling = parentChildren[i];
-    if (isCandidate(sibling)) {
-      return sibling as ButtonNode;
-    }
-  }
-  
-  // 3. Check if first child is a control (header row scenario)
-  const children = getChildren(node);
-  if (children && children.length > 0) {
-    const firstChild = children[0];
-    if (isCandidate(firstChild)) {
-      return firstChild as ButtonNode;
-    }
-  }
-  
-  return null;
+  return findDisclosureControl(node, parentChildren);
 }
 
 /**
