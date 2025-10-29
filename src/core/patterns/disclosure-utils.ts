@@ -172,3 +172,106 @@ function getChildren(node: Node): Node[] | undefined {
   }
   return undefined;
 }
+
+/**
+ * Calculate the sibling distance between a control and a collapsible node.
+ * 
+ * Per spec PD-SHOULD-1: Control should be adjacent (distance <= 1).
+ * 
+ * @param collapsibleId - The ID of the collapsible node
+ * @param controlId - The ID of the control button
+ * @param parentChildren - Siblings array containing both nodes
+ * @returns Distance between siblings (0 if adjacent, >0 otherwise), or -1 if not siblings
+ */
+export function calculateSiblingDistance(
+  collapsibleId: string,
+  controlId: string,
+  parentChildren: Node[] | undefined
+): number {
+  if (!parentChildren) {
+    return -1; // Not siblings
+  }
+  
+  const collapsibleIndex = parentChildren.findIndex((n) => n.id === collapsibleId);
+  const controlIndex = parentChildren.findIndex((n) => n.id === controlId);
+  
+  if (collapsibleIndex === -1 || controlIndex === -1) {
+    return -1; // One or both not found in sibling array
+  }
+  
+  return Math.abs(collapsibleIndex - controlIndex);
+}
+
+/**
+ * Extract affordance tokens from a collapsible node.
+ * 
+ * Per spec PD-SHOULD-2: Multiple collapsibles should have consistent affordances.
+ * 
+ * @param node - The collapsible node
+ * @returns Array of affordance tokens (e.g., ["chevron", "details"])
+ */
+export function extractAffordanceTokens(node: Node): string[] {
+  const affordances = (node as any).affordances;
+  if (Array.isArray(affordances)) {
+    return affordances
+      .filter((token: any) => typeof token === 'string' && token.trim().length > 0)
+      .map((token: string) => token.toLowerCase().trim());
+  }
+  return [];
+}
+
+/**
+ * Find all collapsible nodes in a tree.
+ * 
+ * @param root - The root node
+ * @returns Array of collapsible nodes
+ */
+export function findCollapsibles(root: Node): Node[] {
+  const nodes = traversePreOrder(root);
+  return nodes.filter((n) => n.behaviors?.disclosure?.collapsible === true);
+}
+
+/**
+ * Find the first required Form field in a tree.
+ * 
+ * Per spec PD-SHOULD-3: Collapsible sections should follow primary content.
+ * 
+ * @param root - The root node
+ * @returns The first required field node, or null if none found
+ */
+export function findFirstRequiredField(root: Node): Node | null {
+  const nodes = traversePreOrder(root);
+  for (const node of nodes) {
+    if (node.type === 'Field') {
+      const field = node as any;
+      if (field.required === true) {
+        return node;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Check if a collapsible node appears before another node in document order.
+ * 
+ * @param collapsibleId - ID of the collapsible node
+ * @param targetId - ID of the target node
+ * @param root - The root node
+ * @returns true if collapsible appears before target in traversal order
+ */
+export function appearsBefore(collapsibleId: string, targetId: string, root: Node): boolean {
+  const nodes = traversePreOrder(root);
+  let foundCollapsible = false;
+  
+  for (const node of nodes) {
+    if (node.id === collapsibleId) {
+      foundCollapsible = true;
+    }
+    if (node.id === targetId) {
+      return foundCollapsible; // true if we saw collapsible before target
+    }
+  }
+  
+  return false;
+}

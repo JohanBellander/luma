@@ -194,44 +194,211 @@ const disclosureMissingLabel: PatternRule = {
 };
 
 /**
- * Stub SHOULD rule: Control placement proximity
- * Full implementation in LUMA-51
+ * PD-SHOULD-1: Control placement proximity
  */
 const disclosureControlFar: PatternRule = {
   id: 'disclosure-control-far',
   level: 'should',
   description: 'Control should be adjacent to collapsible section',
-  check: (_root: Node): Issue[] => {
-    // Stub implementation - will be completed in LUMA-51
-    return [];
+  check: (root: Node): Issue[] => {
+    const issues: Issue[] = [];
+    const nodes = traversePreOrder(root);
+    const parentMap = buildParentMap(root);
+    
+    for (const node of nodes) {
+      const disclosure = node.behaviors?.disclosure;
+      if (disclosure && disclosure.collapsible) {
+        const siblings = getSiblings(node.id, parentMap);
+        const control = findControl(node, siblings);
+        
+        if (control && siblings) {
+          // Check if control is a sibling (not inside the collapsible)
+          const controlIndex = siblings.findIndex((n) => n.id === control.id);
+          const collapsibleIndex = siblings.findIndex((n) => n.id === node.id);
+          
+          if (controlIndex !== -1 && collapsibleIndex !== -1) {
+            // They are siblings - check distance
+            const distance = Math.abs(controlIndex - collapsibleIndex);
+            
+            if (distance > 1) {
+              issues.push({
+                id: 'disclosure-control-far',
+                severity: 'warn',
+                message: `Control "${control.id}" is not adjacent to collapsible section "${node.id}" (distance: ${distance} siblings)`,
+                nodeId: node.id,
+                source: {
+                  pattern: 'Progressive.Disclosure',
+                  name: 'Nielsen Norman Group — Progressive Disclosure',
+                  url: 'https://www.nngroup.com/articles/progressive-disclosure/',
+                },
+                suggestion: `Place the control as a preceding sibling or within a header row next to the section.`,
+                details: {
+                  expected: 'Control adjacent to collapsible (distance <= 1)',
+                  found: `Control at distance ${distance} from collapsible`,
+                  controlId: control.id,
+                },
+              });
+            }
+          }
+        }
+      }
+    }
+    
+    return issues;
   },
 };
 
 /**
- * Stub SHOULD rule: Consistent affordance
- * Full implementation in LUMA-51
+ * PD-SHOULD-2: Consistent affordance
  */
 const disclosureInconsistentAffordance: PatternRule = {
   id: 'disclosure-inconsistent-affordance',
   level: 'should',
   description: 'Multiple collapsibles should use consistent affordances',
-  check: (_root: Node): Issue[] => {
-    // Stub implementation - will be completed in LUMA-51
-    return [];
+  check: (root: Node): Issue[] => {
+    const issues: Issue[] = [];
+    const nodes = traversePreOrder(root);
+    const parentMap = buildParentMap(root);
+    
+    // Group collapsibles by parent
+    const collapsiblesByParent = new Map<Node[] | undefined, Node[]>();
+    
+    for (const node of nodes) {
+      const disclosure = node.behaviors?.disclosure;
+      if (disclosure && disclosure.collapsible) {
+        const siblings = getSiblings(node.id, parentMap);
+        if (!collapsiblesByParent.has(siblings)) {
+          collapsiblesByParent.set(siblings, []);
+        }
+        collapsiblesByParent.get(siblings)!.push(node);
+      }
+    }
+    
+    // Check each group for inconsistent affordances
+    for (const [_siblings, collapsibles] of collapsiblesByParent) {
+      if (collapsibles.length < 2) {
+        continue; // Need at least 2 collapsibles to compare
+      }
+      
+      // Extract affordances from each collapsible
+      const affordanceSets: Set<string>[] = collapsibles.map((node) => {
+        const affordances = (node as any).affordances;
+        if (Array.isArray(affordances)) {
+          return new Set(
+            affordances
+              .filter((token: any) => typeof token === 'string' && token.trim().length > 0)
+              .map((token: string) => token.toLowerCase().trim())
+          );
+        }
+        return new Set<string>();
+      });
+      
+      // Filter out empty sets for intersection check
+      const nonEmptySets = affordanceSets.filter((set) => set.size > 0);
+      
+      if (nonEmptySets.length < 2) {
+        continue; // Need at least 2 non-empty affordance sets to check consistency
+      }
+      
+      // Check intersection of all non-empty sets
+      const intersection = nonEmptySets.reduce((acc, set) => {
+        return new Set([...acc].filter((x) => set.has(x)));
+      });
+      
+      if (intersection.size === 0) {
+        // No common affordances - inconsistent
+        const affordanceStrings = collapsibles.map((node, i) => {
+          const tokens = Array.from(affordanceSets[i]);
+          return `"${node.id}": [${tokens.map((t) => `"${t}"`).join(', ')}]`;
+        });
+        
+        issues.push({
+          id: 'disclosure-inconsistent-affordance',
+          severity: 'warn',
+          message: `Multiple collapsibles use inconsistent affordances: ${affordanceStrings.join('; ')}`,
+          nodeId: collapsibles[0].id,
+          source: {
+            pattern: 'Progressive.Disclosure',
+            name: 'GOV.UK Design System — Details',
+            url: 'https://design-system.service.gov.uk/components/details/',
+          },
+          suggestion: `Align affordances across collapsible sections, e.g. "affordances":["chevron"].`,
+          details: {
+            expected: 'Common affordance token across all collapsibles',
+            found: `No intersection: ${affordanceStrings.join('; ')}`,
+            collapsibleIds: collapsibles.map((n) => n.id),
+          },
+        });
+      }
+    }
+    
+    return issues;
   },
 };
 
 /**
- * Stub SHOULD rule: Collapsible sections follow primary content
- * Full implementation in LUMA-51
+ * PD-SHOULD-3: Collapsible sections follow primary content
  */
 const disclosureEarlySection: PatternRule = {
   id: 'disclosure-early-section',
   level: 'should',
   description: 'Collapsible content should follow primary content',
-  check: (_root: Node): Issue[] => {
-    // Stub implementation - will be completed in LUMA-51
-    return [];
+  check: (root: Node): Issue[] => {
+    const issues: Issue[] = [];
+    const nodes = traversePreOrder(root);
+    
+    // Find first required field (if any Form fields exist)
+    let firstRequiredField: Node | null = null;
+    for (const node of nodes) {
+      if (node.type === 'Field') {
+        const field = node as any;
+        if (field.required === true) {
+          firstRequiredField = node;
+          break;
+        }
+      }
+    }
+    
+    // Check if any collapsible appears before the first required field
+    if (firstRequiredField) {
+      let foundCollapsibleBefore = false;
+      let collapsibleNode: Node | null = null;
+      
+      for (const node of nodes) {
+        if (node.id === firstRequiredField.id) {
+          break; // Reached the first required field
+        }
+        
+        const disclosure = node.behaviors?.disclosure;
+        if (disclosure && disclosure.collapsible) {
+          foundCollapsibleBefore = true;
+          collapsibleNode = node;
+          break;
+        }
+      }
+      
+      if (foundCollapsibleBefore && collapsibleNode) {
+        issues.push({
+          id: 'disclosure-early-section',
+          severity: 'warn',
+          message: `Collapsible section "${collapsibleNode.id}" appears before the first required field "${firstRequiredField.id}"`,
+          nodeId: collapsibleNode.id,
+          source: {
+            pattern: 'Progressive.Disclosure',
+            name: 'USWDS — Accordion',
+            url: 'https://designsystem.digital.gov/components/accordion/',
+          },
+          suggestion: `Move collapsible sections after required fields and before the action row.`,
+          details: {
+            expected: 'Collapsible after primary content (required fields)',
+            found: `Collapsible "${collapsibleNode.id}" before required field "${firstRequiredField.id}"`,
+            firstRequiredFieldId: firstRequiredField.id,
+          },
+        });
+      }
+    }
+    
+    return issues;
   },
 };
 
