@@ -57,36 +57,39 @@ Create a simple form scaffold in `my-form.json`:
 
 ```json
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "1.0.0",
   "screen": {
-    "id": "login-form",
-    "type": "stack",
-    "direction": "vertical",
-    "spacing": 16,
-    "children": [
-      {
-        "id": "email-field",
-        "type": "field",
-        "label": "Email",
-        "placeholder": "Enter your email",
-        "required": true
-      },
-      {
-        "id": "password-field",
-        "type": "field",
-        "label": "Password",
-        "placeholder": "Enter password",
-        "required": true
-      },
-      {
-        "id": "submit-button",
-        "type": "action",
-        "actionType": "primary",
-        "label": "Login",
-        "width": 120,
-        "height": 44
-      }
-    ]
+    "id": "login-screen",
+    "title": "Login",
+    "root": {
+      "id": "root-stack",
+      "type": "Stack",
+      "direction": "vertical",
+      "gap": 16,
+      "padding": 24,
+      "children": [
+        { "id": "login-title", "type": "Text", "text": "Sign In" },
+        {
+          "id": "login-form",
+          "type": "Form",
+          "title": "Account Access",
+          "fields": [
+            { "id": "email-field", "type": "Field", "label": "Email", "inputType": "email", "required": true },
+            { "id": "password-field", "type": "Field", "label": "Password", "inputType": "password", "required": true }
+          ],
+          "actions": [
+            { "id": "submit-btn", "type": "Button", "text": "Login", "roleHint": "primary", "minSize": { "w": 44, "h": 44 } },
+            { "id": "cancel-btn", "type": "Button", "text": "Cancel", "roleHint": "secondary", "minSize": { "w": 44, "h": 44 } }
+          ],
+          "states": ["default", "submitting", "error"]
+        }
+      ]
+    }
+  },
+  "settings": {
+    "spacingScale": [4, 8, 12, 16, 24, 32, 48],
+    "minTouchTarget": { "w": 44, "h": 44 },
+    "breakpoints": ["320x640", "768x1024", "1280x800"]
   }
 }
 ```
@@ -172,7 +175,7 @@ Check `.ui/runs/<timestamp>/keyboard.json` for the full tab sequence.
 ## Step 5: Validate UX Patterns
 
 ```bash
-luma flow my-form.json --patterns form
+luma flow my-form.json --patterns Form.Basic
 ```
 
 **What it does:** Checks compliance with GOV.UK Form.Basic pattern (fields have labels, actions exist, etc.).
@@ -230,6 +233,37 @@ Open the HTML file in your browser to see:
 - All issues grouped by severity
 - Per-viewport results
 
+## (Important) Chaining Commands Into One Run Folder
+
+Each command creates a NEW timestamped run folder. To ensure `score` sees all artifacts (ingest, layout, keyboard, flow), chain the commands so they execute sequentially in a single folder.
+
+Windows PowerShell:
+```powershell
+luma ingest my-form.json; \
+luma layout my-form.json --viewports 320x640,768x1024; \
+luma keyboard my-form.json; \
+luma flow my-form.json --patterns Form.Basic
+```
+
+macOS/Linux:
+```bash
+luma ingest my-form.json && \
+luma layout my-form.json --viewports 320x640,768x1024 && \
+luma keyboard my-form.json && \
+luma flow my-form.json --patterns Form.Basic
+```
+
+Then score that run:
+```bash
+luma score .ui/runs/<run-id>
+```
+
+If you see errors like `keyboard.json not found` or `flow.json not found`, you likely ran commands separately. Re-run using chaining.
+- Overall pass/fail status
+- Category scores with weights
+- All issues grouped by severity
+- Per-viewport results
+
 ## Understanding the Results
 
 ### Pass Criteria
@@ -266,7 +300,7 @@ luma capabilities
 luma patterns --list
 
 # See Form.Basic MUST/SHOULD rules
-luma patterns --show form
+luma patterns --show Form.Basic
 
 # Explain the scaffold contract (v1.1)
 luma explain --topic scaffold-contract
@@ -329,7 +363,7 @@ luma ingest examples/happy-form.json
 # ... continue with layout, keyboard, flow, score
 
 # Form with MUST violations (should fail)
-luma flow examples/pattern-failures.json --patterns form
+luma flow examples/pattern-failures.json --patterns Form.Basic
 
 # Form with keyboard issues
 luma keyboard examples/keyboard-issues.json
@@ -340,15 +374,16 @@ luma layout examples/overflow-table.json --viewports 320x640
 
 ## Next Steps
 
-- Read the [full specification](./LUMA-SPEC.md)
-- Explore [pattern definitions](./LUMA-SPEC.md#7-ux-pattern-library)
-- Learn about [scoring formulas](./LUMA-SPEC.md#8-scoring--thresholds)
-- Understand [exit codes](./LUMA-SPEC.md#10-exit-codes)
+- Read the [full specification (v1.1)](./LUMA-SPEC-v1.1.md)
+- Explore [pattern definitions](./LUMA-SPEC-v1.1.md#7-ux-pattern-library)
+- Learn about [scoring formulas](./LUMA-SPEC-v1.1.md#8-scoring--thresholds)
+- Understand [exit codes](./LUMA-SPEC-v1.1.md#10-exit-codes)
+- Review [AGENTS.md](./AGENTS.md) if you're an AI agent integrating LUMA.
 
 ## Troubleshooting
 
 **"Invalid schema version"**
-- Ensure `schemaVersion` is `"1.0"` in your scaffold
+- Ensure `schemaVersion` is `"1.0.0"` in your scaffold
 
 **"Cannot find run folder"**
 - Check `.ui/runs/` directory for recent timestamps
@@ -357,6 +392,7 @@ luma layout examples/overflow-table.json --viewports 320x640
 **"Flow artifact not found"**
 - Run `luma flow` before `luma score`
 - Ensure you're using the correct run folder path
+- If artifacts are missing, you may have run commands in separate folders; chain commands into one run folder (see Chaining section).
 
 **"MUST pattern failures detected"**
 - Run `luma patterns --show <pattern>` to see requirements
@@ -371,4 +407,4 @@ luma faq                 # Frequently asked questions
 luma explain --topic     # Topic-based explanations
 ```
 
-For more information, see the [README](./README.md) or [specification](./LUMA-SPEC.md).
+For more information, see the [README](./README.md) or the [v1.1 specification](./LUMA-SPEC-v1.1.md).
