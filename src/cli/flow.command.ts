@@ -4,8 +4,26 @@ import { ingest } from '../core/ingest/ingest.js';
 import { validatePatterns } from '../core/patterns/validator.js';
 import { getPattern } from '../core/patterns/pattern-registry.js';
 import { createRunFolder, getRunFilePath } from '../utils/run-folder.js';
+import { traversePreOrder } from '../core/keyboard/traversal.js';
 import type { Pattern } from '../core/patterns/types.js';
 import type { Scaffold } from '../types/scaffold.js';
+import type { Node } from '../types/node.js';
+
+/**
+ * Detect if any node in the tree has progressive disclosure hints.
+ * Per spec Section 2: Auto-activate when any node has behaviors.disclosure.collapsible === true
+ */
+function hasDisclosureHints(root: Node): boolean {
+  const nodes = traversePreOrder(root, false); // Check all nodes, even invisible ones
+  
+  for (const node of nodes) {
+    if (node.behaviors?.disclosure?.collapsible === true) {
+      return true;
+    }
+  }
+  
+  return false;
+}
 
 export function createFlowCommand(): Command {
   const command = new Command('flow');
@@ -40,6 +58,21 @@ export function createFlowCommand(): Command {
         }
 
         const scaffold = result.normalized as Scaffold;
+        
+        // Auto-inject Progressive.Disclosure pattern if disclosure hints are present
+        // Per spec Section 2: Auto-activate when any node has behaviors.disclosure.collapsible === true
+        const hasDisclosure = hasDisclosureHints(scaffold.screen.root);
+        const hasProgressiveDisclosurePattern = patterns.some(
+          p => p.name === 'Progressive.Disclosure'
+        );
+        
+        if (hasDisclosure && !hasProgressiveDisclosurePattern) {
+          const pdPattern = getPattern('Progressive.Disclosure');
+          if (pdPattern) {
+            patterns.push(pdPattern);
+          }
+        }
+        
         const output = validatePatterns(patterns, scaffold.screen.root);
 
         const runDir = createRunFolder(process.cwd(), options.runFolder);

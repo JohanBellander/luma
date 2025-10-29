@@ -26,6 +26,7 @@ const baseNodeSchema = z.object({
         .optional(),
     })
     .optional(),
+  affordances: z.array(z.string()).optional(),
 });
 
 // Stack node schema

@@ -32,6 +32,12 @@ export interface BaseNode {
   behaviors?: {
     disclosure?: DisclosureBehavior;
   };
+  /**
+   * Optional affordances array for visual/interaction hints.
+   * Used by Progressive Disclosure pattern for consistency checks.
+   * Example values: "chevron", "details", "accordion"
+   */
+  affordances?: string[];
 }
 
 /**
