@@ -123,6 +123,386 @@ This means you ran commands separately. Re-run as a chained command.
 
 ---
 
+## Component Schema Quick Reference
+
+Before writing scaffold JSON, learn valid component properties to avoid trial-and-error.
+
+### Discovery Commands
+
+```bash
+luma explain --topic component-text --json
+luma explain --topic component-button --json
+luma explain --topic component-field --json
+luma explain --topic component-form --json
+luma explain --topic component-table --json
+luma explain --topic component-stack --json
+luma explain --topic component-grid --json
+luma explain --topic component-box --json
+```
+
+### Common Property Mistakes
+
+| Component | Correct | Wrong | Why |
+|-----------|---------|-------|-----|
+| Text | `text` | `content`, `label` | Property name mismatch |
+| Button | `text` | `label` | Property name mismatch |
+| Button | `roleHint` | `variant`, `role` | Property name mismatch |
+| Field | `inputType` | `fieldType`, `type` | Property name mismatch |
+| Field | `label` (required) | Missing label | Must be non-empty string |
+| Table | `columns: ["Name", "Email"]` | `columns: [{key: "col1"}]` | Must be string array, not objects |
+| Table | `title` (required) | Missing title | Must be non-empty string |
+| Form | `fields: [...]` | Empty array | Must have at least 1 field |
+| Form | `actions: [...]` | Empty array | Must have at least 1 action |
+| Form | `states: ["default"]` | Missing states | Must include at least "default" |
+
+### Complete Component Schemas
+
+#### 1. Stack (Container - Vertical/Horizontal)
+
+**Required Properties:**
+- `id` (string): Unique identifier
+- `type` (string): Must be `"Stack"`
+- `direction` (string): `"vertical"` or `"horizontal"`
+- `children` (array): Array of child nodes
+
+**Optional Properties:**
+- `gap` (number): Space between children (default: 0)
+- `padding` (number): Inner padding (default: 0)
+- `align` (string): `"start"`, `"center"`, `"end"`, `"stretch"` (default: `"start"`)
+- `wrap` (boolean): Allow wrapping (default: false)
+- `visible` (boolean): Visibility (default: true)
+- `widthPolicy` (string): `"hug"`, `"fill"`, `"fixed"` (default: `"hug"`)
+- `heightPolicy` (string): `"hug"`, `"fill"`, `"fixed"` (default: `"hug"`)
+- `minSize` (object): `{w?: number, h?: number}`
+- `maxSize` (object): `{w?: number, h?: number}`
+- `at` (object): Responsive overrides
+
+**Example:**
+```json
+{
+  "id": "main-stack",
+  "type": "Stack",
+  "direction": "vertical",
+  "gap": 16,
+  "padding": 24,
+  "align": "start",
+  "children": [
+    {
+      "id": "title",
+      "type": "Text",
+      "text": "Welcome"
+    }
+  ]
+}
+```
+
+#### 2. Grid (Container - Grid Layout)
+
+**Required Properties:**
+- `id` (string): Unique identifier
+- `type` (string): Must be `"Grid"`
+- `columns` (number): Number of columns (positive integer)
+- `children` (array): Array of child nodes
+
+**Optional Properties:**
+- `gap` (number): Space between cells (default: 0)
+- `minColWidth` (number): Minimum column width (triggers column reduction)
+- `visible` (boolean): Visibility (default: true)
+- `widthPolicy` (string): `"hug"`, `"fill"`, `"fixed"` (default: `"hug"`)
+- `heightPolicy` (string): `"hug"`, `"fill"`, `"fixed"` (default: `"hug"`)
+- `minSize` (object): `{w?: number, h?: number}`
+- `maxSize` (object): `{w?: number, h?: number}`
+- `at` (object): Responsive overrides
+
+**Example:**
+```json
+{
+  "id": "dashboard-grid",
+  "type": "Grid",
+  "columns": 3,
+  "gap": 16,
+  "minColWidth": 200,
+  "children": [
+    {
+      "id": "card1",
+      "type": "Box",
+      "padding": 16,
+      "child": {
+        "id": "card1-text",
+        "type": "Text",
+        "text": "Card 1"
+      }
+    }
+  ]
+}
+```
+
+#### 3. Box (Container - Simple Wrapper)
+
+**Required Properties:**
+- `id` (string): Unique identifier
+- `type` (string): Must be `"Box"`
+
+**Optional Properties:**
+- `padding` (number): Inner padding (default: 0)
+- `child` (node): Single child node
+- `visible` (boolean): Visibility (default: true)
+- `widthPolicy` (string): `"hug"`, `"fill"`, `"fixed"` (default: `"hug"`)
+- `heightPolicy` (string): `"hug"`, `"fill"`, `"fixed"` (default: `"hug"`)
+- `minSize` (object): `{w?: number, h?: number}`
+- `maxSize` (object): `{w?: number, h?: number}`
+- `at` (object): Responsive overrides
+
+**Example:**
+```json
+{
+  "id": "card-wrapper",
+  "type": "Box",
+  "padding": 24,
+  "child": {
+    "id": "card-title",
+    "type": "Text",
+    "text": "Card Title"
+  }
+}
+```
+
+#### 4. Text (Display Text Content)
+
+**Required Properties:**
+- `id` (string): Unique identifier
+- `type` (string): Must be `"Text"`
+- `text` (string): Content to display
+
+**Optional Properties:**
+- `fontSize` (number): Font size in pixels (default: 16)
+- `maxLines` (number): Maximum number of lines (enables truncation)
+- `intrinsicTextWidth` (number): Hint for layout calculation
+- `visible` (boolean): Visibility (default: true)
+- `widthPolicy` (string): `"hug"`, `"fill"`, `"fixed"` (default: `"hug"`)
+- `heightPolicy` (string): `"hug"`, `"fill"`, `"fixed"` (default: `"hug"`)
+- `minSize` (object): `{w?: number, h?: number}`
+- `maxSize` (object): `{w?: number, h?: number}`
+- `at` (object): Responsive overrides
+
+**Common Mistakes:**
+- ❌ Using `content` instead of `text`
+- ❌ Using `label` instead of `text`
+- ❌ Using unsupported properties like `fontWeight`, `color`, `align`
+
+**Example:**
+```json
+{
+  "id": "welcome-text",
+  "type": "Text",
+  "text": "Welcome to LUMA",
+  "fontSize": 24
+}
+```
+
+#### 5. Button (Interactive Button)
+
+**Required Properties:**
+- `id` (string): Unique identifier
+- `type` (string): Must be `"Button"`
+
+**Optional Properties:**
+- `text` (string): Button label
+- `roleHint` (string): `"primary"`, `"secondary"`, `"danger"`, `"link"`
+- `focusable` (boolean): Can receive focus (default: true)
+- `tabIndex` (number): Tab order override
+- `visible` (boolean): Visibility (default: true)
+- `widthPolicy` (string): `"hug"`, `"fill"`, `"fixed"` (default: `"hug"`)
+- `heightPolicy` (string): `"hug"`, `"fill"`, `"fixed"` (default: `"hug"`)
+- `minSize` (object): `{w?: number, h?: number}`
+- `maxSize` (object): `{w?: number, h?: number}`
+- `at` (object): Responsive overrides
+
+**Common Mistakes:**
+- ❌ Using `label` instead of `text`
+- ❌ Using `variant` instead of `roleHint`
+- ❌ Using `role` instead of `roleHint`
+
+**Example:**
+```json
+{
+  "id": "submit-btn",
+  "type": "Button",
+  "text": "Submit",
+  "roleHint": "primary"
+}
+```
+
+#### 6. Field (Form Input Field)
+
+**Required Properties:**
+- `id` (string): Unique identifier
+- `type` (string): Must be `"Field"`
+- `label` (string): Field label (non-empty)
+
+**Optional Properties:**
+- `inputType` (string): `"text"`, `"email"`, `"password"`, `"number"`, `"date"`
+- `required` (boolean): Field is required
+- `helpText` (string): Help text below field
+- `errorText` (string): Error message text
+- `focusable` (boolean): Can receive focus (default: true)
+- `visible` (boolean): Visibility (default: true)
+- `widthPolicy` (string): `"hug"`, `"fill"`, `"fixed"` (default: `"hug"`)
+- `heightPolicy` (string): `"hug"`, `"fill"`, `"fixed"` (default: `"hug"`)
+- `minSize` (object): `{w?: number, h?: number}`
+- `maxSize` (object): `{w?: number, h?: number}`
+- `at` (object): Responsive overrides
+
+**Common Mistakes:**
+- ❌ Using `fieldType` instead of `inputType`
+- ❌ Missing `label` (required and must be non-empty)
+- ❌ Using empty string for `label`
+
+**Example:**
+```json
+{
+  "id": "email-field",
+  "type": "Field",
+  "label": "Email Address",
+  "inputType": "email",
+  "required": true,
+  "helpText": "We'll never share your email"
+}
+```
+
+#### 7. Form (Complete Form)
+
+**Required Properties:**
+- `id` (string): Unique identifier
+- `type` (string): Must be `"Form"`
+- `fields` (array): Array of Field nodes (min 1)
+- `actions` (array): Array of Button nodes (min 1)
+- `states` (array): Array of state names (must include `"default"`)
+
+**Optional Properties:**
+- `title` (string): Form title
+- `visible` (boolean): Visibility (default: true)
+- `widthPolicy` (string): `"hug"`, `"fill"`, `"fixed"` (default: `"hug"`)
+- `heightPolicy` (string): `"hug"`, `"fill"`, `"fixed"` (default: `"hug"`)
+- `minSize` (object): `{w?: number, h?: number}`
+- `maxSize` (object): `{w?: number, h?: number}`
+- `at` (object): Responsive overrides
+
+**Common Mistakes:**
+- ❌ Empty `fields` array (must have at least 1)
+- ❌ Empty `actions` array (must have at least 1)
+- ❌ Missing `states` or not including `"default"`
+
+**Example:**
+```json
+{
+  "id": "contact-form",
+  "type": "Form",
+  "title": "Contact Us",
+  "fields": [
+    {
+      "id": "name-field",
+      "type": "Field",
+      "label": "Name",
+      "required": true
+    },
+    {
+      "id": "email-field",
+      "type": "Field",
+      "label": "Email",
+      "inputType": "email",
+      "required": true
+    }
+  ],
+  "actions": [
+    {
+      "id": "submit-btn",
+      "type": "Button",
+      "text": "Submit",
+      "roleHint": "primary"
+    },
+    {
+      "id": "cancel-btn",
+      "type": "Button",
+      "text": "Cancel",
+      "roleHint": "secondary"
+    }
+  ],
+  "states": ["default", "submitting", "error"]
+}
+```
+
+#### 8. Table (Data Table)
+
+**Required Properties:**
+- `id` (string): Unique identifier
+- `type` (string): Must be `"Table"`
+- `title` (string): Table title (non-empty)
+- `columns` (array): Array of column names as strings (min 1)
+- `responsive` (object): `{strategy: "wrap"|"scroll"|"cards", minColumnWidth?: number}`
+
+**Optional Properties:**
+- `rows` (number): Number of rows (for layout calculation)
+- `states` (array): Array of state names
+- `visible` (boolean): Visibility (default: true)
+- `widthPolicy` (string): `"hug"`, `"fill"`, `"fixed"` (default: `"hug"`)
+- `heightPolicy` (string): `"hug"`, `"fill"`, `"fixed"` (default: `"hug"`)
+- `minSize` (object): `{w?: number, h?: number}`
+- `maxSize` (object): `{w?: number, h?: number}`
+- `at` (object): Responsive overrides
+
+**Common Mistakes:**
+- ❌ Using objects for columns: `[{key: "col1", header: "Name"}]`
+- ✅ Correct: Use strings: `["Name", "Email", "Status"]`
+- ❌ Missing `title` (required and must be non-empty)
+- ❌ Missing `responsive.strategy`
+
+**Example:**
+```json
+{
+  "id": "users-table",
+  "type": "Table",
+  "title": "User List",
+  "columns": ["Name", "Email", "Role", "Status"],
+  "rows": 10,
+  "responsive": {
+    "strategy": "scroll",
+    "minColumnWidth": 120
+  },
+  "states": ["default", "loading"]
+}
+```
+
+### Base Node Properties (Common to All)
+
+All node types inherit these optional properties:
+
+- `visible` (boolean): Whether node is visible (default: true)
+- `widthPolicy` (string): `"hug"`, `"fill"`, `"fixed"` (default: `"hug"`)
+- `heightPolicy` (string): `"hug"`, `"fill"`, `"fixed"` (default: `"hug"`)
+- `minSize` (object): `{w?: number, h?: number}` - Minimum dimensions
+- `maxSize` (object): `{w?: number, h?: number}` - Maximum dimensions
+- `at` (object): Responsive overrides (e.g., `{">=768": {...}}`)
+
+### Validation Tips
+
+1. **Check property names carefully** - Most errors come from wrong property names
+2. **String arrays not objects** - Table columns must be strings, not objects
+3. **Required fields** - Field.label, Table.title, Form.fields/actions/states
+4. **Non-empty requirements** - Some strings cannot be empty (label, title)
+5. **Use exact enum values** - `"primary"` not `"Primary"`, `"vertical"` not `"vert"`
+
+### Quick Validation Test
+
+After writing scaffold JSON:
+```bash
+luma ingest your-scaffold.json
+```
+
+Check `.ui/runs/<run-id>/ingest.json` for detailed error messages with `jsonPointer` locations.
+
+---
+
 ## Issue Tracking with bd (beads)
 
 **IMPORTANT**: This project uses **bd (beads)** for ALL issue tracking. Do NOT use markdown TODOs, task lists, or other tracking methods.
