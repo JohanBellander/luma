@@ -503,6 +503,178 @@ Check `.ui/runs/<run-id>/ingest.json` for detailed error messages with `jsonPoin
 
 ---
 
+## Debugging Failed Validation
+
+When LUMA commands fail, understanding the error output helps you fix issues quickly.
+
+### If `luma ingest` Fails
+
+**1. Check error details:**
+
+On Windows PowerShell:
+```powershell
+Get-Content .ui/runs/<run-id>/ingest.json
+```
+
+On macOS/Linux:
+```bash
+cat .ui/runs/<run-id>/ingest.json
+```
+
+**2. Interpret `jsonPointer`:**
+
+The `jsonPointer` field shows the exact location of the error in your scaffold JSON:
+
+| jsonPointer | Meaning |
+|-------------|---------|
+| `/screen/root/children/3` | 4th child of root (0-indexed) |
+| `/screen/root/children/0/text` | `text` property of first child |
+| `/screen/root/children/1/fields/2` | 3rd field in form |
+| `/screen/settings/spacingScale` | spacingScale array in settings |
+
+**3. Common Error Types and Fixes:**
+
+#### Invalid Union Errors
+
+**Symptom:** `Invalid discriminated union. Could not find discriminator property "X"`
+
+**Common Causes:**
+- Wrong property name or type
+- Text component: Using `content` or `label` instead of `text`
+- Button component: Using `label` instead of `text`
+- Button component: Using `variant` or `role` instead of `roleHint`
+- Field component: Using `fieldType` or `type` instead of `inputType`
+
+**Fix:** Use correct property names from component schema (see Component Schema Quick Reference above)
+
+#### Required Property Missing
+
+**Symptom:** `Required property missing: "X"`
+
+**Common Causes and Fixes:**
+
+| Component | Missing Property | Fix |
+|-----------|-----------------|-----|
+| Form | `states` | Add `"states": ["default"]` (must include "default") |
+| Form | `fields` | Add at least 1 Field node in `fields` array |
+| Form | `actions` | Add at least 1 Button node in `actions` array |
+| Field | `label` | Add `"label": "Your Label"` (non-empty string) |
+| Table | `title` | Add `"title": "Your Title"` (non-empty string) |
+| Table | `columns` | Add string array like `["Name", "Email"]` |
+| Table | `responsive` | Add `"responsive": {"strategy": "scroll"}` |
+
+#### Invalid Type
+
+**Symptom:** `Expected X, received Y`
+
+**Common Causes:**
+
+1. **Table columns as objects instead of strings:**
+   - ❌ Wrong: `"columns": [{"key": "col1", "header": "Name"}]`
+   - ✅ Correct: `"columns": ["Name", "Email", "Status"]`
+
+2. **Spacing values not in spacingScale:**
+   - ❌ Wrong: `"gap": 15` (if 15 not in spacingScale)
+   - ✅ Correct: `"gap": 16` (use values from settings.spacingScale)
+
+3. **Wrong enum value:**
+   - ❌ Wrong: `"direction": "vert"` or `"Direction": "vertical"`
+   - ✅ Correct: `"direction": "vertical"` (exact match, case-sensitive)
+
+### If `luma score` is < 85
+
+Score failures come from specific validation rules. Check individual artifact files to identify issues:
+
+**Common Issues:**
+
+| Issue | Artifact | Symptom | Fix |
+|-------|----------|---------|-----|
+| Spacing not in scale | `ingest.json` | Stack/Grid `gap` or `padding` value rejected | Use values from `settings.spacingScale` |
+| Touch target too small | `layout.json` | Button/Field `< 44x44px` | Set `minSize: {w: 44, h: 44}` or increase padding |
+| Wrong action order | `flow.json` | Form actions before fields | Move action buttons after fields in scaffold |
+| Missing field label | `flow.json` | Field without label | Add `"label"` property (required, non-empty) |
+| Tab order issues | `keyboard.json` | Unexpected tab sequence | Reorder nodes in scaffold JSON (tab follows document order) |
+
+**Debugging Workflow:**
+
+```powershell
+# 1. Check which artifact has issues
+Get-Content .ui/runs/<run-id>/score.json
+
+# 2. Examine specific artifact
+Get-Content .ui/runs/<run-id>/ingest.json
+Get-Content .ui/runs/<run-id>/layout.json
+Get-Content .ui/runs/<run-id>/keyboard.json
+Get-Content .ui/runs/<run-id>/flow.json
+
+# 3. Fix issues in scaffold JSON
+
+# 4. Re-run full pipeline (chained for same run folder)
+luma ingest your-scaffold.json; `
+luma layout your-scaffold.json --viewports 320x640,768x1024; `
+luma keyboard your-scaffold.json; `
+luma flow your-scaffold.json --patterns form
+
+# 5. Check new score
+luma score .ui/runs/<new-run-id>
+```
+
+### If `luma keyboard` Shows Wrong Tab Order
+
+**Understanding Tab Order:**
+
+Tab order **always follows document order** in the scaffold JSON. You cannot override this with `tabIndex` alone.
+
+**Fix Wrong Tab Order:**
+
+1. Identify the desired tab sequence
+2. Reorder nodes in your scaffold JSON to match that sequence
+3. Run `luma keyboard` again to verify
+
+**Example:**
+
+❌ Wrong Order (Submit button tabbed before Email field):
+```json
+{
+  "children": [
+    {"id": "name-field", "type": "Field", "label": "Name"},
+    {"id": "submit-btn", "type": "Button", "text": "Submit"},
+    {"id": "email-field", "type": "Field", "label": "Email"}
+  ]
+}
+```
+
+✅ Correct Order (All fields before buttons):
+```json
+{
+  "children": [
+    {"id": "name-field", "type": "Field", "label": "Name"},
+    {"id": "email-field", "type": "Field", "label": "Email"},
+    {"id": "submit-btn", "type": "Button", "text": "Submit"}
+  ]
+}
+```
+
+### Pattern Validation Failures
+
+**Symptom:** Pattern not found or validation fails unexpectedly
+
+**Common Cause:** Pattern names are **case-sensitive** and must match exactly.
+
+**Correct Pattern Names:**
+- `Form.Basic` (not `form`, `form-basic`, or `FORM.BASIC`)
+- `Table.Simple` (not `table`, `table-simple`, or `TABLE.SIMPLE`)
+- `Form.MultiStep` (not `multi-step-form`)
+
+**Check Available Patterns:**
+```bash
+luma patterns
+```
+
+**Fix:** Use exact pattern name from `luma patterns` output.
+
+---
+
 ## Issue Tracking with bd (beads)
 
 **IMPORTANT**: This project uses **bd (beads)** for ALL issue tracking. Do NOT use markdown TODOs, task lists, or other tracking methods.
