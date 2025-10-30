@@ -550,3 +550,588 @@ describe('Progressive.Disclosure pattern - MUST failures', () => {
     });
   });
 });
+
+describe('Progressive.Disclosure pattern - SHOULD warnings', () => {
+  describe('PD-SHOULD-1: disclosure-control-far', () => {
+    it('should warn when control is more than 1 sibling away from collapsible', () => {
+      const root: Node = {
+        id: 'root',
+        type: 'Stack',
+        direction: 'vertical',
+        gap: 16,
+        children: [
+          {
+            id: 'toggle-advanced',
+            type: 'Button',
+            text: 'Show Advanced',
+          },
+          {
+            id: 'separator-text',
+            type: 'Text',
+            text: '---',
+          },
+          {
+            id: 'another-text',
+            type: 'Text',
+            text: 'Some text',
+          },
+          {
+            id: 'advanced-section',
+            type: 'Box',
+            behaviors: {
+              disclosure: {
+                collapsible: true,
+                controlsId: 'toggle-advanced',
+              },
+            },
+            child: {
+              id: 'content',
+              type: 'Field',
+              label: 'Advanced Setting',
+            },
+          },
+        ],
+      };
+
+      const result = validatePattern(ProgressiveDisclosure, root);
+
+      expect(result.shouldFailed).toBeGreaterThan(0);
+      expect(result.issues).toContainEqual(
+        expect.objectContaining({
+          id: 'disclosure-control-far',
+          severity: 'warn',
+          nodeId: 'advanced-section',
+        })
+      );
+
+      const issue = result.issues.find(i => i.id === 'disclosure-control-far');
+      expect(issue?.suggestion).toBeTruthy();
+      expect(issue?.details?.controlId).toBe('toggle-advanced');
+    });
+
+    it('should not warn when control is adjacent to collapsible', () => {
+      const root: Node = {
+        id: 'root',
+        type: 'Stack',
+        direction: 'vertical',
+        gap: 16,
+        children: [
+          {
+            id: 'toggle-advanced',
+            type: 'Button',
+            text: 'Show Advanced',
+          },
+          {
+            id: 'advanced-section',
+            type: 'Box',
+            behaviors: {
+              disclosure: {
+                collapsible: true,
+                controlsId: 'toggle-advanced',
+              },
+            },
+            child: {
+              id: 'content',
+              type: 'Field',
+              label: 'Advanced Setting',
+            },
+          },
+        ],
+      };
+
+      const result = validatePattern(ProgressiveDisclosure, root);
+
+      const issue = result.issues.find(i => i.id === 'disclosure-control-far');
+      expect(issue).toBeUndefined();
+    });
+
+    it('should not warn when control is directly after collapsible', () => {
+      const root: Node = {
+        id: 'root',
+        type: 'Stack',
+        direction: 'vertical',
+        gap: 16,
+        children: [
+          {
+            id: 'advanced-section',
+            type: 'Box',
+            behaviors: {
+              disclosure: {
+                collapsible: true,
+                controlsId: 'toggle-advanced',
+              },
+            },
+            child: {
+              id: 'content',
+              type: 'Field',
+              label: 'Advanced Setting',
+            },
+          },
+          {
+            id: 'toggle-advanced',
+            type: 'Button',
+            text: 'Hide Advanced',
+          },
+        ],
+      };
+
+      const result = validatePattern(ProgressiveDisclosure, root);
+
+      const issue = result.issues.find(i => i.id === 'disclosure-control-far');
+      expect(issue).toBeUndefined();
+    });
+  });
+
+  describe('PD-SHOULD-2: disclosure-inconsistent-affordance', () => {
+    it('should warn when two collapsibles have no common affordances', () => {
+      const root: Node = {
+        id: 'root',
+        type: 'Stack',
+        direction: 'vertical',
+        gap: 16,
+        children: [
+          {
+            id: 'toggle-1',
+            type: 'Button',
+            text: 'Show Section 1',
+          },
+          {
+            id: 'section-1',
+            type: 'Box',
+            behaviors: {
+              disclosure: {
+                collapsible: true,
+                controlsId: 'toggle-1',
+              },
+            },
+            affordances: ['chevron'],
+            child: {
+              id: 'content-1',
+              type: 'Text',
+              text: 'Section 1 content',
+            },
+          },
+          {
+            id: 'toggle-2',
+            type: 'Button',
+            text: 'Show Section 2',
+          },
+          {
+            id: 'section-2',
+            type: 'Box',
+            behaviors: {
+              disclosure: {
+                collapsible: true,
+                controlsId: 'toggle-2',
+              },
+            },
+            affordances: ['details'],
+            child: {
+              id: 'content-2',
+              type: 'Text',
+              text: 'Section 2 content',
+            },
+          },
+        ],
+      };
+
+      const result = validatePattern(ProgressiveDisclosure, root);
+
+      expect(result.shouldFailed).toBeGreaterThan(0);
+      expect(result.issues).toContainEqual(
+        expect.objectContaining({
+          id: 'disclosure-inconsistent-affordance',
+          severity: 'warn',
+        })
+      );
+
+      const issue = result.issues.find(i => i.id === 'disclosure-inconsistent-affordance');
+      expect(issue?.suggestion).toBeTruthy();
+      expect(issue?.details?.collapsibleIds).toContain('section-1');
+      expect(issue?.details?.collapsibleIds).toContain('section-2');
+    });
+
+    it('should not warn when collapsibles share common affordances', () => {
+      const root: Node = {
+        id: 'root',
+        type: 'Stack',
+        direction: 'vertical',
+        gap: 16,
+        children: [
+          {
+            id: 'toggle-1',
+            type: 'Button',
+            text: 'Show Section 1',
+          },
+          {
+            id: 'section-1',
+            type: 'Box',
+            behaviors: {
+              disclosure: {
+                collapsible: true,
+                controlsId: 'toggle-1',
+              },
+            },
+            affordances: ['chevron', 'expandable'],
+            child: {
+              id: 'content-1',
+              type: 'Text',
+              text: 'Section 1 content',
+            },
+          },
+          {
+            id: 'toggle-2',
+            type: 'Button',
+            text: 'Show Section 2',
+          },
+          {
+            id: 'section-2',
+            type: 'Box',
+            behaviors: {
+              disclosure: {
+                collapsible: true,
+                controlsId: 'toggle-2',
+              },
+            },
+            affordances: ['chevron'],
+            child: {
+              id: 'content-2',
+              type: 'Text',
+              text: 'Section 2 content',
+            },
+          },
+        ],
+      };
+
+      const result = validatePattern(ProgressiveDisclosure, root);
+
+      const issue = result.issues.find(i => i.id === 'disclosure-inconsistent-affordance');
+      expect(issue).toBeUndefined();
+    });
+
+    it('should not warn with only one collapsible', () => {
+      const root: Node = {
+        id: 'root',
+        type: 'Stack',
+        direction: 'vertical',
+        gap: 16,
+        children: [
+          {
+            id: 'toggle',
+            type: 'Button',
+            text: 'Show Section',
+          },
+          {
+            id: 'section',
+            type: 'Box',
+            behaviors: {
+              disclosure: {
+                collapsible: true,
+                controlsId: 'toggle',
+              },
+            },
+            affordances: ['chevron'],
+            child: {
+              id: 'content',
+              type: 'Text',
+              text: 'Section content',
+            },
+          },
+        ],
+      };
+
+      const result = validatePattern(ProgressiveDisclosure, root);
+
+      const issue = result.issues.find(i => i.id === 'disclosure-inconsistent-affordance');
+      expect(issue).toBeUndefined();
+    });
+  });
+
+  describe('PD-SHOULD-3: disclosure-early-section', () => {
+    it('should warn when collapsible appears before first required field', () => {
+      const root: Node = {
+        id: 'root',
+        type: 'Stack',
+        direction: 'vertical',
+        gap: 16,
+        children: [
+          {
+            id: 'toggle-advanced',
+            type: 'Button',
+            text: 'Show Advanced',
+          },
+          {
+            id: 'advanced-section',
+            type: 'Box',
+            behaviors: {
+              disclosure: {
+                collapsible: true,
+                controlsId: 'toggle-advanced',
+              },
+            },
+            child: {
+              id: 'optional-field',
+              type: 'Field',
+              label: 'Optional Setting',
+            },
+          },
+          {
+            id: 'required-name',
+            type: 'Field',
+            label: 'Name',
+            required: true,
+          },
+          {
+            id: 'required-email',
+            type: 'Field',
+            label: 'Email',
+            inputType: 'email',
+            required: true,
+          },
+        ],
+      };
+
+      const result = validatePattern(ProgressiveDisclosure, root);
+
+      expect(result.shouldFailed).toBeGreaterThan(0);
+      expect(result.issues).toContainEqual(
+        expect.objectContaining({
+          id: 'disclosure-early-section',
+          severity: 'warn',
+          nodeId: 'advanced-section',
+        })
+      );
+
+      const issue = result.issues.find(i => i.id === 'disclosure-early-section');
+      expect(issue?.suggestion).toBeTruthy();
+      expect(issue?.details?.firstRequiredFieldId).toBe('required-name');
+    });
+
+    it('should not warn when collapsible appears after all required fields', () => {
+      const root: Node = {
+        id: 'root',
+        type: 'Stack',
+        direction: 'vertical',
+        gap: 16,
+        children: [
+          {
+            id: 'required-name',
+            type: 'Field',
+            label: 'Name',
+            required: true,
+          },
+          {
+            id: 'required-email',
+            type: 'Field',
+            label: 'Email',
+            inputType: 'email',
+            required: true,
+          },
+          {
+            id: 'toggle-advanced',
+            type: 'Button',
+            text: 'Show Advanced',
+          },
+          {
+            id: 'advanced-section',
+            type: 'Box',
+            behaviors: {
+              disclosure: {
+                collapsible: true,
+                controlsId: 'toggle-advanced',
+              },
+            },
+            child: {
+              id: 'optional-field',
+              type: 'Field',
+              label: 'Optional Setting',
+            },
+          },
+        ],
+      };
+
+      const result = validatePattern(ProgressiveDisclosure, root);
+
+      const issue = result.issues.find(i => i.id === 'disclosure-early-section');
+      expect(issue).toBeUndefined();
+    });
+
+    it('should not warn when there are no required fields', () => {
+      const root: Node = {
+        id: 'root',
+        type: 'Stack',
+        direction: 'vertical',
+        gap: 16,
+        children: [
+          {
+            id: 'toggle-advanced',
+            type: 'Button',
+            text: 'Show Advanced',
+          },
+          {
+            id: 'advanced-section',
+            type: 'Box',
+            behaviors: {
+              disclosure: {
+                collapsible: true,
+                controlsId: 'toggle-advanced',
+              },
+            },
+            child: {
+              id: 'optional-field',
+              type: 'Field',
+              label: 'Optional Setting',
+            },
+          },
+          {
+            id: 'another-optional',
+            type: 'Field',
+            label: 'Another Optional',
+          },
+        ],
+      };
+
+      const result = validatePattern(ProgressiveDisclosure, root);
+
+      const issue = result.issues.find(i => i.id === 'disclosure-early-section');
+      expect(issue).toBeUndefined();
+    });
+  });
+
+  describe('Comprehensive SHOULD validation', () => {
+    it('should pass all SHOULD rules for well-structured disclosure', () => {
+      const root: Node = {
+        id: 'root',
+        type: 'Stack',
+        direction: 'vertical',
+        gap: 16,
+        children: [
+          {
+            id: 'required-name',
+            type: 'Field',
+            label: 'Name',
+            required: true,
+          },
+          {
+            id: 'required-email',
+            type: 'Field',
+            label: 'Email',
+            inputType: 'email',
+            required: true,
+          },
+          {
+            id: 'toggle-advanced',
+            type: 'Button',
+            text: 'Show Advanced Settings',
+          },
+          {
+            id: 'advanced-section',
+            type: 'Box',
+            behaviors: {
+              disclosure: {
+                collapsible: true,
+                controlsId: 'toggle-advanced',
+              },
+            },
+            affordances: ['chevron'],
+            child: {
+              id: 'optional-field',
+              type: 'Field',
+              label: 'Advanced Option',
+            },
+          },
+        ],
+      };
+
+      const result = validatePattern(ProgressiveDisclosure, root);
+
+      expect(result.shouldFailed).toBe(0);
+    });
+
+    it('should count multiple SHOULD warnings correctly', () => {
+      const root: Node = {
+        id: 'root',
+        type: 'Stack',
+        direction: 'vertical',
+        gap: 16,
+        children: [
+          {
+            id: 'toggle-1',
+            type: 'Button',
+            text: 'Show Section 1',
+          },
+          {
+            id: 'spacer-1',
+            type: 'Text',
+            text: '---',
+          },
+          {
+            id: 'spacer-2',
+            type: 'Text',
+            text: '---',
+          },
+          {
+            id: 'section-1',
+            type: 'Box',
+            behaviors: {
+              disclosure: {
+                collapsible: true,
+                controlsId: 'toggle-1',
+              },
+            },
+            affordances: ['chevron'],
+            child: {
+              id: 'optional-1',
+              type: 'Field',
+              label: 'Optional 1',
+            },
+          },
+          {
+            id: 'toggle-2',
+            type: 'Button',
+            text: 'Show Section 2',
+          },
+          {
+            id: 'section-2',
+            type: 'Box',
+            behaviors: {
+              disclosure: {
+                collapsible: true,
+                controlsId: 'toggle-2',
+              },
+            },
+            affordances: ['details'],
+            child: {
+              id: 'optional-2',
+              type: 'Field',
+              label: 'Optional 2',
+            },
+          },
+          {
+            id: 'required-field',
+            type: 'Field',
+            label: 'Required Field',
+            required: true,
+          },
+        ],
+      };
+
+      const result = validatePattern(ProgressiveDisclosure, root);
+
+      // Should have warnings for:
+      // - disclosure-control-far (section-1 is 3 siblings away from toggle-1)
+      // - disclosure-inconsistent-affordance (chevron vs details)
+      // - disclosure-early-section (both sections before required field)
+      expect(result.shouldFailed).toBeGreaterThan(0);
+
+      const controlFarIssues = result.issues.filter(i => i.id === 'disclosure-control-far');
+      expect(controlFarIssues.length).toBeGreaterThan(0);
+
+      const inconsistentAffordanceIssues = result.issues.filter(i => i.id === 'disclosure-inconsistent-affordance');
+      expect(inconsistentAffordanceIssues.length).toBeGreaterThan(0);
+
+      const earlySectionIssues = result.issues.filter(i => i.id === 'disclosure-early-section');
+      expect(earlySectionIssues.length).toBeGreaterThan(0);
+    });
+  });
+});
