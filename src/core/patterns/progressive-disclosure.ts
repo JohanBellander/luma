@@ -20,6 +20,7 @@ import type { Node } from '../../types/node.js';
 import type { Issue } from '../../types/issue.js';
 import { traversePreOrder } from '../keyboard/traversal.js';
 import { findControl, hasPrimaryHidden, hasLabel } from './disclosure-utils.js';
+import { getSuggestion } from './suggestions.js';
 
 /**
  * Helper to get parent-child relationships for proximity checks.
@@ -92,10 +93,7 @@ const disclosureNoControl: PatternRule = {
               name: 'Nielsen Norman Group — Progressive Disclosure',
               url: 'https://www.nngroup.com/articles/progressive-disclosure/',
             },
-            suggestion: `Add a control Button near the section and reference it:
-"behaviors": { "disclosure": { "collapsible": true, "controlsId": "toggle-${node.id}", "defaultState": "collapsed" } }
-...and define the control:
-{ "id": "toggle-${node.id}", "type": "Button", "text": "Show details" }`,
+            suggestion: getSuggestion('disclosure-no-control', node.id),
             details: {
               expected: 'controlsId referencing a Button or nearby Button with disclosure keywords',
               found: disclosure.controlsId || null,
@@ -134,8 +132,7 @@ const disclosureHidesPrimary: PatternRule = {
               name: 'GOV.UK Design System — Details',
               url: 'https://design-system.service.gov.uk/components/details/',
             },
-            suggestion: `Move the primary action outside the collapsible section OR set:
-"behaviors": { "disclosure": { "defaultState": "expanded" } }`,
+            suggestion: getSuggestion('disclosure-hides-primary'),
             details: {
               expected: 'Primary action outside collapsed section or defaultState expanded',
               found: `defaultState: ${disclosure.defaultState || 'collapsed'}, primary inside section`,
@@ -178,8 +175,7 @@ const disclosureMissingLabel: PatternRule = {
               name: 'USWDS — Accordion',
               url: 'https://designsystem.digital.gov/components/accordion/',
             },
-            suggestion: `Add a sibling Text label before the section:
-{ "type":"Text", "id":"${node.id}-label", "text":"Section title" }`,
+            suggestion: getSuggestion('disclosure-missing-label', node.id),
             details: {
               expected: 'Sibling Text label, child Text summary, or control button with meaningful text',
               found: null,
@@ -231,7 +227,7 @@ const disclosureControlFar: PatternRule = {
                   name: 'Nielsen Norman Group — Progressive Disclosure',
                   url: 'https://www.nngroup.com/articles/progressive-disclosure/',
                 },
-                suggestion: `Place the control as a preceding sibling or within a header row next to the section.`,
+                suggestion: getSuggestion('disclosure-control-far'),
                 details: {
                   expected: 'Control adjacent to collapsible (distance <= 1)',
                   found: `Control at distance ${distance} from collapsible`,
@@ -322,7 +318,7 @@ const disclosureInconsistentAffordance: PatternRule = {
             name: 'GOV.UK Design System — Details',
             url: 'https://design-system.service.gov.uk/components/details/',
           },
-          suggestion: `Align affordances across collapsible sections, e.g. "affordances":["chevron"].`,
+          suggestion: getSuggestion('disclosure-inconsistent-affordance'),
           details: {
             expected: 'Common affordance token across all collapsibles',
             found: `No intersection: ${affordanceStrings.join('; ')}`,
@@ -388,7 +384,7 @@ const disclosureEarlySection: PatternRule = {
             name: 'USWDS — Accordion',
             url: 'https://designsystem.digital.gov/components/accordion/',
           },
-          suggestion: `Move collapsible sections after required fields and before the action row.`,
+          suggestion: getSuggestion('disclosure-early-section'),
           details: {
             expected: 'Collapsible after primary content (required fields)',
             found: `Collapsible "${collapsibleNode.id}" before required field "${firstRequiredField.id}"`,
