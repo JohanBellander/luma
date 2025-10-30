@@ -1,6 +1,8 @@
 # LUMA Pattern Specification — Progressive Disclosure (v1.1-PD)
 _This document is an **additive** specification to LUMA v1.1. It introduces a new optional UX pattern validator without changing existing behavior._
 
+**See also:** [SPECIFICATION.md §7.3](./SPECIFICATION.md#73-progressive-disclosure-optional-additive-v11) for usage summary and examples.
+
 - Pattern name (CLI): `progressive-disclosure`
 - Pattern id (internal): `Progressive.Disclosure`
 - Scope: Structural validation only (no DOM; no styling; no runtime behavior)

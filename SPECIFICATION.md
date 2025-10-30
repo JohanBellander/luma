@@ -178,8 +178,117 @@ SHOULD: helpful `helpText` for ambiguous labels
 MUST: title exists, valid responsive strategy, no horizontal overflow at smallest viewport (fit or scroll/cards)
 SHOULD: controls adjacent to table container
 
-### 7.3 Invocation Rules (Clarification)
-- Pattern names are case-sensitive: `Form.Basic`, `Table.Simple`
+### 7.3 Progressive Disclosure (Optional, Additive v1.1)
+**Pattern ID:** `Progressive.Disclosure`  
+**Sources:** Nielsen Norman Group, GOV.UK Design System, USWDS
+
+Progressive Disclosure reduces cognitive overload by showing secondary/advanced content only when needed. This pattern is **opt-in** and activates when:
+1. Explicitly requested: `luma flow screen.json --patterns progressive-disclosure`
+2. Any node contains `behaviors.disclosure.collapsible === true`
+
+**MUST Rules:**
+- **PD-MUST-1 (disclosure-no-control):** Collapsible container has an associated control (via `controlsId` or proximity inference)
+- **PD-MUST-2 (disclosure-hides-primary):** Primary actions are not hidden by default (i.e., primary buttons must be visible or the section must default to expanded)
+- **PD-MUST-3 (disclosure-missing-label):** Collapsible section has a label/summary (via sibling Text, child summary, or meaningful control text ≥ 2 chars)
+
+**SHOULD Rules:**
+- **PD-SHOULD-1 (disclosure-control-far):** Control is adjacent to collapsible section
+- **PD-SHOULD-2 (disclosure-inconsistent-affordance):** Multiple collapsibles at same level use consistent affordance tokens
+- **PD-SHOULD-3 (disclosure-early-section):** Collapsible sections follow primary content (not before required fields)
+
+**Full specification:** See [LUMA-PATTERN-Progressive-Disclosure-SPEC.md](./LUMA-PATTERN-Progressive-Disclosure-SPEC.md)
+
+**Example - Valid Progressive Disclosure:**
+```json
+{
+  "id": "settings-form",
+  "type": "Stack",
+  "direction": "vertical",
+  "gap": 16,
+  "children": [
+    {
+      "id": "email-field",
+      "type": "Field",
+      "label": "Email",
+      "required": true
+    },
+    {
+      "id": "advanced-label",
+      "type": "Text",
+      "text": "Advanced Settings"
+    },
+    {
+      "id": "toggle-advanced",
+      "type": "Button",
+      "text": "Show Advanced Options"
+    },
+    {
+      "id": "advanced-section",
+      "type": "Box",
+      "behaviors": {
+        "disclosure": {
+          "collapsible": true,
+          "defaultState": "collapsed",
+          "controlsId": "toggle-advanced"
+        }
+      },
+      "child": {
+        "id": "api-key",
+        "type": "Field",
+        "label": "API Key"
+      }
+    },
+    {
+      "id": "submit-btn",
+      "type": "Button",
+      "text": "Save",
+      "roleHint": "primary"
+    }
+  ]
+}
+```
+
+**Example - Invalid (PD-MUST-2 violation):**
+```json
+{
+  "id": "broken-form",
+  "type": "Stack",
+  "direction": "vertical",
+  "gap": 16,
+  "children": [
+    {
+      "id": "toggle-btn",
+      "type": "Button",
+      "text": "Show Form"
+    },
+    {
+      "id": "form-section",
+      "type": "Stack",
+      "direction": "vertical",
+      "gap": 12,
+      "behaviors": {
+        "disclosure": {
+          "collapsible": true,
+          "defaultState": "collapsed",
+          "controlsId": "toggle-btn"
+        }
+      },
+      "children": [
+        {
+          "id": "submit-btn",
+          "type": "Button",
+          "text": "Submit",
+          "roleHint": "primary"
+        }
+      ]
+    }
+  ]
+}
+```
+_Issue: Primary button hidden inside collapsed section. Fix: Move primary button outside or set `defaultState: "expanded"`._
+
+### 7.4 Invocation Rules (Clarification)
+- Pattern names are case-sensitive: `Form.Basic`, `Table.Simple`, `Progressive.Disclosure`
 - Recommended: invoke patterns individually (`--patterns Form.Basic`) rather than ambiguous shorthand
 
 ---
