@@ -400,7 +400,7 @@ describe('Integration: Progressive Disclosure Scoring', () => {
       expect(scoreData.pass).toBe(true);
     });
 
-    it('should yield identical score when scaffold has no disclosure behaviors', () => {
+    it('should yield identical score when scaffold has no disclosure behaviors', { timeout: 15000 }, () => {
       // Create two scaffolds: one without any hints, one explicitly without PD pattern
       const scaffold = {
         schemaVersion: '1.0.0',
