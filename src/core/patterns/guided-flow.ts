@@ -7,6 +7,7 @@
  */
 import type { Pattern, PatternRule } from './types.js';
 import type { Node, ButtonNode } from '../../types/node.js';
+import type { Issue } from '../../types/issue.js';
 
 // Helper placeholder: collect all nodes (simple depth-first)
 function collectNodes(root: Node, acc: Node[] = []): Node[] {
@@ -220,36 +221,156 @@ function detectActions(stepNode: Node): { actionsRow?: Node; buttons: ButtonNode
   return { actionsRow: undefined, buttons: [] };
 }
 
-// Placeholder MUST rules (return empty issues until implemented)
+// ---- Suggestions map (partial; fill out as rules implemented) ----
+const SUGGESTIONS: Record<string, string> = {
+  'wizard-steps-missing': 'Define contiguous stepIndex values 1..N and ensure totalSteps matches. Example: {"behaviors":{"guidedFlow":{"role":"step","stepIndex":2,"totalSteps":4}}}',
+  'wizard-next-missing': 'Add a Next button: {"id":"next-<i>","type":"Button","text":"Next","roleHint":"primary"}',
+  'wizard-back-missing': 'Add a Back button before Next: {"id":"back-<i>","type":"Button","text":"Back"}',
+  'wizard-back-illegal': 'Remove Back from first step or move it to step 2.',
+  'wizard-finish-missing': 'Add Finish action: {"id":"finish","type":"Button","text":"Finish","roleHint":"primary"}',
+};
+
+function makeIssue(id: string, node: Node | undefined, message: string, details: any): Issue {
+  return {
+    id,
+    severity: 'error',
+    message,
+    nodeId: node?.id,
+    jsonPointer: node ? `/screen/root/.../${node.id}` : undefined,
+    source: { pattern: 'Guided.Flow', name: 'LUMA Spec – Guided Flow', url: 'https://spec.local/guided-flow' },
+    details,
+    suggestion: SUGGESTIONS[id],
+  } as Issue;
+}
+
+// Helper: classify button by text heuristics
+function classifyButton(btn: ButtonNode): 'back' | 'next' | 'finish' | 'other' {
+  const text = (btn.text || '').toLowerCase();
+  if (/^(back|previous)$/.test(text)) return 'back';
+  if (/^(next|continue)$/.test(text)) return 'next';
+  if (/^(finish|submit|done)$/.test(text)) return 'finish';
+  return 'other';
+}
+
+// MUST rule implementations (subset)
 const mustRules: PatternRule[] = [
   {
     id: 'wizard-steps-missing',
     level: 'must',
     description: 'Steps must form contiguous 1..N sequence',
-    check: (_root: Node) => [],
+    check: (root: Node) => {
+      const scopes = resolveGuidedFlowScopes(root);
+      const issues: Issue[] = [];
+      for (const scope of scopes) {
+        if (scope.steps.length === 0) continue; // nothing to validate
+        const expectedRange = Array.from({ length: scope.totalSteps }, (_, i) => i + 1);
+        const indices = scope.indices;
+        const contiguous = indices.length === expectedRange.length && expectedRange.every(v => indices.includes(v));
+        const unique = new Set(indices).size === indices.length;
+        if (!contiguous || !unique) {
+          issues.push(
+            makeIssue('wizard-steps-missing', scope.scopeNode || scope.steps[0].node, 'Step indices must be unique & contiguous 1..N', {
+              expectedRange,
+              foundIndices: indices,
+              totalSteps: scope.totalSteps,
+              scopeNodeId: scope.scopeNode?.id,
+            })
+          );
+        }
+      }
+      return issues;
+    },
   },
   {
     id: 'wizard-next-missing',
     level: 'must',
     description: 'Each step must have required next action (or finish on last step)',
-    check: (_root: Node) => [],
+    check: (root: Node) => {
+      const scopes = resolveGuidedFlowScopes(root);
+      const issues: Issue[] = [];
+      for (const scope of scopes) {
+        for (const step of scope.steps) {
+          const isLast = step.index === scope.totalSteps && scope.totalSteps > 0;
+          // Determine actions present
+          const classifications = step.buttons.map(classifyButton);
+          const hasNext = classifications.includes('next');
+          const hasFinish = classifications.includes('finish');
+          if (!isLast && !hasNext) {
+            issues.push(
+              makeIssue('wizard-next-missing', step.node, `Step ${step.index} missing Next action`, {
+                stepIndex: step.index,
+                totalSteps: scope.totalSteps,
+                actionsRowNodeId: step.actionsRow?.id,
+              })
+            );
+          }
+          if (isLast && !hasFinish) {
+            issues.push(
+              makeIssue('wizard-finish-missing', step.node, `Last step ${step.index} missing Finish action`, {
+                stepIndex: step.index,
+                totalSteps: scope.totalSteps,
+                actionsRowNodeId: step.actionsRow?.id,
+              })
+            );
+          }
+        }
+      }
+      return issues;
+    },
   },
   {
     id: 'wizard-back-illegal',
     level: 'must',
     description: 'Back action must not appear on first step',
-    check: (_root: Node) => [],
+    check: (root: Node) => {
+      const scopes = resolveGuidedFlowScopes(root);
+      const issues: Issue[] = [];
+      for (const scope of scopes) {
+        const first = scope.steps.find(s => s.index === 1);
+        if (!first) continue;
+        const hasBack = first.buttons.some(b => classifyButton(b) === 'back');
+        if (hasBack) {
+          issues.push(
+            makeIssue('wizard-back-illegal', first.node, 'Back button not allowed on first step', {
+              stepIndex: first.index,
+              actionsRowNodeId: first.actionsRow?.id,
+            })
+          );
+        }
+      }
+      return issues;
+    },
   },
   {
     id: 'wizard-back-missing',
     level: 'must',
     description: 'Intermediate steps must include back action',
-    check: (_root: Node) => [],
+    check: (root: Node) => {
+      const scopes = resolveGuidedFlowScopes(root);
+      const issues: Issue[] = [];
+      for (const scope of scopes) {
+        for (const step of scope.steps) {
+          if (step.index <= 1 || step.index >= scope.totalSteps) continue; // only intermediate
+          const hasBack = step.buttons.some(b => classifyButton(b) === 'back');
+          if (!hasBack) {
+            issues.push(
+              makeIssue('wizard-back-missing', step.node, `Step ${step.index} missing Back action`, {
+                stepIndex: step.index,
+                totalSteps: scope.totalSteps,
+                actionsRowNodeId: step.actionsRow?.id,
+              })
+            );
+          }
+        }
+      }
+      return issues;
+    },
   },
   {
     id: 'wizard-finish-missing',
     level: 'must',
     description: 'Last step must provide a finish/submit action',
+    // Implemented inside wizard-next-missing rule block to avoid duplicate scanning; kept for compatibility
     check: (_root: Node) => [],
   },
   {
@@ -298,8 +419,8 @@ export const GuidedFlow: Pattern = {
   name: 'Guided.Flow',
   source: {
     pattern: 'Guided.Flow',
-    name: 'LUMA Spec  Guided Flow (v1.1-GF)',
-    url: 'https://spec.local/guided-flow', // placeholder URL
+    name: 'LUMA Spec – Guided Flow (v1.1-GF)',
+    url: 'https://www.nngroup.com/articles/wizard-design/', // canonical reference
   },
   must: mustRules,
   should: shouldRules,

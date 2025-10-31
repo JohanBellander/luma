@@ -460,17 +460,17 @@ describe('Integration: LUMA v1.1 Phase 1', () => {
       
       // Step 3 & 4: Agent validates and analyzes - run sequentially within threshold
       // PowerShell 5.1 doesn't support && so we use ; with $ErrorActionPreference
+      const agentRunFolder = join(process.cwd(), '.ui', 'runs', 'phase1-agent-workflow');
       execSync(
         `$ErrorActionPreference='Stop'; ` +
-        `node dist/index.js ingest ${scaffoldPath} --json; ` +
-        `node dist/index.js layout ${scaffoldPath} --viewports 768x1024; ` +
-        `node dist/index.js keyboard ${scaffoldPath}; ` +
-        `node dist/index.js flow ${scaffoldPath} --patterns table`,
+        `node dist/index.js ingest ${scaffoldPath} --json --run-folder ${agentRunFolder}; ` +
+        `node dist/index.js layout ${scaffoldPath} --viewports 768x1024 --run-folder ${agentRunFolder}; ` +
+        `node dist/index.js keyboard ${scaffoldPath} --run-folder ${agentRunFolder}; ` +
+        `node dist/index.js flow ${scaffoldPath} --patterns table --run-folder ${agentRunFolder}`,
         { ...execOptions, shell: 'powershell.exe' }
       );
-      
-      // Get the run folder - all artifacts should be here
-      const runFolder = getMostRecentRunFolder();
+
+      const runFolder = agentRunFolder;
       expect(runFolder).toBeDefined();
       
       const filesInRunFolder = existsSync(runFolder) ? readdirSync(runFolder) : [];
@@ -485,8 +485,8 @@ describe('Integration: LUMA v1.1 Phase 1', () => {
       // Re-run keyboard explicitly to guarantee artifact presence before scoring.
       execSync(
         `$ErrorActionPreference='Stop'; ` +
-        `node dist/index.js keyboard ${scaffoldPath}; ` +
-        `node dist/index.js score ${runFolder}`,
+        `node dist/index.js keyboard ${scaffoldPath} --run-folder ${agentRunFolder}; ` +
+        `node dist/index.js score ${agentRunFolder}`,
         { encoding: 'utf-8', shell: 'powershell.exe', env: { ...process.env, LUMA_RUN_FOLDER_REUSE_MS: '60000' } }
       );
 
