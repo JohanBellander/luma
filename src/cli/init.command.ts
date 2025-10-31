@@ -798,7 +798,36 @@ Does your scaffold have Add/New/Create/Edit buttons?
 
 ### 3. Validate with LUMA
 
-Run the full LUMA pipeline:
+#### STEP 1: Identify Patterns (MANDATORY)
+
+Before running validation, identify which patterns to test using the \`--patterns\` flag in the flow command.
+
+**Examples:**
+- Form with fields and actions → Test \`form\` pattern
+- Table with columns → Test \`table\` pattern
+- Show/hide or toggle buttons → Add \`behaviors.disclosure\` hint to scaffold
+
+**Quick Pattern Detection:**
+\`\`\`bash
+# If your scaffold has a Form node
+luma flow ui/screens/<screen>.mock.json --patterns form
+
+# If your scaffold has a Table node
+luma flow ui/screens/<screen>.mock.json --patterns table
+
+# If you have both
+luma flow ui/screens/<screen>.mock.json --patterns form,table
+\`\`\`
+
+**Auto-Activation Note:** If you add a \`behaviors.disclosure\` hint to any node in your scaffold, LUMA automatically activates \`Progressive.Disclosure\` pattern validation. You don't need to manually specify it in \`--patterns\`.
+
+⚠️ **Warning**: Skipping pattern identification means LUMA only validates structure, NOT user experience patterns. You will miss critical UX violations.
+
+---
+
+#### STEP 2: Run Full Pipeline
+
+Run all LUMA commands in sequence:
 
 **IMPORTANT**: Chain commands so they write to the same run folder.
 
@@ -818,14 +847,9 @@ luma keyboard ui/screens/<screen>.mock.json && \\
 luma flow ui/screens/<screen>.mock.json --patterns form,table
 \`\`\`
 
-Then score the run:
-\`\`\`bash
-luma score .ui/runs/<run-id>
-\`\`\`
-
-**Why This Matters:**
+**Why Chaining Matters:**
 - Each command creates a new run folder with a timestamp
-- Scoring requires all artifacts (ingest.json, layout.json, keyboard.json, etc.) in the same folder
+- Scoring requires all artifacts (ingest.json, layout.json, keyboard.json, flow.json) in the same folder
 - Chaining ensures sequential execution in the same run
 
 **Common Error:**
@@ -833,6 +857,21 @@ luma score .ui/runs/<run-id>
 Error: .ui/runs/20251029-070139-805/keyboard.json not found
 \`\`\`
 This means you ran commands separately. Re-run as a chained command.
+
+---
+
+#### STEP 3: Score the Run
+
+After running the full pipeline, score the results:
+
+\`\`\`bash
+luma score .ui/runs/<run-id>
+\`\`\`
+
+**Pass Criteria:**
+- No MUST pattern failures
+- No critical flow errors
+- Overall score ≥ **85/100**
 
 If **any** MUST rule fails or **overall score < 85**:
 
