@@ -554,6 +554,12 @@ All node types inherit these optional properties:
 - \`minSize\` (object): \`{w?: number, h?: number}\` - Minimum dimensions
 - \`maxSize\` (object): \`{w?: number, h?: number}\` - Maximum dimensions
 - \`at\` (object): Responsive overrides (e.g., \`{">=768": {...}}\`)
+- \`behaviors\` (object): Interactive behavior hints
+  - \`disclosure\` (object): Progressive disclosure settings
+    - \`collapsible\` (boolean): Whether content can be collapsed/expanded
+    - \`defaultState\` (string): Initial state (\`"open"\` or \`"closed"\`)
+    - \`controlsId\` (string): ID of the node being shown/hidden
+- \`affordances\` (array): Array of strings indicating interaction hints (e.g., \`["expandable"]\`, \`["collapsible"]\`)
 
 ### Validation Tips
 
