@@ -25,6 +25,21 @@ function hasDisclosureHints(root: Node): boolean {
   return false;
 }
 
+/**
+ * Detect guided flow hints (wizard or step roles) for auto-activation.
+ * Per Guided Flow spec Section 2: activate if any node has behaviors.guidedFlow.role
+ */
+function hasGuidedFlowHints(root: Node): boolean {
+  const nodes = traversePreOrder(root, false);
+  for (const node of nodes) {
+    const gf = node.behaviors?.guidedFlow;
+    if (gf && (gf.role === 'wizard' || gf.role === 'step')) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function createFlowCommand(): Command {
   const command = new Command('flow');
 
@@ -60,11 +75,21 @@ export function createFlowCommand(): Command {
         const scaffold = result.normalized as Scaffold;
         
         // Auto-inject Progressive.Disclosure pattern if disclosure hints are present
-        // Per spec Section 2: Auto-activate when any node has behaviors.disclosure.collapsible === true
+        // Per PD spec Section 2: Auto-activate when any node has behaviors.disclosure.collapsible === true
         const hasDisclosure = hasDisclosureHints(scaffold.screen.root);
         const hasProgressiveDisclosurePattern = patterns.some(
           p => p.name === 'Progressive.Disclosure'
         );
+        // Auto-inject Guided.Flow pattern if guided flow hints present
+        // Per Guided Flow spec Section 2: activate when any node has behaviors.guidedFlow.role
+        const hasGuidedFlow = hasGuidedFlowHints(scaffold.screen.root);
+        const hasGuidedFlowPattern = patterns.some(p => p.name === 'Guided.Flow');
+        if (hasGuidedFlow && !hasGuidedFlowPattern) {
+          const gfPattern = getPattern('Guided.Flow');
+          if (gfPattern) {
+            patterns.push(gfPattern);
+          }
+        }
         
         if (hasDisclosure && !hasProgressiveDisclosurePattern) {
           const pdPattern = getPattern('Progressive.Disclosure');
