@@ -44,7 +44,7 @@ export interface GuidedFlowStep {
 }
 
 export interface GuidedFlowScopeResolution {
-  scopeNode?: Node; // wizard container if present
+  scopeNode?: Node; // wizard container if present; undefined means global scope
   steps: GuidedFlowStep[]; // resolved ordered steps
   indices: number[]; // raw indices found
   totalSteps: number; // resolved total steps (from container or max index)
@@ -70,6 +70,8 @@ export function resolveGuidedFlowScope(root: Node): GuidedFlowScopeResolution {
   // Build GuidedFlowStep objects
   const steps: GuidedFlowStep[] = [];
   for (const stepNode of scopedSteps) {
+    // Skip invisible steps; validation logic will treat missing indices differently from hidden nodes
+    if (stepNode.visible === false) continue;
     const gf = stepNode.behaviors!.guidedFlow!; // role:'step'
     if (!gf.stepIndex || gf.stepIndex < 1) continue; // skip invalid indices; validator will flag later
     const total = gf.totalSteps || 0; // may be 0; we derive below
@@ -96,6 +98,55 @@ export function resolveGuidedFlowScope(root: Node): GuidedFlowScopeResolution {
     indices: steps.map(s => s.index),
     totalSteps,
   };
+}
+
+/**
+ * Resolve ALL guided flow scopes (multi-wizard support).
+ * Returns an array of scope resolutions. If no wizard container exists,
+ * returns a single global scope. If multiple wizard containers exist, a
+ * separate scope is returned for each; any standalone step nodes not
+ * belonging to a container form an additional global scope.
+ */
+export function resolveGuidedFlowScopes(root: Node): GuidedFlowScopeResolution[] {
+  const all = collectNodes(root);
+  const wizardContainers = all.filter(n => n.behaviors?.guidedFlow?.role === 'wizard');
+  const stepCandidates = all.filter(n => n.behaviors?.guidedFlow?.role === 'step');
+
+  // Map steps to the first ancestor wizard container (if any)
+  const scopes: GuidedFlowScopeResolution[] = [];
+  const containerStepsMap = new Map<Node, Node[]>();
+  for (const container of wizardContainers) {
+    containerStepsMap.set(container, []);
+  }
+  const globalSteps: Node[] = [];
+  for (const step of stepCandidates) {
+    // Identify containing wizard (first for which isDescendant returns true)
+    const container = wizardContainers.find(c => isDescendant(c, step));
+    if (container) {
+      containerStepsMap.get(container)!.push(step);
+    } else {
+      globalSteps.push(step);
+    }
+  }
+
+  // Build scope resolutions
+  for (const [container] of containerStepsMap.entries()) {
+    scopes.push(resolveGuidedFlowScope(container));
+  }
+  if (wizardContainers.length === 0 || globalSteps.length > 0) {
+    // Construct a synthetic root with just the global steps to reuse logic
+    const syntheticRoot: Node = {
+      id: '__guided_flow_global_scope',
+      type: 'Stack',
+      direction: 'vertical',
+      children: globalSteps,
+    } as Node;
+    const globalResolution = resolveGuidedFlowScope(syntheticRoot);
+    // Indicate no container
+    globalResolution.scopeNode = undefined;
+    scopes.push(globalResolution);
+  }
+  return scopes;
 }
 
 /** Determine if descendant relationship (including self) */
@@ -258,5 +309,6 @@ export const GuidedFlow: Pattern = {
 export const _guidedFlowInternals = {
   hasGuidedFlowHints,
   resolveGuidedFlowScope,
+  resolveGuidedFlowScopes,
   detectActions,
 };
