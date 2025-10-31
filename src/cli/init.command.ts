@@ -580,6 +580,130 @@ Check \`.ui/runs/<run-id>/ingest.json\` for detailed error messages with \`jsonP
 
 ---
 
+## Progressive Disclosure Pattern (v1.1)
+
+Progressive Disclosure reduces cognitive overload by showing secondary/advanced content only when needed. This pattern is automatically detected when you use \`behaviors.disclosure\` hints in your scaffold.
+
+### When to Use Progressive Disclosure
+
+Use this pattern when:
+- You have advanced/optional settings that would overwhelm novice users
+- Secondary information can be hidden until explicitly requested
+- Users have different expertise levels (show basics first, allow experts to expand)
+
+**Examples:**
+- "Advanced search options" in a search form
+- "More details" section in a data table
+- "Show/Hide filters" in a dashboard
+
+### Approach A: Schema Hints with \`behaviors.disclosure\` (Recommended)
+
+Add \`behaviors.disclosure\` to any collapsible container. The pattern validator **automatically activates** when it detects these hints.
+
+**Example:**
+\`\`\`json
+{
+  "id": "root-stack",
+  "type": "Stack",
+  "direction": "vertical",
+  "gap": 16,
+  "children": [
+    {
+      "id": "basic-fields",
+      "type": "Stack",
+      "direction": "vertical",
+      "gap": 12,
+      "children": [
+        {"id": "name-field", "type": "Field", "label": "Name"},
+        {"id": "email-field", "type": "Field", "label": "Email"}
+      ]
+    },
+    {
+      "id": "toggle-advanced",
+      "type": "Button",
+      "text": "Show Advanced Options",
+      "roleHint": "secondary"
+    },
+    {
+      "id": "advanced-section",
+      "type": "Stack",
+      "direction": "vertical",
+      "gap": 12,
+      "behaviors": {
+        "disclosure": {
+          "collapsible": true,
+          "defaultState": "collapsed",
+          "controlsId": "toggle-advanced"
+        }
+      },
+      "children": [
+        {"id": "phone-field", "type": "Field", "label": "Phone"},
+        {"id": "company-field", "type": "Field", "label": "Company"}
+      ]
+    }
+  ]
+}
+\`\`\`
+
+**Schema Properties:**
+- \`behaviors.disclosure.collapsible\` (boolean): Marks section as collapsible
+- \`behaviors.disclosure.defaultState\` (string): \`"collapsed"\` or \`"expanded"\`
+- \`behaviors.disclosure.controlsId\` (string): ID of the Button that toggles this section
+- \`affordances\` (array): Optional UI hints like \`["chevron"]\` or \`["details"]\`
+
+### Approach B: Manual Pattern Flag
+
+If you don't use schema hints, explicitly request validation:
+
+\`\`\`bash
+luma flow scaffold.json --patterns progressive-disclosure
+\`\`\`
+
+However, this requires the validator to **infer** controls and sections from button text patterns (\`"Show"\`, \`"Hide"\`, \`"Expand"\`, \`"Advanced"\`, \`"More"\`). **Prefer Approach A** for explicit control.
+
+### Pattern Rules (MUST and SHOULD)
+
+**MUST Rules (Violations fail validation):**
+
+1. **Collapsible container has an associated control** (\`disclosure-no-control\`)
+   - Every collapsible section must have a visible Button referenced by \`controlsId\`
+   - If \`controlsId\` is omitted, validator attempts proximity inference from button text
+
+2. **Primary action is not hidden by default** (\`disclosure-hides-primary\`)
+   - If a section with \`defaultState: "collapsed"\` contains a \`Button\` with \`roleHint: "primary"\`, either:
+     - Move the primary button outside the collapsible section, OR
+     - Set \`defaultState: "expanded"\`
+
+3. **Label/summary present** (\`disclosure-missing-label\`)
+   - Must have a labeling element: sibling Text, summary Text within section, or control Button text (≥ 2 characters)
+
+**SHOULD Rules (Violations produce warnings):**
+
+1. **Control placement proximity** (\`disclosure-control-far\`)
+   - Control should be adjacent (preceding sibling or header within section)
+
+2. **Consistent affordance** (\`disclosure-inconsistent-affordance\`)
+   - Multiple collapsibles should use consistent affordances (e.g., all use \`["chevron"]\`)
+
+3. **Collapsible sections follow primary content** (\`disclosure-early-section\`)
+   - Show essential content first; collapsibles should appear after core fields/actions
+
+### Testing Progressive Disclosure
+
+When you include \`behaviors.disclosure\` hints, the pattern automatically activates during \`luma flow\`:
+
+\`\`\`bash
+# Run full pipeline (includes progressive-disclosure validation)
+luma flow scaffold.json
+
+# Check flow.json for pattern results
+Get-Content .ui/runs/<run-id>/flow.json
+\`\`\`
+
+No need to manually specify \`--patterns progressive-disclosure\` when using schema hints.
+
+---
+
 ## Design & Development Workflow (Follow Exactly)
 
 ### 1. Start with a UI Goal

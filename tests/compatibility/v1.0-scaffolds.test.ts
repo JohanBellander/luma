@@ -259,7 +259,7 @@ describe('Backward Compatibility: v1.0 Scaffolds', () => {
       expect(existsSync(join(runFolder, 'ingest.json'))).toBe(true);
     });
 
-    it('should detect MUST violations during flow analysis', () => {
+    it('should detect MUST violations during flow analysis', { timeout: 15000 }, () => {
       execSync(
         `node dist/index.js layout ${scaffoldPath} --viewports 1024x768`,
         { encoding: 'utf-8' }

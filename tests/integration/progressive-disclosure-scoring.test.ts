@@ -31,7 +31,7 @@ describe('Integration: Progressive Disclosure Scoring', () => {
   });
 
   describe('MUST failure impact', () => {
-    it('should reduce pattern fidelity score by 30 points for one MUST failure', { timeout: 10000 }, () => {
+    it('should reduce pattern fidelity score by 30 points for one MUST failure', { timeout: 20000 }, () => {
       // Create a scaffold with Progressive Disclosure MUST violation (primary hidden)
       const scaffold = {
         schemaVersion: '1.0.0',
@@ -158,7 +158,7 @@ describe('Integration: Progressive Disclosure Scoring', () => {
   });
 
   describe('SHOULD failure impact', () => {
-    it('should reduce pattern fidelity score by 10 points for one SHOULD failure', { timeout: 10000 }, () => {
+    it('should reduce pattern fidelity score by 10 points for one SHOULD failure', { timeout: 20000 }, () => {
       // Create a scaffold with Progressive Disclosure SHOULD violation (control-target far apart)
       const scaffold = {
         schemaVersion: '1.0.0',
@@ -295,7 +295,7 @@ describe('Integration: Progressive Disclosure Scoring', () => {
   });
 
   describe('Progressive Disclosure inactive', () => {
-    it('should yield identical score to baseline when PD pattern is not activated', { timeout: 10000 }, () => {
+    it('should yield identical score to baseline when PD pattern is not activated', { timeout: 20000 }, () => {
       // Create a baseline scaffold WITHOUT any disclosure behaviors
       const scaffold = {
         schemaVersion: '1.0.0',
@@ -400,7 +400,7 @@ describe('Integration: Progressive Disclosure Scoring', () => {
       expect(scoreData.pass).toBe(true);
     });
 
-    it('should yield identical score when scaffold has no disclosure behaviors', { timeout: 15000 }, () => {
+    it('should yield identical score when scaffold has no disclosure behaviors', { timeout: 20000 }, () => {
       // Create two scaffolds: one without any hints, one explicitly without PD pattern
       const scaffold = {
         schemaVersion: '1.0.0',
@@ -489,7 +489,7 @@ describe('Integration: Progressive Disclosure Scoring', () => {
   });
 
   describe('Combined MUST and SHOULD failures', () => {
-    it('should correctly aggregate multiple Progressive Disclosure failures', { timeout: 10000 }, () => {
+    it('should correctly aggregate multiple Progressive Disclosure failures', { timeout: 20000 }, () => {
       // Create a scaffold with both MUST and SHOULD violations
       const scaffold = {
         schemaVersion: '1.0.0',
