@@ -1,0 +1,18 @@
+﻿{
+  "schemaVersion": "1.0.0",
+  "screen": {
+    "id": "test",
+    "title": "Test",
+    "root": {
+      "id": "root",
+      "type": "Stack",
+      "direction": "vertical",
+      "children": []
+    }
+  },
+  "settings": {
+    "spacingScale": [4, 8, 12, 16],
+    "minTouchTarget": {"w": 44, "h": 44},
+    "breakpoints": ["320x640"]
+  }
+}

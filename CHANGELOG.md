@@ -7,6 +7,90 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.22] - 2025-10-30
+
+### Added
+
+#### Progressive Disclosure Pattern (Optional)
+- **Progressive Disclosure Pattern Validator** - New optional UX pattern for validating progressive disclosure implementations:
+  - Pattern name: `progressive-disclosure` (CLI) / `Progressive.Disclosure` (internal)
+  - **Activation**: Inactive by default; activates when:
+    - Explicitly requested via `luma flow --patterns progressive-disclosure`
+    - Any node contains `behaviors.disclosure.collapsible === true` hint
+  - **MUST Rules** (blocking, -30 points each):
+    - `disclosure-no-control`: Collapsible containers must have an associated control
+    - `disclosure-hides-primary`: Primary actions cannot be hidden by default in collapsed sections
+    - `disclosure-missing-label`: Collapsible sections must have a label or summary
+  - **SHOULD Rules** (warnings, -10 points each):
+    - `disclosure-control-far`: Controls should be adjacent to collapsible content
+    - `disclosure-inconsistent-affordance`: Multiple collapsibles should use consistent visual affordances
+    - `disclosure-early-section`: Advanced sections should follow primary content
+
+#### Schema Extensions (Non-breaking)
+- **`behaviors.disclosure` hint** (optional):
+  - `collapsible`: boolean - marks a container as collapsible
+  - `defaultState`: `"collapsed"` | `"expanded"` - initial state (defaults to `"collapsed"`)
+  - `controlsId`: string - ID of control Button/Text node
+  - `ariaSummaryText`: string - optional accessible summary text
+- **`affordances` field** (optional): string array for visual affordance hints (e.g., `["chevron"]`, `["details"]`, `["accordion"]`)
+- All hints are optional and ignored if pattern is not activated
+
+#### Pattern Integration
+- **Inference Engine** - Automatic control detection when `controlsId` omitted:
+  - Searches preceding siblings (reverse order)
+  - Searches following siblings (forward order)
+  - Searches header row (first child of container)
+  - Matches on keywords: show, hide, expand, collapse, advanced, details, more
+  - Falls back to affordances tokens: chevron, details
+- **Pattern Registry** - Registered under aliases `progressive-disclosure` and `Progressive.Disclosure`
+- **Scoring Impact** - Pattern failures affect "Pattern Fidelity" category (45% weight)
+- **CLI Commands**:
+  - `luma patterns --list` now includes Progressive Disclosure
+  - `luma patterns --show Progressive.Disclosure` displays rules and sources
+  - `luma flow --patterns progressive-disclosure` validates scaffolds
+
+#### Testing & Quality
+- **Unit Tests**:
+  - Passing examples with valid disclosure implementations
+  - MUST rule failure cases with error detection
+  - SHOULD rule warning cases with proximity and consistency checks
+  - Control inference with keyword and affordance matching
+  - Suggestion generation for all issue IDs
+- **Integration Tests**:
+  - Pattern activation via explicit flag and automatic detection
+  - Pattern scoring impact on overall score
+  - Backward compatibility (pattern inactive without hints)
+- **Performance**: < 5% increase in `validatePatterns` execution time
+
+### Technical Details
+- **Backward Compatibility**: Pattern is completely optional and inactive by default
+  - Existing scaffolds without hints: no behavior change
+  - Schema version remains `"1.0.0"` - no breaking changes
+  - Pattern only runs when explicitly requested or hinted
+- **Non-functional Requirements**:
+  - Deterministic inference selection (precedence-based)
+  - No performance regression in validation pipeline
+- **Sources Cited**: Nielsen Norman Group, GOV.UK Design System, USWDS
+- **Files Added**:
+  - `src/core/patterns/progressive-disclosure.ts` - Pattern validator
+  - `src/core/patterns/disclosure-inference.ts` - Control inference engine
+  - `src/core/patterns/disclosure-utils.ts` - Helper utilities
+  - `src/core/patterns/suggestions.ts` - Issue suggestion generator
+  - `tests/unit/patterns/progressive-disclosure.test.ts` - Unit tests
+  - `tests/integration/progressive-disclosure-activation.test.ts` - Activation tests
+  - `tests/integration/progressive-disclosure-scoring.test.ts` - Scoring tests
+  - `LUMA-PATTERN-Progressive-Disclosure-SPEC.md` - Full pattern specification
+
+### Upgrade Notes
+- **No migration required** - This is an additive feature
+- Pattern hints (`behaviors.disclosure`, `affordances`) are ignored if omitted
+- To use the pattern:
+  - Option 1: Add `behaviors.disclosure.collapsible: true` to nodes in your scaffold
+  - Option 2: Explicitly request via `luma flow --patterns progressive-disclosure`
+- If you don't use progressive disclosure: no impact on your workflows or scores
+
+---
+
 ## [1.1.0] - 2025-10-28
 
 ### Added
@@ -127,5 +211,6 @@ No migration needed! All v1.0 features work identically in v1.1. New features ar
 
 ---
 
+[0.1.22]: https://github.com/JohanBellander/luma/compare/v0.1.21...v0.1.22
 [1.1.0]: https://github.com/JohanBellander/luma/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/JohanBellander/luma/releases/tag/v1.0.0

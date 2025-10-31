@@ -19,7 +19,7 @@ This enforced order reduces wasted UI rework: semantics and interaction are lock
 - Keyboard reachability & tab sequence
 - Hierarchy & grouping clarity
 - Responsive behavior across breakpoints
-- UX pattern fidelity (e.g. Form.Basic, Table.Simple)
+- UX pattern fidelity (e.g. Form.Basic, Table.Simple, Progressive Disclosure (optional))
 
 ## Install
 

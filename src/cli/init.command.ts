@@ -554,6 +554,12 @@ All node types inherit these optional properties:
 - \`minSize\` (object): \`{w?: number, h?: number}\` - Minimum dimensions
 - \`maxSize\` (object): \`{w?: number, h?: number}\` - Maximum dimensions
 - \`at\` (object): Responsive overrides (e.g., \`{">=768": {...}}\`)
+- \`behaviors\` (object): Interactive behavior hints
+  - \`disclosure\` (object): Progressive disclosure settings
+    - \`collapsible\` (boolean): Whether content can be collapsed/expanded
+    - \`defaultState\` (string): Initial state (\`"open"\` or \`"closed"\`)
+    - \`controlsId\` (string): ID of the node being shown/hidden
+- \`affordances\` (array): Array of strings indicating interaction hints (e.g., \`["expandable"]\`, \`["collapsible"]\`)
 
 ### Validation Tips
 
@@ -571,6 +577,130 @@ luma ingest your-scaffold.json
 \`\`\`
 
 Check \`.ui/runs/<run-id>/ingest.json\` for detailed error messages with \`jsonPointer\` locations.
+
+---
+
+## Progressive Disclosure Pattern (v1.1)
+
+Progressive Disclosure reduces cognitive overload by showing secondary/advanced content only when needed. This pattern is automatically detected when you use \`behaviors.disclosure\` hints in your scaffold.
+
+### When to Use Progressive Disclosure
+
+Use this pattern when:
+- You have advanced/optional settings that would overwhelm novice users
+- Secondary information can be hidden until explicitly requested
+- Users have different expertise levels (show basics first, allow experts to expand)
+
+**Examples:**
+- "Advanced search options" in a search form
+- "More details" section in a data table
+- "Show/Hide filters" in a dashboard
+
+### Approach A: Schema Hints with \`behaviors.disclosure\` (Recommended)
+
+Add \`behaviors.disclosure\` to any collapsible container. The pattern validator **automatically activates** when it detects these hints.
+
+**Example:**
+\`\`\`json
+{
+  "id": "root-stack",
+  "type": "Stack",
+  "direction": "vertical",
+  "gap": 16,
+  "children": [
+    {
+      "id": "basic-fields",
+      "type": "Stack",
+      "direction": "vertical",
+      "gap": 12,
+      "children": [
+        {"id": "name-field", "type": "Field", "label": "Name"},
+        {"id": "email-field", "type": "Field", "label": "Email"}
+      ]
+    },
+    {
+      "id": "toggle-advanced",
+      "type": "Button",
+      "text": "Show Advanced Options",
+      "roleHint": "secondary"
+    },
+    {
+      "id": "advanced-section",
+      "type": "Stack",
+      "direction": "vertical",
+      "gap": 12,
+      "behaviors": {
+        "disclosure": {
+          "collapsible": true,
+          "defaultState": "collapsed",
+          "controlsId": "toggle-advanced"
+        }
+      },
+      "children": [
+        {"id": "phone-field", "type": "Field", "label": "Phone"},
+        {"id": "company-field", "type": "Field", "label": "Company"}
+      ]
+    }
+  ]
+}
+\`\`\`
+
+**Schema Properties:**
+- \`behaviors.disclosure.collapsible\` (boolean): Marks section as collapsible
+- \`behaviors.disclosure.defaultState\` (string): \`"collapsed"\` or \`"expanded"\`
+- \`behaviors.disclosure.controlsId\` (string): ID of the Button that toggles this section
+- \`affordances\` (array): Optional UI hints like \`["chevron"]\` or \`["details"]\`
+
+### Approach B: Manual Pattern Flag
+
+If you don't use schema hints, explicitly request validation:
+
+\`\`\`bash
+luma flow scaffold.json --patterns progressive-disclosure
+\`\`\`
+
+However, this requires the validator to **infer** controls and sections from button text patterns (\`"Show"\`, \`"Hide"\`, \`"Expand"\`, \`"Advanced"\`, \`"More"\`). **Prefer Approach A** for explicit control.
+
+### Pattern Rules (MUST and SHOULD)
+
+**MUST Rules (Violations fail validation):**
+
+1. **Collapsible container has an associated control** (\`disclosure-no-control\`)
+   - Every collapsible section must have a visible Button referenced by \`controlsId\`
+   - If \`controlsId\` is omitted, validator attempts proximity inference from button text
+
+2. **Primary action is not hidden by default** (\`disclosure-hides-primary\`)
+   - If a section with \`defaultState: "collapsed"\` contains a \`Button\` with \`roleHint: "primary"\`, either:
+     - Move the primary button outside the collapsible section, OR
+     - Set \`defaultState: "expanded"\`
+
+3. **Label/summary present** (\`disclosure-missing-label\`)
+   - Must have a labeling element: sibling Text, summary Text within section, or control Button text (≥ 2 characters)
+
+**SHOULD Rules (Violations produce warnings):**
+
+1. **Control placement proximity** (\`disclosure-control-far\`)
+   - Control should be adjacent (preceding sibling or header within section)
+
+2. **Consistent affordance** (\`disclosure-inconsistent-affordance\`)
+   - Multiple collapsibles should use consistent affordances (e.g., all use \`["chevron"]\`)
+
+3. **Collapsible sections follow primary content** (\`disclosure-early-section\`)
+   - Show essential content first; collapsibles should appear after core fields/actions
+
+### Testing Progressive Disclosure
+
+When you include \`behaviors.disclosure\` hints, the pattern automatically activates during \`luma flow\`:
+
+\`\`\`bash
+# Run full pipeline (includes progressive-disclosure validation)
+luma flow scaffold.json
+
+# Check flow.json for pattern results
+Get-Content .ui/runs/<run-id>/flow.json
+\`\`\`
+
+No need to manually specify \`--patterns progressive-disclosure\` when using schema hints.
 
 ---
 
@@ -621,9 +751,83 @@ Before finalizing your scaffold, verify EVERY interactive element has a complete
 
 ---
 
+### 2a. Pattern Detection Checklist (Before Validation)
+
+Before running LUMA validation, identify which patterns your scaffold contains. This ensures you test ALL relevant patterns, not just the obvious ones.
+
+**Decision Tree:**
+
+\`\`\`
+Does your scaffold have a Form node?
+  → YES: Include Form.Basic in --patterns
+
+Does your scaffold have a Table node?
+  → YES: Include Table.Simple in --patterns
+
+Does your scaffold have show/hide/toggle/expand/collapse behavior?
+  → YES: Add "behaviors": {"disclosure": true} to schema hints
+        OR include Progressive.Disclosure in --patterns
+
+Does your scaffold have Add/New/Create/Edit buttons?
+  → LIKELY: You may have hidden forms/dialogs
+        → Add "behaviors": {"disclosure": true} to schema hints
+\`\`\`
+
+**Pattern Detection Checklist:**
+
+- [ ] I checked for Form nodes → Added \`Form.Basic\` to --patterns
+- [ ] I checked for Table nodes → Added \`Table.Simple\` to --patterns
+- [ ] I checked for show/hide/toggle UI → Added \`behaviors.disclosure\` hint
+- [ ] I checked for Add/New/Create/Edit buttons → Considered \`behaviors.disclosure\` hint
+- [ ] I reviewed all Button text for action words → Verified no missing disclosure patterns
+
+**Common Pattern Indicators:**
+
+| If You See... | Pattern to Test |
+|---------------|-----------------|
+| Form node with fields[] and actions[] | \`Form.Basic\` |
+| Table node with columns[] | \`Table.Simple\` |
+| "Show Details", "Expand", "Collapse" buttons | \`behaviors.disclosure\` hint |
+| "Add", "New", "Create", "Edit" buttons | \`behaviors.disclosure\` hint (likely hidden form) |
+| Modal/Dialog references in button text | \`behaviors.disclosure\` hint |
+| Tabs, Accordions, Drawers | \`behaviors.disclosure\` hint |
+
+⚠️ **Warning**: If you skip pattern detection, LUMA will only validate structure, NOT user experience patterns. You may miss critical UX violations.
+
+---
+
 ### 3. Validate with LUMA
 
-Run the full LUMA pipeline:
+#### STEP 1: Identify Patterns (MANDATORY)
+
+Before running validation, identify which patterns to test using the \`--patterns\` flag in the flow command.
+
+**Examples:**
+- Form with fields and actions → Test \`form\` pattern
+- Table with columns → Test \`table\` pattern
+- Show/hide or toggle buttons → Add \`behaviors.disclosure\` hint to scaffold
+
+**Quick Pattern Detection:**
+\`\`\`bash
+# If your scaffold has a Form node
+luma flow ui/screens/<screen>.mock.json --patterns form
+
+# If your scaffold has a Table node
+luma flow ui/screens/<screen>.mock.json --patterns table
+
+# If you have both
+luma flow ui/screens/<screen>.mock.json --patterns form,table
+\`\`\`
+
+**Auto-Activation Note:** If you add a \`behaviors.disclosure\` hint to any node in your scaffold, LUMA automatically activates \`Progressive.Disclosure\` pattern validation. You don't need to manually specify it in \`--patterns\`.
+
+⚠️ **Warning**: Skipping pattern identification means LUMA only validates structure, NOT user experience patterns. You will miss critical UX violations.
+
+---
+
+#### STEP 2: Run Full Pipeline
+
+Run all LUMA commands in sequence:
 
 **IMPORTANT**: Chain commands so they write to the same run folder.
 
@@ -643,14 +847,9 @@ luma keyboard ui/screens/<screen>.mock.json && \\
 luma flow ui/screens/<screen>.mock.json --patterns form,table
 \`\`\`
 
-Then score the run:
-\`\`\`bash
-luma score .ui/runs/<run-id>
-\`\`\`
-
-**Why This Matters:**
+**Why Chaining Matters:**
 - Each command creates a new run folder with a timestamp
-- Scoring requires all artifacts (ingest.json, layout.json, keyboard.json, etc.) in the same folder
+- Scoring requires all artifacts (ingest.json, layout.json, keyboard.json, flow.json) in the same folder
 - Chaining ensures sequential execution in the same run
 
 **Common Error:**
@@ -658,6 +857,21 @@ luma score .ui/runs/<run-id>
 Error: .ui/runs/20251029-070139-805/keyboard.json not found
 \`\`\`
 This means you ran commands separately. Re-run as a chained command.
+
+---
+
+#### STEP 3: Score the Run
+
+After running the full pipeline, score the results:
+
+\`\`\`bash
+luma score .ui/runs/<run-id>
+\`\`\`
+
+**Pass Criteria:**
+- No MUST pattern failures
+- No critical flow errors
+- Overall score ≥ **85/100**
 
 If **any** MUST rule fails or **overall score < 85**:
 
@@ -974,6 +1188,77 @@ Once the scaffold is approved (score ≥ 85), follow these **mandatory** rules:
 5. THEN implement the expanded scaffold
 
 **Never implement features that haven't passed LUMA validation.**
+
+**5. "Partial Pattern Testing" - PROGRESSIVE.DISCLOSURE TRAP**
+- ❌ "I tested Form.Basic and Table.Simple, so my scaffold is valid"
+- ❌ "No form/table issues, must be good to go"
+- ❌ "I added a show/hide button but forgot to test Progressive.Disclosure"
+- ✅ "I used the pattern checklist - Form, Table, AND Progressive.Disclosure"
+- ✅ "My scaffold has show/hide behavior, so I added \`behaviors.disclosure\` hint"
+
+**Real Example - Missed Progressive.Disclosure:**
+
+Scaffold with Form + Table + Show/Hide button:
+\`\`\`json
+{
+  "screen": {
+    "root": {
+      "id": "root",
+      "type": "Stack",
+      "direction": "vertical",
+      "children": [
+        {
+          "id": "contact-form",
+          "type": "Form",
+          "title": "Add Contact",
+          "fields": [...],
+          "actions": [...]
+        },
+        {
+          "id": "toggle-table-btn",
+          "type": "Button",
+          "text": "Show Contact List"
+        },
+        {
+          "id": "contacts-table",
+          "type": "Table",
+          "title": "Contacts",
+          "columns": ["Name", "Email"]
+        }
+      ]
+    }
+  }
+}
+\`\`\`
+
+**What Went Wrong:**
+- ✅ Form.Basic passed validation
+- ✅ Table.Simple passed validation
+- ❌ Progressive.Disclosure pattern NOT tested (show/hide button exists)
+- ❌ Missing \`behaviors.disclosure\` hint on toggle button
+
+**Solution - Add behaviors.disclosure:**
+\`\`\`json
+{
+  "id": "toggle-table-btn",
+  "type": "Button",
+  "text": "Show Contact List",
+  "behaviors": {
+    "disclosure": {
+      "controls": "contacts-table",
+      "initialState": "collapsed"
+    }
+  }
+}
+\`\`\`
+
+**Pattern Checklist Before Implementation:**
+- [ ] Does scaffold have a Form? → Test \`luma flow --patterns form\`
+- [ ] Does scaffold have a Table? → Test \`luma flow --patterns table\`
+- [ ] Does scaffold have show/hide/expand/collapse UI? → Add \`behaviors.disclosure\` + test auto-activated Progressive.Disclosure
+- [ ] Does scaffold have multi-step flow? → Test \`luma flow --patterns form\` (checks Form.MultiStep)
+
+**Remember:** Just because obvious patterns (Form, Table) pass doesn't mean ALL patterns pass. Always check for disclosure behaviors!
 
 ---
 

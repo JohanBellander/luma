@@ -24,6 +24,31 @@ export interface BaseNode {
   minSize?: SizeConstraint;
   maxSize?: SizeConstraint;
   at?: ResponsiveOverrides; // responsive overrides keyed by "<=N" or ">=N"
+  /**
+   * Optional behaviors metadata for non-visual semantics.
+   * Progressive Disclosure pattern will look for behaviors.disclosure hints.
+   * Non-breaking: absence of this object never causes validation failure.
+   */
+  behaviors?: {
+    disclosure?: DisclosureBehavior;
+  };
+  /**
+   * Optional affordances array for visual/interaction hints.
+   * Used by Progressive Disclosure pattern for consistency checks.
+   * Example values: "chevron", "details", "accordion"
+   */
+  affordances?: string[];
+}
+
+/**
+ * Hint structure for progressive disclosure (collapsible sections).
+ * Adding this is optional; if present it can trigger automatic pattern activation.
+ */
+export interface DisclosureBehavior {
+  collapsible: boolean; // true marks node as a collapsible section
+  defaultState?: 'collapsed' | 'expanded'; // default collapsed if omitted
+  controlsId?: string; // id of explicit control button (optional)
+  ariaSummaryText?: string; // optional accessible summary override
 }
 
 export type StackDirection = 'vertical' | 'horizontal';
