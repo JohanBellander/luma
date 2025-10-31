@@ -751,6 +751,51 @@ Before finalizing your scaffold, verify EVERY interactive element has a complete
 
 ---
 
+### 2a. Pattern Detection Checklist (Before Validation)
+
+Before running LUMA validation, identify which patterns your scaffold contains. This ensures you test ALL relevant patterns, not just the obvious ones.
+
+**Decision Tree:**
+
+\`\`\`
+Does your scaffold have a Form node?
+  → YES: Include Form.Basic in --patterns
+
+Does your scaffold have a Table node?
+  → YES: Include Table.Simple in --patterns
+
+Does your scaffold have show/hide/toggle/expand/collapse behavior?
+  → YES: Add "behaviors": {"disclosure": true} to schema hints
+        OR include Progressive.Disclosure in --patterns
+
+Does your scaffold have Add/New/Create/Edit buttons?
+  → LIKELY: You may have hidden forms/dialogs
+        → Add "behaviors": {"disclosure": true} to schema hints
+\`\`\`
+
+**Pattern Detection Checklist:**
+
+- [ ] I checked for Form nodes → Added \`Form.Basic\` to --patterns
+- [ ] I checked for Table nodes → Added \`Table.Simple\` to --patterns
+- [ ] I checked for show/hide/toggle UI → Added \`behaviors.disclosure\` hint
+- [ ] I checked for Add/New/Create/Edit buttons → Considered \`behaviors.disclosure\` hint
+- [ ] I reviewed all Button text for action words → Verified no missing disclosure patterns
+
+**Common Pattern Indicators:**
+
+| If You See... | Pattern to Test |
+|---------------|-----------------|
+| Form node with fields[] and actions[] | \`Form.Basic\` |
+| Table node with columns[] | \`Table.Simple\` |
+| "Show Details", "Expand", "Collapse" buttons | \`behaviors.disclosure\` hint |
+| "Add", "New", "Create", "Edit" buttons | \`behaviors.disclosure\` hint (likely hidden form) |
+| Modal/Dialog references in button text | \`behaviors.disclosure\` hint |
+| Tabs, Accordions, Drawers | \`behaviors.disclosure\` hint |
+
+⚠️ **Warning**: If you skip pattern detection, LUMA will only validate structure, NOT user experience patterns. You may miss critical UX violations.
+
+---
+
 ### 3. Validate with LUMA
 
 Run the full LUMA pipeline:
