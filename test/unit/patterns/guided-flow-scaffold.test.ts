@@ -32,11 +32,13 @@ const scaffoldRoot: Node = {
 };
 
 describe('Guided.Flow pattern scaffolding', () => {
-  it('returns zero issues with placeholder rules', () => {
+  it('produces one SHOULD warning (missing title) with implemented rules', () => {
     const result = validatePattern(GuidedFlow, scaffoldRoot);
     expect(result.pattern).toBe('Guided.Flow');
-    expect(result.issues.length).toBe(0);
+    // Expect one warn issue: wizard-step-title-missing
+    const warnIds = result.issues.map(i => i.id);
+    expect(warnIds).toContain('wizard-step-title-missing');
     expect(result.mustFailed).toBe(0);
-    expect(result.shouldFailed).toBe(0);
+    expect(result.shouldFailed).toBe(1);
   });
 });

@@ -221,19 +221,24 @@ function detectActions(stepNode: Node): { actionsRow?: Node; buttons: ButtonNode
   return { actionsRow: undefined, buttons: [] };
 }
 
-// ---- Suggestions map (partial; fill out as rules implemented) ----
+// ---- Suggestions map (expanded) ----
 const SUGGESTIONS: Record<string, string> = {
-  'wizard-steps-missing': 'Define contiguous stepIndex values 1..N and ensure totalSteps matches. Example: {"behaviors":{"guidedFlow":{"role":"step","stepIndex":2,"totalSteps":4}}}',
+  'wizard-steps-missing': 'Define contiguous stepIndex values 1..N. Example: {"behaviors":{"guidedFlow":{"role":"step","stepIndex":2,"totalSteps":4}}}',
   'wizard-next-missing': 'Add a Next button: {"id":"next-<i>","type":"Button","text":"Next","roleHint":"primary"}',
   'wizard-back-missing': 'Add a Back button before Next: {"id":"back-<i>","type":"Button","text":"Back"}',
-  'wizard-back-illegal': 'Remove Back from first step or move it to step 2.',
-  'wizard-finish-missing': 'Add Finish action: {"id":"finish","type":"Button","text":"Finish","roleHint":"primary"}',
+  'wizard-back-illegal': 'Remove Back from the first step or move it to step 2.',
+  'wizard-finish-missing': 'Add a Finish action: {"id":"finish","type":"Button","text":"Finish","roleHint":"primary"}',
+  'wizard-field-after-actions': 'Ensure fields appear before the actions row. Move the actions Stack below all Field nodes.',
+  'wizard-multiple-primary': 'Keep only one primary action per step; remove roleHint or demote extras.',
+  'wizard-progress-missing': 'Add a visible progress indicator: {"id":"progress-1","type":"Text","text":"Step 1 of 4"} and reference it via behaviors.guidedFlow.progressNodeId.',
+  'wizard-actions-order': 'Order actions as Back then Next/Finish inside the actions row.',
+  'wizard-step-title-missing': 'Add a heading Text near the top of each step: {"id":"step-<i>-title","type":"Text","text":"Step <i> — Details"}',
 };
 
-function makeIssue(id: string, node: Node | undefined, message: string, details: any): Issue {
+function makeIssue(id: string, node: Node | undefined, message: string, details: any, severity: 'error' | 'warn' = 'error'): Issue {
   return {
     id,
-    severity: 'error',
+    severity,
     message,
     nodeId: node?.id,
     jsonPointer: node ? `/screen/root/.../${node.id}` : undefined,
@@ -377,13 +382,52 @@ const mustRules: PatternRule[] = [
     id: 'wizard-field-after-actions',
     level: 'must',
     description: 'Fields must appear before actions row in a step',
-    check: (_root: Node) => [],
+    check: (root: Node) => {
+      const scopes = resolveGuidedFlowScopes(root);
+      const issues: Issue[] = [];
+      for (const scope of scopes) {
+        for (const step of scope.steps) {
+          if (!step.actionsRow) continue; // no actions row to order against
+          const subtree = collectNodes(step.node);
+          const actionsIndex = subtree.indexOf(step.actionsRow);
+          const fieldNodes = subtree.filter(n => n.type === 'Field');
+          const misplaced = fieldNodes.filter(f => subtree.indexOf(f) > actionsIndex);
+          if (misplaced.length > 0) {
+            issues.push(
+              makeIssue('wizard-field-after-actions', step.node, `Fields appear after actions row in step ${step.index}`, {
+                stepIndex: step.index,
+                actionsRowId: step.actionsRow.id,
+                misplacedFieldIds: misplaced.map(m => m.id),
+              })
+            );
+          }
+        }
+      }
+      return issues;
+    },
   },
   {
     id: 'wizard-multiple-primary',
     level: 'must',
     description: 'Only one primary action per step',
-    check: (_root: Node) => [],
+    check: (root: Node) => {
+      const scopes = resolveGuidedFlowScopes(root);
+      const issues: Issue[] = [];
+      for (const scope of scopes) {
+        for (const step of scope.steps) {
+          const primaryButtons = step.buttons.filter(b => b.roleHint === 'primary');
+          if (primaryButtons.length > 1) {
+            issues.push(
+              makeIssue('wizard-multiple-primary', step.node, `Multiple primary actions in step ${step.index}`, {
+                stepIndex: step.index,
+                primaryButtonIds: primaryButtons.map(p => p.id),
+              })
+            );
+          }
+        }
+      }
+      return issues;
+    },
   },
 ];
 
@@ -393,25 +437,97 @@ const shouldRules: PatternRule[] = [
     id: 'wizard-progress-missing',
     level: 'should',
     description: 'Progress indicator should exist when hasProgress=true',
-    check: (_root: Node) => [],
+    check: (root: Node) => {
+      const scopes = resolveGuidedFlowScopes(root);
+      const allNodes = collectNodes(root);
+      const issues: Issue[] = [];
+      for (const scope of scopes) {
+        const container = scope.scopeNode;
+        const hasProgress = container?.behaviors?.guidedFlow?.hasProgress;
+        if (!hasProgress) continue;
+        const progressId = container?.behaviors?.guidedFlow?.progressNodeId;
+        let progressNode: Node | undefined;
+        if (progressId) {
+          progressNode = allNodes.find(n => n.id === progressId && n.visible !== false);
+        } else if (container) {
+          const containerSubtree = collectNodes(container);
+          const topSlice = containerSubtree.slice(0, 6);
+            progressNode = topSlice.find(n => n.type === 'Text' && /step\s+\d+\s+of\s+\d+/i.test((n as any).text || ''));
+          if (!progressNode) {
+            progressNode = topSlice.find(n => n.affordances?.includes('progress-indicator'));
+          }
+        }
+        if (!progressNode) {
+          issues.push(
+            makeIssue('wizard-progress-missing', container, 'Progress indicator missing for wizard', {
+              scopeNodeId: container?.id,
+              hasProgress: true,
+            }, 'warn')
+          );
+        }
+      }
+      return issues;
+    },
   },
   {
     id: 'wizard-actions-order',
     level: 'should',
     description: 'Back should precede Next/Finish in action sequence',
-    check: (_root: Node) => [],
+    check: (root: Node) => {
+      const scopes = resolveGuidedFlowScopes(root);
+      const issues: Issue[] = [];
+      for (const scope of scopes) {
+        for (const step of scope.steps) {
+          const order = step.buttons.map(classifyButton);
+          const backIndex = order.indexOf('back');
+          const nextIndex = order.indexOf('next');
+          const finishIndex = order.indexOf('finish');
+          const primaryIndex = finishIndex >= 0 ? finishIndex : nextIndex;
+          if (backIndex >= 0 && primaryIndex >= 0 && backIndex > primaryIndex) {
+            issues.push(
+              makeIssue('wizard-actions-order', step.node, `Back action appears after Next/Finish in step ${step.index}`, {
+                stepIndex: step.index,
+                order,
+              }, 'warn')
+            );
+          }
+        }
+      }
+      return issues;
+    },
   },
   {
     id: 'wizard-step-title-missing',
     level: 'should',
     description: 'Each step should expose a visible title',
-    check: (_root: Node) => [],
+    check: (root: Node) => {
+      const scopes = resolveGuidedFlowScopes(root);
+      const issues: Issue[] = [];
+      for (const scope of scopes) {
+        for (const step of scope.steps) {
+          const subtree = collectNodes(step.node);
+          let title: Node | undefined;
+          for (const n of subtree) {
+            if (n === step.actionsRow) break;
+            if (n.type === 'Text') { title = n; break; }
+          }
+          if (!title) {
+            issues.push(
+              makeIssue('wizard-step-title-missing', step.node, `Step ${step.index} missing title/heading`, {
+                stepIndex: step.index,
+              }, 'warn')
+            );
+          }
+        }
+      }
+      return issues;
+    },
   },
   {
     id: 'wizard-primary-below-fold',
     level: 'should',
     description: 'Primary action should appear within initial viewport (smallest breakpoint)',
-    check: (_root: Node) => [],
+    check: (_root: Node) => [], // deferred layout integration
   },
 ];
 
