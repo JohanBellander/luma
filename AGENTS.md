@@ -900,3 +900,140 @@ Then use `mcp__beads__*` functions instead of CLI commands.
 - ❌ Do NOT duplicate tracking systems
 
 For more details, see README.md and QUICKSTART.md.
+
+---
+
+## Progressive Disclosure Pattern (Optional)
+
+LUMA supports an optional `Progressive.Disclosure` UX pattern that evaluates collapsible sections (advanced settings panels, expandable details areas) for accessibility and clarity. The pattern is only active if:
+1. You explicitly request it via: `luma flow scaffold.json --patterns Progressive.Disclosure` (or alias `--patterns progressive-disclosure`)
+2. OR your scaffold contains any node with `behaviors.disclosure.collapsible: true` (auto-activated).
+
+### Why Use It?
+Progressive disclosure helps keep interfaces focused while allowing advanced users to reveal additional configuration. The pattern enforces that critical actions/content are not hidden and that toggle controls are discoverable and consistently labeled.
+
+### Activating the Pattern
+
+Explicit:
+```bash
+luma flow my.json --patterns Progressive.Disclosure
+```
+Alias:
+```bash
+luma flow my.json --patterns progressive-disclosure
+```
+Implicit (auto): Any node includes:
+```json
+{
+  "id": "advanced-box",
+  "type": "Box",
+  "behaviors": {
+    "disclosure": {
+      "collapsible": true,
+      "defaultState": "collapsed"
+    }
+  }
+}
+```
+
+### Node Additions
+Any node may include optional disclosure behavior metadata:
+```json
+"behaviors": {
+  "disclosure": {
+    "collapsible": true,
+    "defaultState": "collapsed" | "expanded"
+  }
+}
+```
+You can also supply `affordances` tokens to help the inference engine find the correct toggle control (e.g. `"affordances": ["chevron", "details"]`).
+
+### MUST Rules (Errors)
+If violated, pattern fidelity score drops 30 per rule and overall score may fail.
+1. `disclosure-no-control`: Collapsible content has no discoverable control (Button/Text with matching affordance or keyword).
+2. `disclosure-hides-primary`: Primary actionable element (e.g. submit button) is hidden in a collapsed section by default.
+3. `disclosure-missing-label`: Collapsible section lacks a visible label/heading to describe its contents.
+
+### SHOULD Rules (Warnings)
+Each warning deducts 10 points from pattern fidelity.
+1. `disclosure-control-far`: Toggle control is more than one sibling away from collapsible container.
+2. `disclosure-inconsistent-affordance`: Multiple collapsibles use completely different affordance tokens (e.g. one uses chevron, another uses details) reducing predictability.
+3. `disclosure-early-section`: Advanced collapsible appears before primary required fields/content, potentially distracting users.
+
+### Suggestions
+LUMA provides deterministic suggestions for each issue ID. Example:
+```json
+{
+  "id": "disclosure-no-control",
+  "suggestion": "Add a preceding Button with an affordance token (e.g. chevron) or a label containing 'Show'/'Details'."
+}
+```
+
+### Example (Passing)
+```json
+{
+  "schemaVersion": "1.0.0",
+  "screen": {
+    "id": "pd-example",
+    "title": "Advanced Settings",
+    "root": {
+      "id": "root-stack",
+      "type": "Stack",
+      "direction": "vertical",
+      "gap": 16,
+      "children": [
+        { "id": "primary-action", "type": "Button", "text": "Save", "roleHint": "primary", "minSize": {"w": 44, "h": 44} },
+        { "id": "toggle-advanced", "type": "Button", "text": "Show Advanced", "roleHint": "secondary" },
+        {
+          "id": "advanced-box",
+          "type": "Box",
+          "behaviors": { "disclosure": { "collapsible": true, "defaultState": "collapsed" } },
+          "padding": 16,
+          "child": {
+            "id": "advanced-text",
+            "type": "Text",
+            "text": "Advanced tuning options go here"
+          }
+        }
+      ]
+    }
+  },
+  "settings": {
+    "spacingScale": [4,8,12,16,24,32,48],
+    "minTouchTarget": {"w":44,"h":44},
+    "breakpoints": ["320x640","768x1024"]
+  }
+}
+```
+
+### Example MUST Failure (No Control)
+```json
+{
+  "id": "advanced-box",
+  "type": "Box",
+  "behaviors": { "disclosure": { "collapsible": true, "defaultState": "collapsed" } },
+  "child": { "id": "adv-text", "type": "Text", "text": "Hidden details" }
+}
+```
+Fix: Add a preceding sibling Button with text "Show Details".
+
+### Scoring Impact
+Pattern Fidelity weight is 45%. Progressive Disclosure deductions:
+-30 per MUST, -10 per SHOULD. Inactive pattern (no flag, no hints) produces no deductions.
+
+### Tips
+- Place toggle control immediately before collapsible content.
+- Keep primary actions outside collapsed regions.
+- Use consistent affordance tokens (e.g. all use chevron).
+- Provide clear label text (Advanced Settings, More Details).
+
+Run pattern by itself to inspect:
+```bash
+luma flow pd-example.json --patterns Progressive.Disclosure
+```
+Then view issues:
+```bash
+Get-Content .ui/runs/<run-id>/flow.json
+```
+
+---
