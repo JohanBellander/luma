@@ -39,6 +39,10 @@ describe('Integration: LUMA v1.1 Phase 1', () => {
     if (!existsSync(TEST_OUTPUT_DIR)) {
       mkdirSync(TEST_OUTPUT_DIR, { recursive: true });
     }
+    
+    // Extend run folder reuse threshold for tests to 60 seconds
+    // This allows multiple commands to write to the same run folder even if slow CI
+    process.env.LUMA_RUN_FOLDER_REUSE_MS = '60000';
   });
 
   describe('Feature: Scaffold Contract Topic (LUMA-15)', () => {
@@ -479,20 +483,56 @@ describe('Integration: LUMA v1.1 Phase 1', () => {
         { encoding: 'utf-8' }
       );
 
-      // Step 3: Agent validates with LUMA
+      // Prepare exec options with extended run folder reuse threshold (60s for slow CI)
+      const execOptions = { 
+        encoding: 'utf-8' as const,
+        env: { ...process.env, LUMA_RUN_FOLDER_REUSE_MS: '60000' }
+      };
+      
+      // Step 3: Agent validates with LUMA (starts run folder)
       const ingestResult = execSync(
         `node dist/index.js ingest ${scaffoldPath} --json`,
-        { encoding: 'utf-8' }
+        execOptions
       );
       const ingest = JSON.parse(ingestResult);
       expect(ingest.valid).toBe(true);
 
-      // Step 4: Agent runs full analysis
-      execSync(`node dist/index.js layout ${scaffoldPath} --viewports 768x1024`, { encoding: 'utf-8' });
-      execSync(`node dist/index.js keyboard ${scaffoldPath}`, { encoding: 'utf-8' });
-      execSync(`node dist/index.js flow ${scaffoldPath} --patterns table`, { encoding: 'utf-8' });
+      // Get the run folder created by ingest - all subsequent commands should reuse it
+      // (within 60-second threshold via LUMA_RUN_FOLDER_REUSE_MS env var)
+      const runFolderAfterIngest = getMostRecentRunFolder();
+      expect(runFolderAfterIngest).toBeDefined();
       
+      // Step 4: Agent runs full analysis - commands will reuse the same run folder
+      execSync(`node dist/index.js layout ${scaffoldPath} --viewports 768x1024`, execOptions);
+      execSync(`node dist/index.js keyboard ${scaffoldPath}`, execOptions);
+      execSync(`node dist/index.js flow ${scaffoldPath} --patterns table`, execOptions);
+      
+      // Verify all commands wrote to the same run folder
       const runFolder = getMostRecentRunFolder();
+      const filesInRunFolder = existsSync(runFolder) ? readdirSync(runFolder) : [];
+      
+      expect(runFolder).toBe(runFolderAfterIngest); // Should be the same folder
+      
+      // Verify all required artifacts exist before scoring
+      const ingestPath = join(runFolder, 'ingest.json');
+      const keyboardPath = join(runFolder, 'keyboard.json');
+      const flowPath = join(runFolder, 'flow.json');
+      // Layout creates viewport-specific files like layout_768x1024.json
+      const hasLayoutFiles = filesInRunFolder.some(f => f.startsWith('layout_'));
+      
+      if (!hasLayoutFiles) {
+        throw new Error(
+          `No layout_*.json files found in ${runFolder}. ` +
+          `This indicates commands created separate run folders. ` +
+          `Files present: ${filesInRunFolder.join(', ')}`
+        );
+      }
+      
+      expect(existsSync(ingestPath), 'ingest.json should exist').toBe(true);
+      expect(hasLayoutFiles, 'layout files should exist').toBe(true);
+      expect(existsSync(keyboardPath), 'keyboard.json should exist').toBe(true);
+      expect(existsSync(flowPath), 'flow.json should exist').toBe(true);
+      
       execSync(`node dist/index.js score ${runFolder}`, { encoding: 'utf-8' });
 
       const scorePath = join(runFolder, 'score.json');

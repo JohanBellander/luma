@@ -7,7 +7,10 @@ import { mkdirSync, existsSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 
 const RUN_FOLDER_BASE = '.ui/runs';
-const RUN_FOLDER_REUSE_THRESHOLD_MS = 5000; // 5 seconds
+// Allow tests to override the threshold via environment variable
+const RUN_FOLDER_REUSE_THRESHOLD_MS = process.env.LUMA_RUN_FOLDER_REUSE_MS 
+  ? parseInt(process.env.LUMA_RUN_FOLDER_REUSE_MS, 10) 
+  : 5000; // 5 seconds default
 
 /**
  * Generate a timestamp string for run folders

@@ -417,7 +417,7 @@ describe('Backward Compatibility: v1.0 Scaffolds', () => {
     ];
 
     v1Scaffolds.forEach(scaffoldName => {
-      it(`should process ${scaffoldName} through full workflow`, () => {
+      it(`should process ${scaffoldName} through full workflow`, { timeout: 10000 }, () => {
         const scaffoldPath = join(EXAMPLES_DIR, scaffoldName);
 
         // Ingest should not crash

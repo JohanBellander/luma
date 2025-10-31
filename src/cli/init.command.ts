@@ -1189,6 +1189,77 @@ Once the scaffold is approved (score ≥ 85), follow these **mandatory** rules:
 
 **Never implement features that haven't passed LUMA validation.**
 
+**5. "Partial Pattern Testing" - PROGRESSIVE.DISCLOSURE TRAP**
+- ❌ "I tested Form.Basic and Table.Simple, so my scaffold is valid"
+- ❌ "No form/table issues, must be good to go"
+- ❌ "I added a show/hide button but forgot to test Progressive.Disclosure"
+- ✅ "I used the pattern checklist - Form, Table, AND Progressive.Disclosure"
+- ✅ "My scaffold has show/hide behavior, so I added \`behaviors.disclosure\` hint"
+
+**Real Example - Missed Progressive.Disclosure:**
+
+Scaffold with Form + Table + Show/Hide button:
+\`\`\`json
+{
+  "screen": {
+    "root": {
+      "id": "root",
+      "type": "Stack",
+      "direction": "vertical",
+      "children": [
+        {
+          "id": "contact-form",
+          "type": "Form",
+          "title": "Add Contact",
+          "fields": [...],
+          "actions": [...]
+        },
+        {
+          "id": "toggle-table-btn",
+          "type": "Button",
+          "text": "Show Contact List"
+        },
+        {
+          "id": "contacts-table",
+          "type": "Table",
+          "title": "Contacts",
+          "columns": ["Name", "Email"]
+        }
+      ]
+    }
+  }
+}
+\`\`\`
+
+**What Went Wrong:**
+- ✅ Form.Basic passed validation
+- ✅ Table.Simple passed validation
+- ❌ Progressive.Disclosure pattern NOT tested (show/hide button exists)
+- ❌ Missing \`behaviors.disclosure\` hint on toggle button
+
+**Solution - Add behaviors.disclosure:**
+\`\`\`json
+{
+  "id": "toggle-table-btn",
+  "type": "Button",
+  "text": "Show Contact List",
+  "behaviors": {
+    "disclosure": {
+      "controls": "contacts-table",
+      "initialState": "collapsed"
+    }
+  }
+}
+\`\`\`
+
+**Pattern Checklist Before Implementation:**
+- [ ] Does scaffold have a Form? → Test \`luma flow --patterns form\`
+- [ ] Does scaffold have a Table? → Test \`luma flow --patterns table\`
+- [ ] Does scaffold have show/hide/expand/collapse UI? → Add \`behaviors.disclosure\` + test auto-activated Progressive.Disclosure
+- [ ] Does scaffold have multi-step flow? → Test \`luma flow --patterns form\` (checks Form.MultiStep)
+
+**Remember:** Just because obvious patterns (Form, Table) pass doesn't mean ALL patterns pass. Always check for disclosure behaviors!
+
 ---
 
 ## Key Rules
