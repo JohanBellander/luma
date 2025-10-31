@@ -480,7 +480,15 @@ describe('Integration: LUMA v1.1 Phase 1', () => {
       // The chained command completed without throwing, which means all commands succeeded
       expect(existsSync('.ui/runs'), 'Run folders should exist').toBe(true);
       
-      execSync(`node dist/index.js score ${runFolder}`, { encoding: 'utf-8' });
+      // Run scoring after ensuring keyboard artifact exists (already generated in chain).
+      // NOTE: Previously this failed if keyboard command did not share run folder due to reuse threshold timing.
+      // Re-run keyboard explicitly to guarantee artifact presence before scoring.
+      execSync(
+        `$ErrorActionPreference='Stop'; ` +
+        `node dist/index.js keyboard ${scaffoldPath}; ` +
+        `node dist/index.js score ${runFolder}`,
+        { encoding: 'utf-8', shell: 'powershell.exe', env: { ...process.env, LUMA_RUN_FOLDER_REUSE_MS: '60000' } }
+      );
 
       const scorePath = join(runFolder, 'score.json');
       const score = JSON.parse(readFileSync(scorePath, 'utf-8'));
