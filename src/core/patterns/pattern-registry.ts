@@ -8,6 +8,7 @@ import type { Pattern } from './types.js';
 import { FormBasic } from './form-basic.js';
 import { TableSimple } from './table-simple.js';
 import { ProgressiveDisclosure } from './progressive-disclosure.js';
+import { GuidedFlow } from './guided-flow.js';
 
 /**
  * Registry of all available patterns.
@@ -21,6 +22,8 @@ patterns.set('table', TableSimple);
 patterns.set('Table.Simple', TableSimple);
 patterns.set('progressive-disclosure', ProgressiveDisclosure);
 patterns.set('Progressive.Disclosure', ProgressiveDisclosure);
+patterns.set('guided-flow', GuidedFlow);
+patterns.set('Guided.Flow', GuidedFlow);
 
 /**
  * Get a pattern by name.
