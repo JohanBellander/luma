@@ -53,7 +53,8 @@ export function getMostRecentRunFolder(baseDir: string = process.cwd()): string 
     .sort((a, b) => {
       const statA = statSync(a);
       const statB = statSync(b);
-      return statB.mtimeMs - statA.mtimeMs;
+      // Use birthtimeMs (creation time) instead of mtimeMs for more reliable sorting
+      return statB.birthtimeMs - statA.birthtimeMs;
     });
 
   if (folders.length === 0) {
@@ -61,7 +62,9 @@ export function getMostRecentRunFolder(baseDir: string = process.cwd()): string 
   }
 
   const mostRecent = folders[0];
-  const age = Date.now() - statSync(mostRecent).mtimeMs;
+  // Use birthtimeMs (creation time) instead of mtimeMs to check age
+  // This is more reliable across platforms, especially Windows
+  const age = Date.now() - statSync(mostRecent).birthtimeMs;
 
   // Only reuse if created within the threshold
   if (age <= RUN_FOLDER_REUSE_THRESHOLD_MS) {
