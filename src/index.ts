@@ -22,6 +22,7 @@ import { createFaqCommand } from './cli/faq.command.js';
 import { createReportCommand } from './cli/report.command.js';
 import { initCommand } from './cli/init.command.js';
 import { createScaffoldCommand } from './cli/scaffold.command.js';
+import { createAgentCommand } from './cli/agent.command.js';
 
 // Read version from package.json
 const __filename = fileURLToPath(import.meta.url);
@@ -50,6 +51,7 @@ program.addCommand(createPatternsCommand());
 program.addCommand(createExplainCommand());
 program.addCommand(createFaqCommand());
 program.addCommand(createReportCommand());
+program.addCommand(createAgentCommand());
 
 // Placeholder for commands to be added in Phase 2+
 program.parse(process.argv);
