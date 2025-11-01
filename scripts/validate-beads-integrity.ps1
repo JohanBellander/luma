@@ -30,11 +30,12 @@ function Fail($msg, $code='MANUAL_EDIT_DETECTED', $line=$null) {
   exit 2
 }
 
-$issuesPath = Join-Path $PSScriptRoot '..' '.beads' 'issues.jsonl'
+$issuesDir = Join-Path (Join-Path $PSScriptRoot '..') '.beads'
+$issuesPath = Join-Path $issuesDir 'issues.jsonl'
 if (-not (Test-Path $issuesPath)) { Fail "issues file missing: $issuesPath" }
 
-$lines = Get-Content -Raw -Path $issuesPath -ErrorAction Stop | Select-String -Pattern '.*' | ForEach-Object { $_.ToString() }
-if ($lines.Count -eq 0) { Fail 'issues file empty (unexpected)' }
+$lines = Get-Content -Path $issuesPath -ErrorAction Stop
+if (-not $lines -or $lines.Length -eq 0) { Fail 'issues file empty (unexpected)' }
 
 $idNumbers = @()
 $lineNumber = 0
@@ -51,7 +52,11 @@ foreach ($line in $lines) {
       Fail "Missing field '$required' at line $lineNumber (id=$($obj.id))" 'MISSING_FIELD' $lineNumber
     }
   }
-  if ($obj.id -notmatch '^LUMA-(\d+)$') { Fail "Bad id format at line $lineNumber: $($obj.id)" 'BAD_ID_FORMAT' $lineNumber }
+  if ($obj.id -notmatch '^LUMA-(\d+)$') {
+    $badId = $obj.id
+  $msg = 'Bad id format at line ' + $lineNumber + ': ' + $badId
+  Fail $msg 'BAD_ID_FORMAT' $lineNumber
+  }
   $n = [int]$Matches[1]
   $idNumbers += $n
 }

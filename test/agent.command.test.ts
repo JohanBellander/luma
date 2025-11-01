@@ -36,7 +36,7 @@ describe('agent command (sections quick/workflow/rules)', () => {
       // Expect exit code 2 (INVALID_INPUT)
       expect(err.status).toBe(2);
       const stderr = err.stderr.toString();
-      expect(stderr).toContain('INVALID_SECTION');
+  expect(stderr).toContain('UNKNOWN_SECTION');
     }
   });
 

@@ -42,7 +42,7 @@ interface AgentEnvelope {
 }
 
 interface ErrorJSON {
-  code: string; // MACHINE code e.g. INVALID_SECTION
+  code: string; // MACHINE code e.g. UNKNOWN_SECTION, UNKNOWN_PATH, CONFLICTING_FLAGS
   message: string; // Human readable
   details?: any;
 }
@@ -313,12 +313,25 @@ function uniqueOrdered<T>(items: T[]): T[] {
   return result;
 }
 
-function resolveDotPath(obj: any, dotPath: string): { ok: boolean; value?: any } {
-  const parts = dotPath.split('.').filter(Boolean);
-  let cur: any = obj;
-  for (const p of parts) {
-    if (cur && Object.prototype.hasOwnProperty.call(cur, p)) {
-      cur = cur[p];
+// Resolve a dot path starting from the envelope.sections root.
+// Grammar (v1): section(.segment)* where segment matches /^[A-Za-z0-9_]+$/
+// Backward compatibility: allow an initial "sections" token (old tests) and skip it.
+export function resolveDotPath(envelope: AgentEnvelope, dotPath: string): { ok: boolean; value?: any } {
+  const rawParts = dotPath.split('.').filter(Boolean);
+  if (!rawParts.length) return { ok: false };
+  const parts = rawParts[0] === 'sections' ? rawParts.slice(1) : rawParts;
+  if (!parts.length) return { ok: false };
+  // Validate segments
+  for (const seg of parts) {
+    if (!/^[A-Za-z0-9_]+$/.test(seg)) return { ok: false };
+  }
+  const [section, ...rest] = parts;
+  const sectionObj = envelope.sections[section];
+  if (sectionObj === undefined) return { ok: false };
+  let cur: any = sectionObj;
+  for (const seg of rest) {
+    if (cur && Object.prototype.hasOwnProperty.call(cur, seg)) {
+      cur = cur[seg];
     } else {
       return { ok: false };
     }
@@ -356,7 +369,7 @@ export function createAgentCommand(): Command {
 
       // Validate flag conflicts
       if (options.all && options.sections) {
-        const err: ErrorJSON = { code: 'CONFLICTING_FLAGS', message: 'Cannot use --all with --sections' };
+  const err: ErrorJSON = { code: 'CONFLICTING_FLAGS', message: 'Cannot use --all with --sections' };
         if (options.json) console.error(JSON.stringify(err, null, 2));
         else console.error('Error: ' + err.message);
         process.exit(EXIT_INVALID_INPUT);
@@ -373,7 +386,7 @@ export function createAgentCommand(): Command {
         requested = [...AGENT_SECTION_NAMES];
       } else {
         // No actionable flag: show guidance and exit 2 (invalid usage) to encourage explicitness
-        const err: ErrorJSON = { code: 'NO_SECTIONS_SPECIFIED', message: 'Specify --sections <csv> or --all or use --list-sections.' };
+  const err: ErrorJSON = { code: 'NO_SECTIONS_SPECIFIED', message: 'Specify --sections <csv> or --all or use --list-sections.' };
         if (options.json) console.error(JSON.stringify(err, null, 2));
         else {
           console.error('Error: ' + err.message);
@@ -385,7 +398,7 @@ export function createAgentCommand(): Command {
       // Validate section names
       const invalid = requested.filter(s => !AGENT_SECTION_NAMES.includes(s));
       if (invalid.length) {
-        const err: ErrorJSON = { code: 'INVALID_SECTION', message: 'Unknown section(s): ' + invalid.join(', '), details: { invalid } };
+        const err: ErrorJSON = { code: 'UNKNOWN_SECTION', message: 'Unknown section(s): ' + invalid.join(', '), details: { invalid } };
         if (options.json) console.error(JSON.stringify(err, null, 2));
         else console.error('Error: ' + err.message);
         process.exit(EXIT_INVALID_INPUT);
@@ -396,10 +409,10 @@ export function createAgentCommand(): Command {
       if (options.get) {
         const { ok, value } = resolveDotPath(envelope, options.get);
         if (!ok) {
-          const err: ErrorJSON = { code: 'DOT_PATH_NOT_FOUND', message: `Dot path not found: ${options.get}` };
-            if (options.json) console.error(JSON.stringify(err, null, 2));
-            else console.error('Error: ' + err.message);
-            process.exit(EXIT_INVALID_INPUT);
+          const err: ErrorJSON = { code: 'UNKNOWN_PATH', message: `Dot path not found or invalid: ${options.get}` };
+          if (options.json) console.error(JSON.stringify(err, null, 2));
+          else console.error('Error: ' + err.message);
+          process.exit(EXIT_INVALID_INPUT);
         }
         if (options.json) {
           console.log(JSON.stringify(value, null, 2));

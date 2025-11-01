@@ -10,18 +10,19 @@ $repoRoot = Split-Path -Parent $scriptDir
 $packageJsonPath = Join-Path -Path $repoRoot -ChildPath 'package.json'
 
 Write-Host "[pre-push] Running beads integrity check..." -ForegroundColor Cyan
-$integrityScript = Join-Path $repoRoot 'scripts' 'validate-beads-integrity.ps1'
+$integrityScript = Join-Path (Join-Path $repoRoot 'scripts') 'validate-beads-integrity.ps1'
 if (Test-Path $integrityScript) {
     & $integrityScript
     $integrityExit = $LASTEXITCODE
     if ($integrityExit -eq 2) {
-        Write-Host "[pre-push] ❌ Beads integrity anomaly detected. Push aborted." -ForegroundColor Red
+        Write-Host '[pre-push] Integrity anomaly detected. Push aborted.' -ForegroundColor Red
         exit 2
-    } else {
-        Write-Host "[pre-push] ✓ Integrity clean." -ForegroundColor Green
+    }
+    else {
+        Write-Host '[pre-push] Integrity clean.' -ForegroundColor Green
     }
 } else {
-    Write-Host "[pre-push] (info) Integrity script missing; skipping." -ForegroundColor Yellow
+    Write-Host '[pre-push] (info) Integrity script missing; skipping.' -ForegroundColor Yellow
 }
 
 $packageJson = Get-Content $packageJsonPath -Raw | ConvertFrom-Json
