@@ -388,7 +388,11 @@ export function createAgentCommand(): Command {
       // Determine selected sections (default quick if no explicit flags)
       let requested: string[] = [];
       if (options.all) requested = [...AGENT_SECTION_NAMES];
-      else if (options.sections) requested = uniqueOrdered(options.sections.split(',').map(s => s.trim()).filter(Boolean));
+      else if (options.sections) {
+        // PowerShell can split comma-separated arguments into separate tokens (e.g. quick,rules -> quick rules)
+        // so we also treat whitespace as a valid delimiter. Pattern: split on one or more commas OR whitespace.
+        requested = uniqueOrdered(options.sections.split(/[\s,]+/).map(s => s.trim()).filter(Boolean));
+      }
       else if (options.get) requested = [...AGENT_SECTION_NAMES]; // build all so dot path likely resolves
       else requested = ['quick']; // default startup card per spec
 
