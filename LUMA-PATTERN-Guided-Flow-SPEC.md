@@ -15,6 +15,8 @@ _This document is an **additive** specification to LUMA v1.1. It introduces an o
 
 **Why it matters:** Reduces friction and errors, improves completion, and sets expectations across multi‑step tasks (onboarding, checkout, setup).
 
+**Primary Action Visibility (GF-SHOULD-4 Rationale):** Keeping the primary action (Next / Finish) visible without scrolling at the smallest viewport reduces abandonment and increases conversion. Users losing sight of the core progression or completion action introduce cognitive overhead and can produce premature exits. This SHOULD rule guides layout refinements early—before visual/UI implementation—by nudging designers to elevate or reduce vertical bloat.
+
 **Primary references (cite in issues):**
 - Nielsen Norman Group — Wizards & Multi‑Step Forms
 - USWDS — Step Indicators
@@ -157,6 +159,23 @@ Include `stepIndex`, `nodeId`, and `suggestion` with minimal action snippet (see
 - This reuses the existing layout solver’s frames; if the primary is below fold at the smallest viewport, emit a **warn** (the layout command may also emit its own error depending on global policy).
 
 **Issue:** `wizard-primary-below-fold` (warn, reference layout viewport)
+
+**Rationale:** Maintain visibility of the action that moves the user forward—avoids loss of momentum and ensures continual affordance recognition. (NNG wizard design + common checkout funnel studies)
+### 3.3 MUST vs SHOULD Summary Table
+
+| ID | Level | Description | Rationale (Abbrev.) |
+|----|-------|-------------|---------------------|
+| GF-MUST-1 | MUST | Contiguous unique step indices 1..N | Prevents broken navigation & orphaned steps |
+| GF-MUST-2 | MUST | Required navigation actions per step (Next/Back/Finish rules) | Guarantees deterministic forward/back progress |
+| GF-MUST-3 | MUST | Fields precede actions row | Aligns with Form.Basic ergonomics & scanning order |
+| GF-MUST-4 | MUST | Single primary action per step | Avoids decision paralysis & focuses progression |
+| GF-SHOULD-1 | SHOULD | Progress indicator when hasProgress=true | Reinforces mental model of position & remaining effort |
+| GF-SHOULD-2 | SHOULD | Back precedes Next/Finish | Follows conventional left-to-right / tab order for predictability |
+| GF-SHOULD-3 | SHOULD | Visible step title/heading | Provides contextual grounding per step |
+| GF-SHOULD-4 | SHOULD | Primary action above fold at smallest viewport | Preserves forward-action visibility, reduces abandonment |
+
+> NOTE: If future layout heuristics evolve, GF-SHOULD-4 may transition to MUST for critical conversion flows; current stance: warn-level suffices for early design iteration.
+
 
 ---
 
@@ -353,6 +372,49 @@ Issue IDs for this pattern:
 ```
 
 ### 10.3 Last Step (Valid)
+### 10.4 Failing Example – Primary Action Below Fold (Triggers GF-SHOULD-4)
+Smallest viewport height: 640. Suppose the Finish button frame is `{ "y": 700, "h": 44 }` → bottom = 744 > 640.
+
+```json
+{
+  "id": "step3",
+  "type": "Stack",
+  "behaviors": { "guidedFlow": { "role": "step", "stepIndex": 3, "totalSteps": 3, "prevId": "back-3" } },
+  "children": [
+    { "id": "long-content", "type": "Text", "text": "(Many paragraphs causing vertical overflow...)" },
+    { "id": "actions-3", "type": "Stack", "direction": "horizontal", "children": [
+      { "id": "back-3", "type": "Button", "text": "Back" },
+      { "id": "finish", "type": "Button", "text": "Finish", "roleHint": "primary" }
+    ]}
+  ]
+}
+```
+
+**Result:** `wizard-primary-below-fold` warn suggests reducing content height or elevating actions.
+
+### 10.5 State Transition Snippet (Multi-Step Progress)
+Demonstrates form submission state changes inside a step (optional; complements flow analysis):
+
+```json
+{
+  "id": "step2",
+  "type": "Form",
+  "title": "Account Details",
+  "behaviors": { "guidedFlow": { "role": "step", "stepIndex": 2, "totalSteps": 3, "prevId": "back-2", "nextId": "next-2" } },
+  "fields": [
+    { "id": "email", "type": "Field", "label": "Email", "inputType": "email", "required": true },
+    { "id": "password", "type": "Field", "label": "Password", "inputType": "password", "required": true }
+  ],
+  "actions": [
+    { "id": "back-2", "type": "Button", "text": "Back" },
+    { "id": "next-2", "type": "Button", "text": "Next", "roleHint": "primary" }
+  ],
+  "states": ["default", "submitting", "error"]
+}
+```
+
+State transitions (e.g., disabling Next during `submitting`) are not simulated; scaffold presence ensures completeness.
+
 ```json
 {
   "id": "step3",

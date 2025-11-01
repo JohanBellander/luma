@@ -94,6 +94,61 @@ luma flow scaffold.json --patterns Form.Basic,Table.Simple
 
 Suggestions add <5% execution time compared to listing patterns and never block validation; empty output means no strong pattern indicators were detected.
 
+## Guided.Flow Pattern (Multi-Step Wizards)
+
+Use `Guided.Flow` to validate multi-step flows (onboarding, setup, checkout) for structural completeness and usability affordances.
+
+### Activation Triggers
+Pattern runs when:
+1. Explicitly included: `luma flow scaffold.json --patterns guided-flow`
+2. Any node has `behaviors.guidedFlow.role` set to `wizard` or `step`
+3. Suggestion engine detects multi-step indicators (buttons: Next/Previous/Finish; text: "Step 2 of 5")
+
+### MUST Rules (Fail = blocking)
+- Contiguous Steps (GF-MUST-1)
+- Navigation Actions Present (GF-MUST-2)
+- Fields Before Actions Row (GF-MUST-3)
+- Single Primary per Step (GF-MUST-4)
+
+### SHOULD Rules (Warn)
+- Progress Indicator Present (GF-SHOULD-1)
+- Back Before Next/Finish (GF-SHOULD-2)
+- Step Title Present (GF-SHOULD-3)
+- Primary Action Above Fold (GF-SHOULD-4) — ensures forward navigation remains visible at smallest viewport
+
+### Example Passing Step
+```json
+{
+	"id": "step2",
+	"type": "Stack",
+	"behaviors": { "guidedFlow": { "role": "step", "stepIndex": 2, "totalSteps": 3, "prevId": "back-2", "nextId": "next-2" } },
+	"children": [
+		{ "id": "email", "type": "Field", "label": "Email" },
+		{ "id": "actions-2", "type": "Stack", "direction": "horizontal", "children": [
+			{ "id": "back-2", "type": "Button", "text": "Back" },
+			{ "id": "next-2", "type": "Button", "text": "Next", "roleHint": "primary" }
+		]}
+	]
+}
+```
+
+### Folding Visibility Failure (GF-SHOULD-4 Warn)
+If the primary button frame bottom exceeds the smallest viewport height:
+```json
+{
+	"id": "finish", "type": "Button", "text": "Finish", "roleHint": "primary"
+}
+```
+Warn: `wizard-primary-below-fold` → Reduce vertical content or elevate action.
+
+### Quick Run
+```powershell
+luma flow ui/screens/onboarding.mock.json --patterns guided-flow
+```
+Or rely on auto-activation via hints.
+
+> Rationale: Keeping the primary progression action visible increases completion and reduces abandonment.
+
 ## License
 
 ISC
