@@ -780,6 +780,10 @@ Does your scaffold have Add/New/Create/Edit buttons?
 - [ ] I checked for show/hide/toggle UI → Added \`behaviors.disclosure\` hint
 - [ ] I checked for Add/New/Create/Edit buttons → Considered \`behaviors.disclosure\` hint
 - [ ] I reviewed all Button text for action words → Verified no missing disclosure patterns
+// Guided.Flow additions
+- [ ] Multi-step buttons (Next/Previous/Finish) present → Added \`Guided.Flow\`
+- [ ] Progress indicator ("Step X of N" text or stepper) present → Added \`Guided.Flow\`
+- [ ] Primary action might be below initial viewport → Evaluate \`Guided.Flow\` GF-SHOULD-4 (raise or reduce vertical content)
 
 **Common Pattern Indicators:**
 
@@ -791,6 +795,10 @@ Does your scaffold have Add/New/Create/Edit buttons?
 | "Add", "New", "Create", "Edit" buttons | \`behaviors.disclosure\` hint (likely hidden form) |
 | Modal/Dialog references in button text | \`behaviors.disclosure\` hint |
 | Tabs, Accordions, Drawers | \`behaviors.disclosure\` hint |
+| "Next", "Previous", "Finish" button set | \`Guided.Flow\` |
+| Text like "Step 2 of 5" or progress bar | \`Guided.Flow\` (hasProgress) |
+| Sequential steps each with actions row | \`Guided.Flow\` |
+| Primary button near/below fold | \`Guided.Flow\` GF-SHOULD-4 (warn) |
 
 ⚠️ **Warning**: If you skip pattern detection, LUMA will only validate structure, NOT user experience patterns. You may miss critical UX violations.
 
