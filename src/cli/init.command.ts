@@ -2,36 +2,74 @@ import {Command} from 'commander';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Concise agent guidance replacing previous large static block.
-// Refer to dynamic runtime knowledge via `luma agent` instead of embedding rules here.
-const agentsContent = `# Agent Instructions
+// Strict agent guidance enforcing mandatory LUMA usage and verifiable compliance.
+// Sentinel token used for automated detection of proper workflow adherence.
+const agentsContent = `# Agent Instructions (Strict Mode)
 
-This repository uses **LUMA** for UI scaffold analysis. This file is intentionally concise.
-Use the dynamic runtime knowledge system instead of embedding large static docs.
+MANDATORY: Use the **LUMA CLI** for ALL scaffold analysis. Manual reasoning without producing artifacts is non-compliant.
 
-## Runtime Knowledge (Up-To-Date)
-Commands (request only what you need):
-  luma agent --sections list
-  luma agent --sections quick,rules
-  luma agent --sections quick,rules --json   (JSON envelope)
-  luma agent --get quick.pipeline            (dot path retrieval)
-  luma explain --topic scaffold-contract     (scaffold contract)
+Sentinel: AGENT-COMPLIANCE-V1
+You MUST echo this exact token inside a JSON compliance block after every completed task:
+\`{"lumaCompliance":{"sentinel":"AGENT-COMPLIANCE-V1","ingestRun":"<run-id>","flowRun":"<run-id>","scoreRun":"<run-id>"}}\`
+
+## Runtime Knowledge (Query, Do Not Memorize)
+Always fetch fresh data (request only what you need):
+  luma agent --sections quick,rules --json
+  luma agent --get rules.patterns --json
+  luma explain --topic scaffold-contract
+
+## Non-Negotiable Workflow
+1. Generate or modify scaffold ONLY after validating previous version.
+2. Run in order (single run folder):
+   luma ingest <scaffold> --json
+   luma layout <scaffold> --viewports 320x640,768x1024 --json
+   luma keyboard <scaffold> --json
+   luma flow <scaffold> --patterns auto --json   (or explicit list)
+   luma score .ui/runs/<run-id> --json
+3. Use bd to manage tasks:
+   bd ready --json
+   bd update <id> --status in_progress --json
+   bd close <id> --reason "...analysis summary..." --json
 
 ## Scaffold Generation
   luma scaffold new --pattern login-form --out login.json --title "Sign In"
   luma scaffold new --pattern form-basic --out form.json
-Validate:
-  luma ingest form.json
+Validate immediately:
+  luma ingest form.json --json
 
-## Pipeline (single run folder)
-  luma ingest form.json; luma layout form.json --viewports 320x640,768x1024; luma keyboard form.json; luma flow form.json --patterns Form.Basic
-Then score:
-  luma score .ui/runs/<run-id>
+## Compliance Checklist (ALL REQUIRED)
+- Ingest artifact exists (.ui/runs/<run-id>/ingest.json)
+- Flow artifact lists patterns validated
+- Score artifact overall >= 85 and MUST failures == 0 (or task flagged as blocked)
+- Agent emitted compliance JSON block (sentinel present)
+- Issue close reason cites at least one real MUST/SHOULD rule id or component issue from artifacts
 
-## Pattern Selection Checklist
-  luma patterns --suggest ui/screens/<screen>.mock.json --json
-  luma flow ui/screens/<screen>.mock.json --patterns Form.Basic,Table.Simple,Guided.Flow
-Include disclosure hints: add behaviors.disclosure for collapsible/hidden sections.
+If ANY item missing: self-open a bug:
+  bd create "Non-compliance: <reason>" -t bug -p 1 --json
+
+## Forbidden
+- Editing .beads/issues.jsonl directly
+- Fabricating pattern results or scores
+- Skipping ingest/layout/flow before suggesting code changes
+- Guessing pattern names not shown by: luma patterns --list
+- Deep array indexing in dot paths (not yet supported): rules.patterns[0].must[0]
+
+## Allowed / Encouraged
+- Minimal section retrieval: luma agent --sections quick,patterns --json
+- Re-use run folder IDs for sequential commands
+- Creating discovered-from issues when uncovering new tasks
+
+## Verification Signals (Respond After Each Task)
+1. Short summary (<=300 chars)
+2. Compliance JSON block (with sentinel)
+3. List of actual commands run
+
+Example block:
+\`{"lumaCompliance":{"sentinel":"AGENT-COMPLIANCE-V1","ingestRun":"2025-11-01T164255Z","flowRun":"2025-11-01T164255Z","scoreRun":"2025-11-01T164255Z"}}\`
+
+## Escalation Rules
+- If median luma flow > 1200ms over 5 runs: open performance issue.
+- If a MUST failure persists across 2 consecutive iterations: open blocking issue & halt feature work.
 
 ## Governance
 Issue tracking: use bd only.
@@ -41,17 +79,8 @@ Integrity check:
 ## Reproducibility
 Capture envelopes with --json for deterministic agent context across versions.
 
-## Rules Summary
-1. Design scaffold first.
-2. Validate (ingest, layout, keyboard, flow) before coding.
-3. Require score >= 85 & zero MUST failures.
-4. One scaffold node -> one UI element.
-5. Feature freeze after approval (updates require re-validation).
-6. No hidden forms/modals unless in scaffold.
-7. Prefer explicit behaviors.disclosure hints.
-Red flags (STOP & update scaffold): "Obviously needs", "Users expect", "I'll just add".
-
-Full reference (large): luma agent --sections all
+Full envelope (on demand):
+  luma agent --sections all --json
 `;
 
 export const initCommand = new Command('init')

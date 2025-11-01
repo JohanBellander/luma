@@ -106,3 +106,85 @@ Exit codes:
 - `2` = manual edit or structural anomaly detected
 
 Add this script to CI / pre-push if stricter enforcement is desired.
+
+---
+
+# Agent Instructions (Strict Mode)
+
+MANDATORY: Use the **LUMA CLI** for ALL scaffold analysis. Manual reasoning without producing artifacts is non-compliant.
+
+Sentinel: `AGENT-COMPLIANCE-V1`
+You MUST echo this exact token inside a JSON compliance block after every completed task:
+```
+{"lumaCompliance":{"sentinel":"AGENT-COMPLIANCE-V1","ingestRun":"<run-id>","flowRun":"<run-id>","scoreRun":"<run-id>"}}
+```
+
+## Runtime Knowledge (Query, Do Not Memorize)
+Fetch fresh data each time:
+```
+luma agent --sections quick,rules --json
+luma agent --get rules.patterns --json
+luma explain --topic scaffold-contract
+```
+
+## Non-Negotiable Workflow
+1. Generate or modify scaffold ONLY after validating previous version.
+2. Run in order (single run folder):
+```
+luma ingest <scaffold> --json
+luma layout <scaffold> --viewports 320x640,768x1024 --json
+luma keyboard <scaffold> --json
+luma flow <scaffold> --patterns auto --json
+luma score .ui/runs/<run-id> --json
+```
+3. Manage issues with bd:
+```
+bd ready --json
+bd update <id> --status in_progress --json
+bd close <id> --reason "...analysis summary..." --json
+```
+
+## Compliance Checklist (ALL REQUIRED)
+- ingest.json present
+- flow.json includes validated patterns
+- score.json overall >=85 & zero MUST failures (or marked blocked)
+- Compliance JSON block (sentinel present)
+- Close reason cites at least one real rule id or component issue
+
+If ANY item missing:
+```
+bd create "Non-compliance: <reason>" -t bug -p 1 --json
+```
+
+## Forbidden
+- Editing `.beads/issues.jsonl` directly
+- Fabricating pattern results or scores
+- Skipping ingest/layout/flow before proposing code changes
+- Using pattern names not in `luma patterns --list`
+- Dot path deep array indexing (e.g. rules.patterns[0].must[0])
+
+## Allowed / Encouraged
+- Minimal section retrieval: `luma agent --sections quick,patterns --json`
+- Re-use run folder IDs
+- Discovered-from issues for new tasks
+
+## Verification Signals (after each task)
+1. Summary (<=300 chars)
+2. Compliance JSON block
+3. List of commands run
+
+Example:
+```
+{"lumaCompliance":{"sentinel":"AGENT-COMPLIANCE-V1","ingestRun":"2025-11-01T164255Z","flowRun":"2025-11-01T164255Z","scoreRun":"2025-11-01T164255Z"}}
+```
+
+## Escalation Rules
+- Median `luma flow` >1200ms across 5 runs: open performance issue
+- Persistent MUST failure (2 iterations): open blocking issue & halt feature work
+
+## Full Envelope (On Demand)
+```
+luma agent --sections all --json
+```
+
+By following Strict Mode you ensure reproducible, auditable, and token-efficient AI agent operations.
