@@ -3,19 +3,29 @@ import { execSync } from 'child_process';
 
 // NOTE: These are skeleton tests; richer tests will arrive in later issues.
 
-describe('agent command (skeleton)', () => {
+describe('agent command (sections quick/workflow/rules)', () => {
   it('lists sections', () => {
     const output = execSync('node dist/index.js agent --list-sections', { encoding: 'utf-8' });
     expect(output).toContain('Available agent sections:');
     expect(output).toContain('quick');
   });
 
-  it('returns JSON envelope for --sections quick --json', () => {
-    const json = execSync('node dist/index.js agent --sections quick --json', { encoding: 'utf-8' });
+  it('returns JSON envelope for --sections quick,workflow,rules --json', () => {
+    const json = execSync('node dist/index.js agent --sections quick,workflow,rules --json', { encoding: 'utf-8' });
     const parsed = JSON.parse(json);
     expect(parsed).toHaveProperty('version');
     expect(parsed).toHaveProperty('generatedAt');
     expect(parsed.sections).toHaveProperty('quick');
+    expect(parsed.sections).toHaveProperty('workflow');
+    expect(parsed.sections).toHaveProperty('rules');
+    // Basic shape checks
+    expect(parsed.sections.quick).toHaveProperty('usage');
+    expect(Array.isArray(parsed.sections.quick.primaryCommands)).toBe(true);
+    expect(Array.isArray(parsed.sections.workflow.stages)).toBe(true);
+    // rules.patterns should be sorted by name
+    const patternNames = parsed.sections.rules.patterns.map((p: any) => p.name);
+    const sorted = [...patternNames].sort((a, b) => a.localeCompare(b));
+    expect(patternNames).toEqual(sorted);
   });
 
   it('errors on invalid section', () => {
@@ -30,10 +40,10 @@ describe('agent command (skeleton)', () => {
     }
   });
 
-  it('supports --get dot path', () => {
-    const value = execSync('node dist/index.js agent --sections quick --get sections.quick --json', { encoding: 'utf-8' });
+  it('supports --get dot path into rules.patterns', () => {
+    const value = execSync('node dist/index.js agent --sections rules --get sections.rules.patterns --json', { encoding: 'utf-8' });
     const parsed = JSON.parse(value);
-    // Placeholder is empty object
-    expect(parsed).toMatchObject({});
+    expect(Array.isArray(parsed)).toBe(true);
+    expect(parsed[0]).toHaveProperty('name');
   });
 });

@@ -18,6 +18,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { EXIT_INVALID_INPUT } from '../utils/exit-codes.js';
+import { getAllPatterns } from '../core/patterns/pattern-registry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -25,12 +26,13 @@ const __dirname = dirname(__filename);
 // Placeholder section identifiers (will be populated in later issues LUMA-85+)
 export const AGENT_SECTION_NAMES = [
   'quick',        // Quick usage / minimal cheat sheet
-  'rules',        // Governance & generation rules
-  'patterns',     // UX pattern overview
-  'components',   // Component schema quick refs
-  'examples',     // Example scaffold fragments
-  'links',        // Helpful command/topic references
-  'meta'          // Envelope/meta description
+  'workflow',     // Recommended pipeline stages (LUMA-85)
+  'rules',        // Pattern rule ids per pattern (LUMA-85)
+  'patterns',     // UX pattern overview (later bead)
+  'components',   // Component schema quick refs (later bead)
+  'examples',     // Example scaffold fragments (later bead)
+  'links',        // Helpful command/topic references (later bead)
+  'meta'          // Envelope/meta description (later bead)
 ];
 
 interface AgentEnvelope {
@@ -45,11 +47,95 @@ interface ErrorJSON {
   details?: any;
 }
 
+// ---- Section Assemblers (LUMA-85) -------------------------------------------------
+
+function assembleQuick(): Record<string, unknown> {
+  return {
+    usage: 'luma <command> [options] <file-or-run-folder>',
+    primaryCommands: ['ingest', 'layout', 'keyboard', 'flow', 'score', 'report'],
+    recommendedOrder: ['ingest', 'layout', 'keyboard', 'flow', 'score', 'report'],
+  };
+}
+
+interface WorkflowStage {
+  name: string;
+  description: string;
+  command: string;
+  produces: string[];
+}
+
+function assembleWorkflow(): Record<string, unknown> {
+  const stages: WorkflowStage[] = [
+    {
+      name: 'Ingest',
+      description: 'Validate & normalize scaffold JSON',
+      command: 'luma ingest <scaffold>',
+      produces: ['ingest.json'],
+    },
+    {
+      name: 'Layout',
+      description: 'Compute frames for nodes across viewports',
+      command: 'luma layout <scaffold> --viewports <list>',
+      produces: ['layout_<viewport>.json'],
+    },
+    {
+      name: 'Keyboard',
+      description: 'Analyze focus / tab order and reachability',
+      command: 'luma keyboard <scaffold>',
+      produces: ['keyboard.json'],
+    },
+    {
+      name: 'Flow',
+      description: 'Validate activated UX patterns (MUST/SHOULD)',
+      command: 'luma flow <scaffold> [--patterns names]',
+      produces: ['flow.json'],
+    },
+    {
+      name: 'Score',
+      description: 'Aggregate category & pattern scores',
+      command: 'luma score <run-folder>',
+      produces: ['score.json'],
+    },
+    {
+      name: 'Report',
+      description: 'Generate HTML summary report',
+      command: 'luma report <run-folder>',
+      produces: ['report.html'],
+    },
+  ];
+  return { stages };
+}
+
+function assembleRules(): Record<string, unknown> {
+  // Patterns sorted by canonical name
+  const patterns = getAllPatterns()
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(p => ({
+      name: p.name,
+      must: p.must.map(r => r.id),
+      should: p.should.map(r => r.id),
+    }));
+  return { patterns };
+}
+
 function buildEnvelope(version: string, selected: string[]): AgentEnvelope {
   const sections: Record<string, unknown> = {};
   for (const name of selected) {
-    // Empty placeholder objects for now (explicit presence required by spec)
-    sections[name] = {};
+    switch (name) {
+      case 'quick':
+        sections.quick = assembleQuick();
+        break;
+      case 'workflow':
+        sections.workflow = assembleWorkflow();
+        break;
+      case 'rules':
+        sections.rules = assembleRules();
+        break;
+      default:
+        // Placeholder until implemented in later beads
+        sections[name] = {};
+    }
   }
   return {
     version,
