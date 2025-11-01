@@ -407,7 +407,8 @@ luma layout examples/overflow-table.json --viewports 320x640
 - Explore [pattern definitions](./SPECIFICATION.md#7-ux-pattern-library)
 - Learn about [scoring formulas](./SPECIFICATION.md#8-scoring--thresholds)
 - Understand [exit codes](./SPECIFICATION.md#10-exit-codes)
-- Review [AGENTS.md](./AGENTS.md) if you're an AI agent integrating LUMA.
+- Retrieve dynamic agent runtime knowledge: `luma agent --sections quick,rules --json`
+- Review the minimal pointer in [AGENTS.md](./AGENTS.md) (it defers to `luma agent`).
 
 ## Troubleshooting
 
