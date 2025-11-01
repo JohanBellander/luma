@@ -24,7 +24,7 @@ export function layoutBox(
       severity: 'warn',
       message: `Box padding ${padding} not in spacingScale`,
       nodeId: node.id,
-      jsonPointer: `/screens/0/root`,
+  jsonPointer: `/screen/root`,
     });
   }
 

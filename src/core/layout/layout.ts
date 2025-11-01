@@ -161,7 +161,7 @@ function layoutNode(
           severity: 'warn',
           message: `Button ${node.id} has touch target ${size.w}x${size.h}, minimum is ${minTouchTarget.w}x${minTouchTarget.h}`,
           nodeId: node.id,
-          jsonPointer: `/screens/0/root`,
+          jsonPointer: `/screen/root`,
         });
       }
       break;
@@ -185,7 +185,7 @@ function layoutNode(
           severity: 'warn',
           message: `Field ${node.id} has touch target ${size.w}x${size.h}, minimum is ${minTouchTarget.w}x${minTouchTarget.h}`,
           nodeId: node.id,
-          jsonPointer: `/screens/0/root`,
+          jsonPointer: `/screen/root`,
         });
       }
       break;
@@ -400,7 +400,7 @@ function checkPrimaryBelowFold(frames: Frame[], issues: Issue[], viewport: Viewp
       message: `Primary button below fold at viewport ${viewport.width}x${viewport.height}`,
       nodeId: primaryFrame.id,
       viewport: `${viewport.width}x${viewport.height}`,
-      jsonPointer: `/screens/0/root`,
+  jsonPointer: `/screen/root`,
     });
   }
 }

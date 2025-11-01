@@ -50,7 +50,7 @@ export function layoutStackVertical(
       severity: 'warn',
       message: `Stack padding ${padding} not in spacingScale`,
       nodeId: node.id,
-      jsonPointer: `/screens/0/root`, // Simplified for now
+  jsonPointer: `/screen/root`, // Simplified for now
     });
   }
   if (gap !== 0 && !ctx.spacingScale.includes(gap)) {
@@ -59,7 +59,7 @@ export function layoutStackVertical(
       severity: 'warn',
       message: `Stack gap ${gap} not in spacingScale`,
       nodeId: node.id,
-      jsonPointer: `/screens/0/root`,
+  jsonPointer: `/screen/root`,
     });
   }
 
@@ -133,7 +133,7 @@ export function layoutStackHorizontal(
       severity: 'warn',
       message: `Stack padding ${padding} not in spacingScale`,
       nodeId: node.id,
-      jsonPointer: `/screens/0/root`,
+  jsonPointer: `/screen/root`,
     });
   }
   if (gap !== 0 && !ctx.spacingScale.includes(gap)) {
@@ -142,7 +142,7 @@ export function layoutStackHorizontal(
       severity: 'warn',
       message: `Stack gap ${gap} not in spacingScale`,
       nodeId: node.id,
-      jsonPointer: `/screens/0/root`,
+  jsonPointer: `/screen/root`,
     });
   }
 
@@ -170,7 +170,7 @@ export function layoutStackHorizontal(
         severity: 'error',
         message: `Child ${child.id} overflows horizontal Stack container`,
         nodeId: child.id,
-        jsonPointer: `/screens/0/root`,
+  jsonPointer: `/screen/root`,
       });
     }
 
@@ -225,7 +225,7 @@ export function layoutStackHorizontalWrap(
       severity: 'warn',
       message: `Stack padding ${padding} not in spacingScale`,
       nodeId: node.id,
-      jsonPointer: `/screens/0/root`,
+  jsonPointer: `/screen/root`,
     });
   }
   if (gap !== 0 && !ctx.spacingScale.includes(gap)) {
@@ -234,7 +234,7 @@ export function layoutStackHorizontalWrap(
       severity: 'warn',
       message: `Stack gap ${gap} not in spacingScale`,
       nodeId: node.id,
-      jsonPointer: `/screens/0/root`,
+  jsonPointer: `/screen/root`,
     });
   }
 

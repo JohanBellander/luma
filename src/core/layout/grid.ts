@@ -30,7 +30,7 @@ export function layoutGrid(
       severity: 'warn',
       message: `Grid gap ${gap} not in spacingScale`,
       nodeId: node.id,
-      jsonPointer: `/screens/0/root`,
+  jsonPointer: `/screen/root`,
     });
   }
 
@@ -70,7 +70,7 @@ export function layoutGrid(
         severity: 'error',
         message: `Child ${child.id} width ${childW} exceeds Grid cell width ${cellW}`,
         nodeId: child.id,
-        jsonPointer: `/screens/0/root`,
+  jsonPointer: `/screen/root`,
       });
     }
 
