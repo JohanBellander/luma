@@ -38,8 +38,25 @@ export function createLayoutCommand(): Command {
         const scaffold = JSON.parse(scaffoldText) as Scaffold;
 
         // Parse viewports
-        const viewportStrings = options.viewports.split(',').map(s => s.trim());
-        const viewports = viewportStrings.map(parseViewport);
+        const viewportStrings = options.viewports.split(',').map(s => s.trim()).filter(s => s.length > 0);
+        if (viewportStrings.length === 0) {
+          logger.error('No viewports provided. Use --viewports <width>x<height>[,<width>x<height>...]');
+          process.exit(EXIT_INVALID_INPUT);
+        }
+
+        let viewports;
+        try {
+          viewports = viewportStrings.map(v => {
+            try {
+              return parseViewport(v);
+            } catch (e: any) {
+              throw new Error(`Viewport '${v}' invalid: ${e.message}`);
+            }
+          });
+        } catch (e: any) {
+          logger.error(e.message);
+          process.exit(EXIT_INVALID_INPUT);
+        }
 
         // Select run folder
         let runFolder: string;
