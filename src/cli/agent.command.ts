@@ -1,5 +1,5 @@
 /**
- * Agent command - runtime knowledge envelope skeleton (LUMA-84)
+ * Agent command - runtime knowledge envelope (LUMA-84, LUMA-85, LUMA-86, LUMA-87)
  *
  * Flags:
  *  --sections <csv>   Comma separated list of section names to include
@@ -31,8 +31,8 @@ export const AGENT_SECTION_NAMES = [
   'patterns',     // UX pattern overview (LUMA-86)
   'components',   // Component schema quick refs (LUMA-86)
   'examples',     // Example scaffold metadata (LUMA-86)
-  'links',        // Helpful command/topic references (later bead)
-  'meta'          // Envelope/meta description (later bead)
+  'links',        // Helpful references (specs, docs) (LUMA-87)
+  'meta'          // Build/platform metadata (LUMA-87)
 ];
 
 interface AgentEnvelope {
@@ -222,6 +222,45 @@ function assembleExamples(): Record<string, unknown> {
   return { examples };
 }
 
+// ---- LUMA-87 Additional Sections (links, meta) -----------------------------------
+
+interface LinkEntry { name: string; path?: string; url?: string; description?: string }
+
+function assembleLinks(): Record<string, unknown> {
+  // Provide authoritative internal spec file references & pattern spec docs.
+  // If project later publishes canonical URLs, they can be added here without changing shape.
+  const links: LinkEntry[] = [
+    { name: 'Specification', path: 'SPECIFICATION.md', description: 'Core system specification' },
+    { name: 'Quickstart', path: 'QUICKSTART.md', description: 'Step-by-step usage guide' },
+    { name: 'Patterns Overview', path: 'SPECIFICATION.md#7-ux-pattern-library', description: 'Pattern library section in spec' },
+    { name: 'Progressive Disclosure Pattern', path: 'LUMA-PATTERN-Progressive-Disclosure-SPEC.md' },
+    { name: 'Guided Flow Pattern', path: 'LUMA-PATTERN-Guided-Flow-SPEC.md' },
+    { name: 'Flip Spec', path: 'FLIP-SPEC.md', description: 'Future layout improvement plan (if applicable)' },
+    { name: 'Readme', path: 'README.md', description: 'Project overview & install' },
+  ];
+  return { links };
+}
+
+interface MetaSection {
+  nodeVersion: string;
+  platform: string;
+  arch: string;
+  processPid?: number;
+  patternsRegistered: number;
+}
+
+function assembleMeta(): Record<string, unknown> {
+  const patternsRegistered = getAllPatterns().length;
+  const meta: MetaSection = {
+    nodeVersion: process.version,
+    platform: process.platform,
+    arch: process.arch,
+    processPid: process.pid,
+    patternsRegistered,
+  };
+  return { meta };
+}
+
 function buildEnvelope(version: string, selected: string[]): AgentEnvelope {
   const sections: Record<string, unknown> = {};
   for (const name of selected) {
@@ -243,6 +282,12 @@ function buildEnvelope(version: string, selected: string[]): AgentEnvelope {
         break;
       case 'examples':
         sections.examples = assembleExamples();
+        break;
+      case 'links':
+        sections.links = assembleLinks();
+        break;
+      case 'meta':
+        sections.meta = assembleMeta();
         break;
       default:
         // Placeholder until implemented in later beads
