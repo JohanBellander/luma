@@ -3,10 +3,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 // Strict agent guidance enforcing mandatory LUMA usage and verifiable compliance.
-// Sentinel token used for automated detection of proper workflow adherence.
+// Scaffold-first: absolutely no HTML/CSS/JS/JSX before full artifact validation.
 const agentsContent = `# Agent Instructions (Strict Mode)
 
 MANDATORY: Use the **LUMA CLI** for ALL scaffold analysis. Manual reasoning without producing artifacts is non-compliant.
+
+CRITICAL RULE: Do NOT generate HTML, JSX/TSX, CSS, design tokens, or component code BEFORE producing and validating a scaffold with the required LUMA artifacts (ingest/layout/keyboard/flow/score). Scaffold-first always.
 
 Sentinel: AGENT-COMPLIANCE-V1
 You MUST echo this exact token inside a JSON compliance block after every completed task:
@@ -19,68 +21,77 @@ Always fetch fresh data (request only what you need):
   luma explain --topic scaffold-contract
 
 ## Non-Negotiable Workflow
-1. Generate or modify scaffold ONLY after validating previous version.
-2. Run in order (single run folder):
-   luma ingest <scaffold> --json
-   luma layout <scaffold> --viewports 320x640,768x1024 --json
-   luma keyboard <scaffold> --json
-   luma flow <scaffold> --patterns auto --json   (or explicit list)
+1. Collect requirements / clarify intent (no UI code yet).
+2. Draft / modify a scaffold JSON (minimal viable structure).
+3. Run in strict order (single run folder):
+   luma ingest <scaffold.json> --json
+   luma layout <scaffold.json> --viewports 320x640,768x1024 --json
+   luma keyboard <scaffold.json> --json
+   luma flow <scaffold.json> --patterns auto --json
    luma score .ui/runs/<run-id> --json
-3. Use bd to manage tasks:
-   bd ready --json
-   bd update <id> --status in_progress --json
-   bd close <id> --reason "...analysis summary..." --json
+4. If score passes (>=85, zero MUST failures) THEN and ONLY THEN produce implementation code (HTML/React/etc) as a separate phase.
+5. When changing scaffold again, repeat the analysis sequence BEFORE adjusting implementation.
 
-## Scaffold Generation
-  luma scaffold new --pattern login-form --out login.json --title "Sign In"
-  luma scaffold new --pattern form-basic --out form.json
-Validate immediately:
-  luma ingest form.json --json
+## Compliance Checklist (ALL REQUIRED BEFORE ANY UI CODE)
+- ingest.json present
+- layout.json present
+- keyboard.json present
+- flow.json includes validated patterns
+- score.json overall >=85 & zero MUST failures (or task explicitly blocked)
+- Compliance JSON block (sentinel present)
 
-## Compliance Checklist (ALL REQUIRED)
-- Ingest artifact exists (.ui/runs/<run-id>/ingest.json)
-- Flow artifact lists patterns validated
-- Score artifact overall >= 85 and MUST failures == 0 (or task flagged as blocked)
-- Agent emitted compliance JSON block (sentinel present)
-- Issue close reason cites at least one real MUST/SHOULD rule id or component issue from artifacts
-
-If ANY item missing: self-open a bug:
-  bd create "Non-compliance: <reason>" -t bug -p 1 --json
+If ANY item missing: Fix the scaffold or rerun analysis. Do NOT output HTML/JSX/CSS.
 
 ## Forbidden
-- Editing .beads/issues.jsonl directly
+- Producing HTML/JSX/CSS/component code before compliant artifacts exist
 - Fabricating pattern results or scores
-- Skipping ingest/layout/flow before suggesting code changes
-- Guessing pattern names not shown by: luma patterns --list
-- Deep array indexing in dot paths (not yet supported): rules.patterns[0].must[0]
+- Skipping ingest/layout/keyboard/layout/flow/score sequence
+- Using pattern names not in: luma patterns --list
+- Dot path deep array indexing (e.g. rules.patterns[0].must[0])
 
 ## Allowed / Encouraged
 - Minimal section retrieval: luma agent --sections quick,patterns --json
-- Re-use run folder IDs for sequential commands
-- Creating discovered-from issues when uncovering new tasks
+- Re-use run folder IDs across steps
+- Provide concise diffs of scaffold changes (structure only) before re-analysis
 
 ## Verification Signals (Respond After Each Task)
 1. Short summary (<=300 chars)
 2. Compliance JSON block (with sentinel)
-3. List of actual commands run
+3. Exact commands run (copyable)
+4. NEXT ACTION (if not compliant)
 
 Example block:
 \`{"lumaCompliance":{"sentinel":"AGENT-COMPLIANCE-V1","ingestRun":"2025-11-01T164255Z","flowRun":"2025-11-01T164255Z","scoreRun":"2025-11-01T164255Z"}}\`
 
 ## Escalation Rules
-- If median luma flow > 1200ms over 5 runs: open performance issue.
-- If a MUST failure persists across 2 consecutive iterations: open blocking issue & halt feature work.
+- Median luma flow > 1200ms over 5 runs: flag performance concern.
+- MUST failure persists for 2 iterations: halt implementation; refine scaffold.
 
-## Governance
-Issue tracking: use bd only.
-Integrity check:
-  pwsh scripts/validate-beads-integrity.ps1
+## Full Envelope (On Demand)
+  luma agent --sections all --json
+
+## Incorrect vs Correct Examples
+
+INCORRECT (non-compliant):
+  (1) "Here's the full HTML for the login form"  <-- BEFORE any ingest/layout/keyboard/flow/score
+  (2) luma ingest login.json (after code)   <-- Late analysis
+
+CORRECT (compliant):
+  (1) Draft login.json scaffold (structure only)
+  (2) luma ingest login.json --json
+  (3) luma layout login.json --viewports 320x640,768x1024 --json
+  (4) luma keyboard login.json --json
+  (5) luma flow login.json --patterns auto --json
+  (6) luma score .ui/runs/<run-id> --json  (score >=85, no MUST failures)
+  (7) Produce HTML/React component (implementation phase)
+
+## HTML / UI Implementation Gate
+Only after passing compliance checklist may you output any UI code. If you must propose future implementation, describe it textually (no tags) until artifacts are validated.
 
 ## Reproducibility
 Capture envelopes with --json for deterministic agent context across versions.
 
-Full envelope (on demand):
-  luma agent --sections all --json
+By following Strict Mode you ensure reproducible, auditable, and token-efficient AI agent operations. Scaffold-first preserves correctness and prevents premature UI divergence.
 `;
 
 export const initCommand = new Command('init')
