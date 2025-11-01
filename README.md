@@ -87,6 +87,22 @@ Typical integration flow for an agent:
 3. Run validation pipeline.
 4. Optionally fetch `rules` section later for pattern rule IDs.
 
+## Agent Integration Verification
+
+Use the `agent-verify` command to quickly audit that a repository has the expected agent workflow assets and governance policies:
+
+```bash
+luma agent-verify --json
+```
+
+Checks performed (v1):
+* `agents_md` – Presence of `AGENTS.md` and required governance/pattern hint lines
+* `beads_integrity_script` – Presence of `scripts/validate-beads-integrity.ps1` (Windows integrity enforcement)
+* `package_json_scripts` – Basic `test` or `build` scripts defined
+* `tsconfig_present` – Presence of TypeScript config (for projects using TS)
+
+Exit code: 0 if all pass, 2 if any fail (suitable for CI gating). Human output shows ✓/✗ markers; JSON output includes per-check detail fields.
+
 Error examples:
 ```bash
 luma agent --sections unknown --json   # => code: UNKNOWN_SECTION (exit 2)
