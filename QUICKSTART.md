@@ -44,6 +44,21 @@ luma init
 
 This displays instructions for adding LUMA workflow documentation to AGENTS.md and CLAUDE.md files.
 
+You can also bootstrap example scaffolds immediately:
+
+```bash
+# Copy a single example scaffold into ./examples
+luma init --example happy-form
+
+# Copy ALL available example scaffolds
+luma init --examples
+```
+
+All copied examples can be inspected with:
+```bash
+luma agent --sections examples --json
+```
+
 ## Step 1: Prepare Your Scaffold
 
 **Option A: Use scaffold generation (recommended)**

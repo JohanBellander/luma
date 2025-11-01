@@ -1,4 +1,4 @@
-import {Command} from 'commander';
+import { Command } from 'commander';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -94,11 +94,40 @@ Capture envelopes with --json for deterministic agent context across versions.
 By following Strict Mode you ensure reproducible, auditable, and token-efficient AI agent operations. Scaffold-first preserves correctness and prevents premature UI divergence.
 `;
 
+interface ExampleMeta { id: string; file: string }
+function discoverExamples(repoRoot: string): ExampleMeta[] {
+  const dir = path.join(repoRoot, 'examples');
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir)
+    .filter(f => f.endsWith('.json'))
+    .map(f => ({ id: f.replace(/\.json$/, ''), file: path.join(dir, f) }));
+}
+function copyExample(ex: ExampleMeta, destDir: string) {
+  if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+  const dest = path.join(destDir, path.basename(ex.file));
+  if (fs.existsSync(dest)) return { copied: false, path: dest, reason: 'exists' };
+  fs.copyFileSync(ex.file, dest);
+  return { copied: true, path: dest };
+}
+
 export const initCommand = new Command('init')
-  .description('Initialize LUMA in the current project by creating/updating AGENTS.md')
-  .action(() => {
-    const cwd = process.cwd();
-    const agentsPath = path.join(cwd, 'AGENTS.md');
+  .description('Initialize LUMA in the current project (AGENTS.md) and optionally copy example scaffolds')
+  .option('--example <name>', 'Copy a single example scaffold into ./examples')
+  .option('--examples', 'Copy ALL example scaffolds into ./examples (skip existing)')
+  .action((opts: { example?: string; examples?: boolean }) => {
+  const cwd = process.cwd();
+  const targetDir = process.env.LUMA_INIT_TARGET ? path.resolve(process.env.LUMA_INIT_TARGET) : cwd;
+  const agentsPath = path.join(targetDir, 'AGENTS.md');
+    // Determine repo root by walking up for package.json (max 5 levels)
+    let repoRoot = cwd;
+    let probe = cwd;
+    for (let i = 0; i < 5; i++) {
+      if (fs.existsSync(path.join(probe, 'package.json'))) { repoRoot = probe; break; }
+      const parent = path.dirname(probe);
+      if (parent === probe) break;
+      probe = parent;
+    }
+    const availableExamples = discoverExamples(repoRoot);
     
     let existingContent = '';
     let fileExists = false;
@@ -139,8 +168,31 @@ export const initCommand = new Command('init')
       process.exit(1);
     }
     
+    // Example copy handling
+  const destDir = path.join(targetDir, 'examples');
+    const reports: Array<{ copied: boolean; path: string; reason?: string }> = [];
+    if (opts.example) {
+      const match = availableExamples.find(e => e.id === opts.example);
+      if (!match) {
+        console.error(`\x1b[31m✗ Example '${opts.example}' not found. Available: ${availableExamples.map(e => e.id).join(', ')}\x1b[0m`);
+        process.exit(2);
+      } else {
+        reports.push(copyExample(match, destDir));
+      }
+    } else if (opts.examples) {
+      for (const ex of availableExamples) reports.push(copyExample(ex, destDir));
+    }
+
     console.log('\n\x1b[1mNext steps:\x1b[0m');
     console.log('  • Review AGENTS.md to ensure the content is properly integrated');
-    console.log('  • Create examples/ folder with sample scaffolds');
-    console.log('  • Run \`luma --help\` to see available commands\n');
+  if (!opts.example && !opts.examples) console.log('  • (Optional) Re-run with --example <name> or --examples to copy scaffold examples');
+    console.log('  • Run `luma --help` to see available commands');
+    if (reports.length) {
+      console.log('\n\x1b[1mExample copy results:\x1b[0m');
+      for (const r of reports) {
+        if (r.copied) console.log(`  ✓ Copied ${path.basename(r.path)}`); else console.log(`  • Skipped ${path.basename(r.path)} (exists)`);
+      }
+    }
+    if (!availableExamples.length) console.log('\n  (No repository examples discovered)');
+    console.log('\n');
   });
