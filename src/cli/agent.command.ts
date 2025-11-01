@@ -261,7 +261,7 @@ function assembleMeta(): Record<string, unknown> {
   return { meta };
 }
 
-function buildEnvelope(version: string, selected: string[]): AgentEnvelope {
+export function buildEnvelope(version: string, selected: string[]): AgentEnvelope {
   const sections: Record<string, unknown> = {};
   for (const name of selected) {
     switch (name) {

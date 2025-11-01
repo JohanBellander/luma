@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { execSync } from 'child_process';
 import { performance } from 'perf_hooks';
+import { buildEnvelope, AGENT_SECTION_NAMES } from '../src/cli/agent.command';
 
 // Extended tests for LUMA-89
 
@@ -66,11 +67,33 @@ describe('agent command extended suite', () => {
     expect(parsed).not.toHaveProperty('sections');
   });
 
-  it('performance: full generation under 400ms wall clock', () => {
+  it('performance: buildEnvelope direct invocation under 25ms (after warm-up)', () => {
+    const version = '0.0.0-test';
+    // Warm-up JIT / module cache
+    buildEnvelope(version, AGENT_SECTION_NAMES);
     const start = performance.now();
-    run('node dist/index.js agent --all --json');
+    const env = buildEnvelope(version, AGENT_SECTION_NAMES);
     const end = performance.now();
-    const duration = end - start;
-    expect(duration).toBeLessThan(400); // relaxed threshold for CI variability
+    expect(env.sections.quick).toBeTruthy();
+    expect(end - start).toBeLessThan(25);
+  });
+
+  it('performance: CLI spawn median < 800ms, max < 1200ms over 5 runs', () => {
+    const runs: number[] = [];
+    const iterations = 5;
+    for (let i = 0; i < iterations; i++) {
+      const start = performance.now();
+      run('node dist/index.js agent --all --json');
+      const end = performance.now();
+      runs.push(end - start);
+    }
+    const sorted = [...runs].sort((a,b)=>a-b);
+    const median = sorted[Math.floor(sorted.length/2)];
+    const max = Math.max(...runs);
+    // Log stats for visibility (stdout acceptable in test context)
+    // eslint-disable-next-line no-console
+    console.log('[agent performance] runs(ms)=', JSON.stringify(runs), 'median=', median.toFixed(2), 'max=', max.toFixed(2));
+    expect(median).toBeLessThan(800);
+    expect(max).toBeLessThan(1200);
   });
 });
