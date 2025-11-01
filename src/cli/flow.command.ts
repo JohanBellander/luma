@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { ingest } from '../core/ingest/ingest.js';
 import { validatePatterns } from '../core/patterns/validator.js';
-import { getPattern } from '../core/patterns/pattern-registry.js';
+import { getPattern, listPatternNames } from '../core/patterns/pattern-registry.js';
 import { getRunFilePath, selectRunFolder } from '../utils/run-folder.js';
 import type { Pattern } from '../core/patterns/types.js';
 import type { Scaffold } from '../types/scaffold.js';
@@ -31,7 +31,37 @@ export function createFlowCommand(): Command {
           for (const name of explicitPatternNames) {
             const pattern = getPattern(name);
             if (!pattern) {
-              console.error('[ERROR] Unknown pattern:', name);
+              // Enhanced messaging (LUMA-102)
+              const allNames = listPatternNames();
+              const lowered = name.toLowerCase();
+              const suggestions = allNames.filter((n: string) => {
+                const ln = n.toLowerCase();
+                return ln.startsWith(lowered.slice(0, 3)) || ln.includes(lowered);
+              }).slice(0, 5);
+              console.error(`[ERROR] Unknown pattern: ${name}`);
+              if (suggestions.length) {
+                console.error('[ERROR] Did you mean:', suggestions.join(', '));
+              }
+              // Provide canonical + alias list for discoverability
+              const canonicalToAliases: Record<string,string[]> = {};
+              for (const pname of allNames) {
+                if (pname.includes('.')) canonicalToAliases[pname] = [];
+              }
+              for (const pname of allNames) {
+                if (!pname.includes('.')) {
+                  const resolved = getPattern(pname);
+                  if (resolved) {
+                    canonicalToAliases[resolved.name] = canonicalToAliases[resolved.name] || [];
+                    if (!canonicalToAliases[resolved.name].includes(pname)) {
+                      canonicalToAliases[resolved.name].push(pname);
+                    }
+                  }
+                }
+              }
+              console.error('[ERROR] Available patterns & aliases:');
+              for (const [canonical, aliases] of Object.entries(canonicalToAliases)) {
+                console.error(`  - ${canonical}${aliases.length ? ' :: ' + aliases.join(', ') : ''}`);
+              }
               process.exit(2);
             }
             patterns.push(pattern);

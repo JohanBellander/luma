@@ -202,8 +202,43 @@ export function createPatternsCommand(): Command {
         const pattern = getPattern(options.show);
         
         if (!pattern) {
-          console.error(`Pattern not found: ${options.show}`);
-          console.error(`Available patterns: ${listPatternNames().join(', ')}`);
+          // Enhanced unknown pattern messaging (LUMA-102): show closest alias suggestions
+          const requested = options.show.trim();
+          const allNames = listPatternNames();
+          // Simple similarity heuristic: case-insensitive startsWith / includes
+          const lowered = requested.toLowerCase();
+          const suggestions = allNames.filter(n => {
+            const ln = n.toLowerCase();
+            return ln.startsWith(lowered.slice(0, 3)) || ln.includes(lowered);
+          }).slice(0, 5);
+          console.error(`Unknown pattern: ${requested}`);
+          if (suggestions.length) {
+            console.error(`Did you mean: ${suggestions.join(', ')}?`);
+          }
+          // Group canonical names with their aliases for clarity
+          const canonicalToAliases: Record<string,string[]> = {};
+          for (const name of allNames) {
+            // canonical names contain a dot per current patterns; treat others as aliases
+            if (name.includes('.')) {
+              canonicalToAliases[name] = [];
+            }
+          }
+          for (const name of allNames) {
+            if (!name.includes('.')) {
+              // find which canonical resolves this alias
+              const p = getPattern(name);
+              if (p) {
+                canonicalToAliases[p.name] = canonicalToAliases[p.name] || [];
+                if (!canonicalToAliases[p.name].includes(name)) {
+                  canonicalToAliases[p.name].push(name);
+                }
+              }
+            }
+          }
+          console.error('Available patterns & aliases:');
+          for (const [canonical, aliases] of Object.entries(canonicalToAliases)) {
+            console.error(`  - ${canonical}${aliases.length ? ' :: ' + aliases.join(', ') : ''}`);
+          }
           process.exit(2);
         }
 
