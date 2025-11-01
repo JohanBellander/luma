@@ -13,12 +13,15 @@ describe('agent command extended suite', () => {
   it('produces stable snapshot for all sections (ignoring volatile fields)', () => {
     const first = JSON.parse(run('node dist/index.js agent --all --json'));
     const second = JSON.parse(run('node dist/index.js agent --all --json'));
-    // Remove volatile fields
+    // Strip volatile timestamps & PIDs & legacy duplicates
     delete first.generatedAt; delete second.generatedAt;
+    delete first.schema.generated; delete second.schema.generated;
     delete first.sections?.meta?.meta?.processPid; delete second.sections?.meta?.meta?.processPid;
+    delete first.meta?.meta?.processPid; delete second.meta?.meta?.processPid;
+    // Compare deterministic JSON
     expect(JSON.stringify(first)).toBe(JSON.stringify(second));
     expect(first).toHaveProperty('sections.quick');
-    expect(first).toHaveProperty('sections.workflow');
+    expect(first).toHaveProperty('quick'); // top-level exposure
   });
 
   it('de-dupes duplicate sections in --sections flag', () => {

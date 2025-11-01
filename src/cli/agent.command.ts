@@ -37,10 +37,23 @@ export const AGENT_SECTION_NAMES = [
   'meta'          // Build/platform metadata (LUMA-87)
 ];
 
+interface AgentEnvelopeSchema {
+  id: string;            // constant schema id
+  version: string;       // schema version (bump on breaking structural change)
+  generated: string;     // ISO8601 timestamp
+  sections: string[];    // list of included section keys (canonical order)
+}
+
 interface AgentEnvelope {
+  // Backwards compatibility fields (original shape fields retained)
   version: string;
-  generatedAt: string; // ISO8601
+  generatedAt: string; // ISO8601 (legacy)
+  // New schema metadata (spec v1)
+  schema: AgentEnvelopeSchema;
+  // Legacy container of sections for existing tests
   sections: Record<string, unknown>;
+  // Also expose each section at top-level for direct dot path retrieval per spec
+  [key: string]: any;
 }
 
 interface ErrorJSON {
@@ -266,54 +279,42 @@ function assembleMeta(): Record<string, unknown> {
 // Simple memoization cache keyed by sorted section list string
 const envelopeCache: Map<string, AgentEnvelope> = new Map();
 export function buildEnvelope(version: string, selected: string[]): AgentEnvelope {
-  const key = selected.slice().sort().join('|');
-  if (envelopeCache.has(key)) {
-    return envelopeCache.get(key)!;
-  }
+  // Preserve order as passed (already canonical ordering performed by caller)
+  const key = selected.join('|');
+  if (envelopeCache.has(key)) return envelopeCache.get(key)!;
   const start = performance.now();
   const sections: Record<string, unknown> = {};
   for (const name of selected) {
     switch (name) {
-      case 'quick':
-        sections.quick = assembleQuick();
-        break;
-      case 'workflow':
-        sections.workflow = assembleWorkflow();
-        break;
-      case 'rules':
-        sections.rules = assembleRules();
-        break;
-      case 'patterns':
-        sections.patterns = assemblePatterns();
-        break;
-      case 'components':
-        sections.components = assembleComponents();
-        break;
-      case 'examples':
-        sections.examples = assembleExamples();
-        break;
-      case 'links':
-        sections.links = assembleLinks();
-        break;
-      case 'meta':
-        sections.meta = assembleMeta();
-        break;
-      default:
-        sections[name] = {};
+      case 'quick': sections.quick = assembleQuick(); break;
+      case 'workflow': sections.workflow = assembleWorkflow(); break;
+      case 'rules': sections.rules = assembleRules(); break;
+      case 'patterns': sections.patterns = assemblePatterns(); break;
+      case 'components': sections.components = assembleComponents(); break;
+      case 'examples': sections.examples = assembleExamples(); break;
+      case 'links': sections.links = assembleLinks(); break;
+      case 'meta': sections.meta = assembleMeta(); break;
+      default: sections[name] = {}; // should not occur
     }
   }
+  const generatedAt = new Date().toISOString();
   const envelope: AgentEnvelope = {
     version,
-    generatedAt: new Date().toISOString(),
+    generatedAt,
+    schema: {
+      id: 'luma.agent-docs',
+      version: '1',
+      generated: generatedAt,
+      sections: selected.slice(),
+    },
     sections,
   };
-  const end = performance.now();
-  const duration = end - start;
-  if (duration > 100) {
-    logger.debug(`agent envelope generation slow (${duration.toFixed(2)}ms) sections=${selected.length}`);
-  } else {
-    logger.debug(`agent envelope generated in ${duration.toFixed(2)}ms`);
+  // Expose each section at top-level for spec compliance (quick, rules, etc.)
+  for (const name of selected) {
+    (envelope as any)[name] = sections[name];
   }
+  const duration = performance.now() - start;
+  logger.debug(`agent envelope generated in ${duration.toFixed(2)}ms (${selected.length} sections)`);
   envelopeCache.set(key, envelope);
   return envelope;
 }
@@ -336,22 +337,14 @@ function uniqueOrdered<T>(items: T[]): T[] {
 export function resolveDotPath(envelope: AgentEnvelope, dotPath: string): { ok: boolean; value?: any } {
   const rawParts = dotPath.split('.').filter(Boolean);
   if (!rawParts.length) return { ok: false };
-  const parts = rawParts[0] === 'sections' ? rawParts.slice(1) : rawParts;
+  // Allow legacy leading 'sections'
+  let parts = rawParts[0] === 'sections' ? rawParts.slice(1) : rawParts;
   if (!parts.length) return { ok: false };
-  // Validate segments
+  for (const seg of parts) if (!/^[A-Za-z0-9_]+$/.test(seg)) return { ok: false };
+  let cur: any = envelope;
   for (const seg of parts) {
-    if (!/^[A-Za-z0-9_]+$/.test(seg)) return { ok: false };
-  }
-  const [section, ...rest] = parts;
-  const sectionObj = envelope.sections[section];
-  if (sectionObj === undefined) return { ok: false };
-  let cur: any = sectionObj;
-  for (const seg of rest) {
-    if (cur && Object.prototype.hasOwnProperty.call(cur, seg)) {
-      cur = cur[seg];
-    } else {
-      return { ok: false };
-    }
+    if (cur && Object.prototype.hasOwnProperty.call(cur, seg)) cur = cur[seg];
+    else return { ok: false };
   }
   return { ok: true, value: cur };
 }
@@ -360,7 +353,7 @@ export function createAgentCommand(): Command {
   const command = new Command('agent');
 
   command
-    .description('Runtime agent knowledge (skeleton)')
+  .description('Runtime agent knowledge (deterministic sections; default quick)')
     .option('--sections <csv>', 'Comma separated section names to include')
     .option('--all', 'Include all sections')
     .option('--get <dotPath>', 'Return only the value at a dot path inside the envelope (simple keys only)')
@@ -392,25 +385,12 @@ export function createAgentCommand(): Command {
         process.exit(EXIT_INVALID_INPUT);
       }
 
-      // Determine selected sections
+      // Determine selected sections (default quick if no explicit flags)
       let requested: string[] = [];
-      if (options.all) {
-        requested = [...AGENT_SECTION_NAMES];
-      } else if (options.sections) {
-        requested = uniqueOrdered(options.sections.split(',').map(s => s.trim()).filter(Boolean));
-      } else if (options.get) {
-        // If only --get is provided without explicit sections, default to all (so path can work)
-        requested = [...AGENT_SECTION_NAMES];
-      } else {
-        // No actionable flag: show guidance and exit 2 (invalid usage) to encourage explicitness
-  const err: ErrorJSON = { code: 'NO_SECTIONS_SPECIFIED', message: 'Specify --sections <csv> or --all or use --list-sections.' };
-        if (options.json) console.error(JSON.stringify(err, null, 2));
-        else {
-          console.error('Error: ' + err.message);
-          console.error('Hint: luma agent --list-sections');
-        }
-        process.exit(EXIT_INVALID_INPUT);
-      }
+      if (options.all) requested = [...AGENT_SECTION_NAMES];
+      else if (options.sections) requested = uniqueOrdered(options.sections.split(',').map(s => s.trim()).filter(Boolean));
+      else if (options.get) requested = [...AGENT_SECTION_NAMES]; // build all so dot path likely resolves
+      else requested = ['quick']; // default startup card per spec
 
       // Validate section names
       const invalid = requested.filter(s => !AGENT_SECTION_NAMES.includes(s));
@@ -443,17 +423,23 @@ export function createAgentCommand(): Command {
       }
 
       if (options.json) {
-        // Determinism: sort top-level section keys
-        const stable = { ...envelope, sections: Object.keys(envelope.sections).sort().reduce((acc, k) => { acc[k] = (envelope.sections as any)[k]; return acc; }, {} as Record<string, unknown>) };
-        console.log(JSON.stringify(stable, null, 2));
+        // Deterministic ordering of sections inside legacy sections object
+        const stableSections = Object.keys(envelope.sections).sort().reduce((acc, k) => { acc[k] = (envelope.sections as any)[k]; return acc; }, {} as Record<string, unknown>);
+        const out = { ...envelope, sections: stableSections };
+        console.log(JSON.stringify(out, null, 2));
         return;
       }
 
-      console.log(`Agent Knowledge Envelope (v${envelope.version})`);
-      console.log('Generated:', envelope.generatedAt);
-      console.log('Sections included (canonical order):');
-      for (const s of canonicalOrder) console.log(' - ' + s);
-      console.log('\n(To view raw JSON: use --json)');
+      console.log(`Agent Knowledge Envelope (schema ${envelope.schema.version})`);
+      console.log('Included sections:', envelope.schema.sections.join(', '));
+      if (envelope.quick) {
+        const q = envelope.quick as any;
+        console.log('\n[quick]');
+        console.log('usage: ' + q.usage);
+        console.log('primaryCommands: ' + q.primaryCommands.join(','));
+        console.log('recommendedOrder: ' + q.recommendedOrder.join('>'));
+      }
+      console.log('\n(JSON: add --json)');
     });
 
   return command;
