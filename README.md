@@ -53,6 +53,50 @@ Requires Node.js ≥ 18.
 luma init
 ```
 
+## Runtime Knowledge (Agent Command)
+
+Use the dynamic agent command to retrieve only the information you need in a deterministic JSON envelope. This replaces large static docs and reduces token usage for AI agents.
+
+List available sections:
+```bash
+luma agent --list-sections
+```
+
+Fetch a subset (only quick + rules):
+```bash
+luma agent --sections quick,rules --json
+```
+
+Dot-path retrieval (returns just that subtree):
+```bash
+luma agent --get quick --json
+```
+
+All sections:
+```bash
+luma agent --all --json
+```
+
+Determinism: Keys are stable and ordering is canonical; only `generatedAt` timestamp varies per invocation.
+
+Dot-path grammar (v1): `section(.segment)*` with simple alphanumeric/underscore segments. **Deep indexing into arrays (e.g. `patterns.Form.Basic.must[0]`) and wildcards are intentionally NOT supported** in the first version. Retrieve the full section and filter client-side if you need individual items.
+
+Typical integration flow for an agent:
+1. `luma agent --sections quick,components,patterns --json` to cache core knowledge.
+2. Build scaffold.
+3. Run validation pipeline.
+4. Optionally fetch `rules` section later for pattern rule IDs.
+
+Error examples:
+```bash
+luma agent --sections unknown --json   # => code: UNKNOWN_SECTION (exit 2)
+luma agent --get rules.invalidPath --json  # => code: UNKNOWN_PATH (exit 2)
+```
+
+Performance target: full envelope generation (<60ms typical) cached in-process; repeat requests for the same section set are memoized.
+
+> Tip: Persist the JSON output alongside your run folder to ensure reproducible agent context across sessions.
+
 ## Documentation
 
 - [SPECIFICATION.md](./SPECIFICATION.md) — Full data & behavior spec

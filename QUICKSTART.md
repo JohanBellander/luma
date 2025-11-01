@@ -410,6 +410,30 @@ luma layout examples/overflow-table.json --viewports 320x640
 - Retrieve dynamic agent runtime knowledge: `luma agent --sections quick,rules --json`
 - Review the minimal pointer in [AGENTS.md](./AGENTS.md) (it defers to `luma agent`).
 
+### Agent Command (Runtime Knowledge)
+
+Instead of loading large static docs, query only what you need:
+```bash
+luma agent --list-sections                 # show available sections
+luma agent --sections quick,rules --json   # minimal envelope
+luma agent --get quick --json              # just the quick section
+```
+
+All sections (cached after first build):
+```bash
+luma agent --all --json
+```
+
+Dot-path limitations: simple dotted keys only (e.g. `quick`, `rules.patterns`). **No array indexing or wildcard paths (`patterns.Form.Basic.must[0]`) supported in v1.** Fetch the section then filter client-side if needed.
+
+Error examples:
+```bash
+luma agent --sections unknown --json   # UNKNOWN_SECTION (exit 2)
+luma agent --get rules.bad --json      # UNKNOWN_PATH (exit 2)
+```
+
+Determinism: Output ordering is stable; only timestamps differ.
+
 ## Troubleshooting
 
 **"Invalid schema version"**
