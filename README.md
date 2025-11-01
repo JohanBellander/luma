@@ -98,6 +98,43 @@ Suggestions add <5% execution time compared to listing patterns and never block 
 
 ISC
 
+## Pattern Coverage (v1.1)
+
+Use the `--coverage` flag with `flow` to see how many patterns were activated versus total available, and which suggested patterns (medium/high confidence) were not validated.
+
+```bash
+luma flow my-form.json --coverage --json | jq '.coverage'
+```
+
+Example JSON output fragment:
+
+```json
+{
+	"coverage": {
+		"activated": 3,
+		"nTotal": 4,
+		"percent": 75.0,
+		"gaps": [
+			{ "pattern": "Guided.Flow", "reason": "Found multi-step indicators (next, previous, step 1, step 2) suggesting a wizard flow" }
+		]
+	}
+}
+```
+
+Fields:
+* activated – number of patterns validated in this run
+* nTotal – total patterns available in the registry
+* percent – activated / nTotal * 100 (rounded to 2 decimals)
+* gaps – medium/high confidence suggestions not included (potential missed validations)
+
+Without `--json` a summary is printed:
+
+```bash
+luma flow my-form.json --coverage
+# [INFO] Coverage: activated=1/4 (25%) gaps=1
+#   - Gap: Guided.Flow (Found multi-step indicators (...))
+```
+
 ## Contributing
 
 PRs welcome: https://github.com/JohanBellander/luma.

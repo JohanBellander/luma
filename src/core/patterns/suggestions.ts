@@ -1,3 +1,106 @@
+import type { Node } from '../../types/node.js';
+import { traversePreOrder } from '../keyboard/traversal.js';
+
+export type Confidence = 'high' | 'medium' | 'low';
+
+export interface PatternSuggestion {
+  pattern: string;
+  reason: string;
+  confidence: Confidence;
+}
+
+/**
+ * Detect if any node in the tree has progressive disclosure hints.
+ * Per spec: auto-activate when any node has behaviors.disclosure.collapsible === true
+ */
+export function hasDisclosureHints(root: Node): boolean {
+  const nodes = traversePreOrder(root, false); // include invisible
+  for (const node of nodes) {
+    if (node.behaviors?.disclosure?.collapsible === true) return true;
+  }
+  return false;
+}
+
+/**
+ * Detect guided flow hints (wizard or step roles) for auto-activation.
+ */
+export function hasGuidedFlowHints(root: Node): boolean {
+  const nodes = traversePreOrder(root, false);
+  for (const node of nodes) {
+    const gf = node.behaviors?.guidedFlow;
+    if (gf && (gf.role === 'wizard' || gf.role === 'step')) return true;
+  }
+  return false;
+}
+
+/**
+ * Suggest patterns using heuristics.
+ */
+export function suggestPatterns(root: Node): PatternSuggestion[] {
+  const suggestions: PatternSuggestion[] = [];
+  const nodes = traversePreOrder(root, false);
+  let hasForm = false;
+  let formFields = 0;
+  let formActions = 0;
+  let hasTable = false;
+  let tableColumns = 0;
+  let tableResponsiveStrategy: string | undefined;
+  let hasDisclosure = false;
+  let guidedFlowIndicators = 0;
+  const guidedFlowIndicatorsDetails: string[] = [];
+
+  for (const n of nodes) {
+    if (n.type === 'Form') {
+      hasForm = true;
+      // Cast to any to access Form-only properties safely
+      const f: any = n;
+      formFields += Array.isArray(f.fields) ? f.fields.length : 0;
+      formActions += Array.isArray(f.actions) ? f.actions.length : 0;
+    } else if (n.type === 'Table') {
+      hasTable = true;
+      const t: any = n;
+      tableColumns += Array.isArray(t.columns) ? t.columns.length : 0;
+      tableResponsiveStrategy = t.responsive?.strategy;
+    } else if (n.behaviors?.disclosure?.collapsible) {
+      hasDisclosure = true;
+    } else if (n.type === 'Button') {
+      const b: any = n;
+      const text = (b.text || '').toLowerCase();
+      if (['next', 'previous', 'prev', 'back'].some(k => text.includes(k))) {
+        guidedFlowIndicators++;
+        guidedFlowIndicatorsDetails.push(text);
+      } else if (/step\s*\d+/i.test(text)) {
+        guidedFlowIndicators++;
+        guidedFlowIndicatorsDetails.push(text);
+      }
+    } else if (n.behaviors?.guidedFlow) {
+      guidedFlowIndicators++;
+      guidedFlowIndicatorsDetails.push(n.id);
+    }
+  }
+
+  if (hasForm) {
+    const reason = `Detected Form node with ${formFields} field(s) and ${formActions} action(s)`;
+    suggestions.push({ pattern: 'Form.Basic', reason, confidence: 'high' });
+  }
+  if (hasTable) {
+    const reason = `Detected Table node (${tableColumns} columns, responsive.strategy=${tableResponsiveStrategy || 'none'})`;
+    suggestions.push({ pattern: 'Table.Simple', reason, confidence: tableColumns > 0 ? 'high' : 'medium' });
+  }
+  if (hasDisclosure) {
+    const reason = 'Found collapsible disclosure behavior on one or more nodes';
+    suggestions.push({ pattern: 'Progressive.Disclosure', reason, confidence: 'high' });
+  }
+  if (guidedFlowIndicators >= 2) {
+    const reason = `Found multi-step indicators (${guidedFlowIndicatorsDetails.slice(0, 5).join(', ')}) suggesting a wizard flow`;
+    suggestions.push({ pattern: 'Guided.Flow', reason, confidence: guidedFlowIndicators > 3 ? 'high' : 'medium' });
+  } else if (guidedFlowIndicators === 1) {
+    const reason = `Single guided-flow hint (${guidedFlowIndicatorsDetails[0]}) detected`;
+    suggestions.push({ pattern: 'Guided.Flow', reason, confidence: 'low' });
+  }
+
+  return suggestions;
+}
 /**
  * Deterministic suggestion text for Progressive Disclosure pattern issues.
  * 

@@ -1,0 +1,85 @@
+{
+  "schemaVersion": "1.0.0",
+  "screen": {
+    "id": "auto-form",
+    "title": "Auto Form",
+    "root": {
+      "id": "root",
+      "type": "Stack",
+      "direction": "vertical",
+      "children": [
+        {
+          "id": "login-form",
+          "type": "Form",
+          "title": "Login",
+          "fields": [
+            {
+              "id": "email",
+              "type": "Field",
+              "label": "Email",
+              "inputType": "email",
+              "required": true
+            },
+            {
+              "id": "password",
+              "type": "Field",
+              "label": "Password",
+              "inputType": "password",
+              "required": true
+            }
+          ],
+          "actions": [
+            {
+              "id": "submit",
+              "type": "Button",
+              "text": "Submit",
+              "roleHint": "primary",
+              "minSize": {
+                "w": 44,
+                "h": 44
+              }
+            }
+          ],
+          "states": [
+            "default"
+          ]
+        },
+        {
+          "id": "toggle-details",
+          "type": "Button",
+          "text": "Details",
+          "behaviors": {
+            "disclosure": {
+              "collapsible": true,
+              "targetId": "details-box"
+            }
+          }
+        },
+        {
+          "id": "details-box",
+          "type": "Box",
+          "child": {
+            "id": "details-text",
+            "type": "Text",
+            "text": "Hidden"
+          }
+        }
+      ]
+    }
+  },
+  "settings": {
+    "spacingScale": [
+      4,
+      8,
+      12,
+      16
+    ],
+    "minTouchTarget": {
+      "w": 44,
+      "h": 44
+    },
+    "breakpoints": [
+      "320x640"
+    ]
+  }
+}
