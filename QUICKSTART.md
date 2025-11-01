@@ -268,10 +268,7 @@ Each command creates a NEW timestamped run folder. To ensure `score` sees all ar
 
 Windows PowerShell:
 ```powershell
-luma ingest my-form.json; \
-luma layout my-form.json --viewports 320x640,768x1024; \
-luma keyboard my-form.json; \
-luma flow my-form.json --patterns Form.Basic
+luma ingest my-form.json; luma layout my-form.json --viewports 320x640,768x1024; luma keyboard my-form.json; luma flow my-form.json --patterns Form.Basic
 ```
 
 macOS/Linux:
