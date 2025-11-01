@@ -1,100 +1,15 @@
 /**
- * Patterns command - lists or shows UX pattern details
- * Per spec Section 9.7: luma patterns --list --json OR luma patterns --show <Pattern> --json
+ * Patterns command - lists or shows UX pattern details or suggests patterns.
+ * Centralizes suggestion heuristics by delegating to core/patterns/suggestions.ts
+ * (LUMA-120: deduplicate previously inlined logic here).
  */
 
 import { Command } from 'commander';
-import { getAllPatterns, getPattern, listPatternNames, getAliases, _getRegistry } from '../core/patterns/pattern-registry.js';
+import { getAllPatterns, getPattern, listPatternNames, getAliases } from '../core/patterns/pattern-registry.js';
 import { readFileSync } from 'fs';
 import { ingest } from '../core/ingest/ingest.js';
 import type { Node } from '../types/node.js';
-
-interface PatternSuggestion {
-  pattern: string;
-  reason: string;
-  confidence: 'high' | 'medium' | 'low';
-}
-
-function traverse(root: Node, fn: (n: Node) => void) {
-  fn(root);
-  switch (root.type) {
-    case 'Stack':
-    case 'Grid':
-      root.children.forEach(c => traverse(c, fn));
-      break;
-    case 'Box':
-      if (root.child) traverse(root.child, fn);
-      break;
-    case 'Form':
-      root.fields.forEach(f => traverse(f, fn));
-      root.actions.forEach(a => traverse(a, fn));
-      break;
-  }
-}
-
-/**
- * Heuristic pattern suggestions per LUMA-74.
- */
-function suggestPatterns(screenRoot: Node): PatternSuggestion[] {
-  const suggestions: PatternSuggestion[] = [];
-  let hasForm = false;
-  let formActions = 0;
-  let formFields = 0;
-  let hasTable = false;
-  let tableColumns = 0;
-  let tableResponsiveStrategy: string | undefined;
-  let hasDisclosure = false;
-  let guidedFlowIndicators = 0; // next/previous buttons etc.
-  let guidedFlowButtons: string[] = [];
-
-  traverse(screenRoot, (n) => {
-    if (n.type === 'Form') {
-      hasForm = true;
-      formFields += n.fields.length;
-      formActions += n.actions.length;
-    } else if (n.type === 'Table') {
-      hasTable = true;
-      tableColumns += n.columns.length;
-      tableResponsiveStrategy = n.responsive?.strategy;
-    } else if (n.behaviors?.disclosure?.collapsible) {
-      hasDisclosure = true;
-    } else if (n.type === 'Button') {
-      const text = (n.text || '').toLowerCase();
-      if (['next', 'previous', 'prev', 'back'].some(k => text.includes(k))) {
-        guidedFlowIndicators++;
-        guidedFlowButtons.push(text);
-      } else if (/step\s*\d+/i.test(text)) {
-        guidedFlowIndicators++;
-        guidedFlowButtons.push(text);
-      }
-    } else if (n.behaviors?.guidedFlow) {
-      guidedFlowIndicators++;
-      guidedFlowButtons.push(n.id);
-    }
-  });
-
-  if (hasForm) {
-    const reason = `Detected Form node with ${formFields} field(s) and ${formActions} action(s)`;
-    suggestions.push({ pattern: 'Form.Basic', reason, confidence: 'high' });
-  }
-  if (hasTable) {
-    const reason = `Detected Table node (${tableColumns} columns, responsive.strategy=${tableResponsiveStrategy || 'none'})`;
-    suggestions.push({ pattern: 'Table.Simple', reason, confidence: tableColumns > 0 ? 'high' : 'medium' });
-  }
-  if (hasDisclosure) {
-    const reason = 'Found collapsible disclosure behavior on one or more nodes';
-    suggestions.push({ pattern: 'Progressive.Disclosure', reason, confidence: 'high' });
-  }
-  if (guidedFlowIndicators >= 2) {
-    const reason = `Found multi-step indicators (${guidedFlowButtons.slice(0,5).join(', ')}) suggesting a wizard flow`;
-    suggestions.push({ pattern: 'Guided.Flow', reason, confidence: guidedFlowIndicators > 3 ? 'high' : 'medium' });
-  } else if (guidedFlowIndicators === 1) {
-    const reason = `Single guided-flow hint (${guidedFlowButtons[0]}) detected`;
-    suggestions.push({ pattern: 'Guided.Flow', reason, confidence: 'low' });
-  }
-
-  return suggestions;
-}
+import { suggestPatterns } from '../core/patterns/suggestions.js';
 
 interface PatternListItem {
   name: string; // canonical name
