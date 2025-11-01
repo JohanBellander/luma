@@ -1,51 +1,56 @@
 #!/bin/sh
-# Auto-increment patch version on push
-# This wrapper calls the PowerShell script on Windows
+# Pre-push composite hook:
+# 1. Run beads integrity check (blocks push on anomaly)
+# 2. Auto-increment patch version if unchanged (lightweight versioning)
 
+SCRIPT_DIR="$(dirname "$0")"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+echo "[pre-push] Running beads integrity check..."
 if command -v pwsh > /dev/null 2>&1; then
-  # Use PowerShell 7+ if available
-  pwsh -NoProfile -ExecutionPolicy Bypass -File "$(dirname "$0")/pre-push.ps1"
+  pwsh -NoProfile -ExecutionPolicy Bypass -File "$REPO_ROOT/scripts/validate-beads-integrity.ps1"
+  INTEGRITY_CODE=$?
 elif command -v powershell > /dev/null 2>&1; then
-  # Fall back to Windows PowerShell
-  powershell -NoProfile -ExecutionPolicy Bypass -File "$(dirname "$0")/pre-push.ps1"
+  powershell -NoProfile -ExecutionPolicy Bypass -File "$REPO_ROOT/scripts/validate-beads-integrity.ps1"
+  INTEGRITY_CODE=$?
+elif [ -f "$REPO_ROOT/scripts/validate-beads-integrity.sh" ]; then
+  bash "$REPO_ROOT/scripts/validate-beads-integrity.sh"
+  INTEGRITY_CODE=$?
 else
-  # Fallback for Unix systems
-  echo "📦 Auto-incrementing patch version..."
-  
-  # Get current version
-  CURRENT_VERSION=$(node -p "require('./package.json').version" 2>/dev/null)
-  if [ -z "$CURRENT_VERSION" ]; then
-    exit 0
-  fi
-  
-  # Check if version was manually changed
-  STAGED_VERSION=$(git show HEAD:package.json 2>/dev/null | node -p "JSON.parse(require('fs').readFileSync('/dev/stdin', 'utf-8')).version" 2>/dev/null || echo "$CURRENT_VERSION")
-  
-  if [ "$CURRENT_VERSION" = "$STAGED_VERSION" ]; then
-    # Split and increment
-    MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1)
-    MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f2)
-    PATCH=$(echo "$CURRENT_VERSION" | cut -d. -f3)
-    NEW_PATCH=$((PATCH + 1))
-    NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
-    
-    echo "📦 Auto-incrementing version: $CURRENT_VERSION → $NEW_VERSION"
-    
-    # Update package.json
-    node -e "
-      const fs = require('fs');
-      const pkg = JSON.parse(fs.readFileSync('package.json', 'utf-8'));
-      pkg.version = '$NEW_VERSION';
-      fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-    "
-    
-    # Stage and amend
-    git add package.json
-    git commit --amend --no-edit --no-verify
-    
-    echo "✓ Version bumped to $NEW_VERSION"
-  fi
+  echo "[pre-push] Integrity script not found; skipping (non-blocking)."
+  INTEGRITY_CODE=0
 fi
 
+if [ "$INTEGRITY_CODE" -eq 2 ]; then
+  echo "[pre-push] ❌ Beads integrity anomaly detected. Push aborted."
+  exit 2
+fi
+
+# Version bump (only if no anomaly)
+echo "[pre-push] Performing optional patch version bump..."
+if command -v pwsh > /dev/null 2>&1; then
+  pwsh -NoProfile -ExecutionPolicy Bypass -File "$SCRIPT_DIR/pre-push.ps1"
+  exit 0
+elif command -v powershell > /dev/null 2>&1; then
+  powershell -NoProfile -ExecutionPolicy Bypass -File "$SCRIPT_DIR/pre-push.ps1"
+  exit 0
+fi
+
+# POSIX fallback implementation of version bump
+CURRENT_VERSION=$(node -p "require('./package.json').version" 2>/dev/null)
+if [ -z "$CURRENT_VERSION" ]; then
+  exit 0
+fi
+STAGED_VERSION=$(git show HEAD:package.json 2>/dev/null | node -p "JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8')).version" 2>/dev/null || echo "$CURRENT_VERSION")
+if [ "$CURRENT_VERSION" = "$STAGED_VERSION" ]; then
+  MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1)
+  MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f2)
+  PATCH=$(echo "$CURRENT_VERSION" | cut -d. -f3)
+  NEW_PATCH=$((PATCH + 1))
+  NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+  echo "[pre-push] 📦 Auto-incrementing version: $CURRENT_VERSION → $NEW_VERSION"
+  node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf-8'));p.version='$NEW_VERSION';fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n')" || exit 0
+  git add package.json && git commit --amend --no-edit --no-verify && echo "[pre-push] ✓ Version bumped." || echo "[pre-push] (warning) Failed to amend commit; continuing."
+fi
 exit 0
 

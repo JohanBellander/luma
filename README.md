@@ -198,6 +198,26 @@ PRs welcome: https://github.com/JohanBellander/luma.
 
 All work is tracked with `bd (beads)`; **policy (LUMA-82): do NOT edit `.beads/issues.jsonl` manually**.
 
+#### Automated Enforcement (LUMA-80)
+
+The repository ships a pre-push Git hook that now automatically runs the integrity check and blocks pushes when anomalies are detected (e.g., sequence regression, malformed JSON lines).
+
+Enable hooks (one-time):
+```powershell
+npm run setup-hooks
+```
+Then any `git push` will:
+1. Run `scripts/validate-beads-integrity.ps1` (or `.sh` on POSIX)
+2. Abort with exit code 2 if an anomaly is found (preventing corrupt history)
+3. Auto-increment patch version if `package.json` version unchanged in the last commit (lightweight tracking of incremental changes)
+
+Sample blocked push output:
+```text
+[pre-push] Running beads integrity check...
+{"code":"SEQUENCE_REGRESSION","message":"ID numeric sequence regression: 77 after 120","line":121}
+[pre-push] ❌ Beads integrity anomaly detected. Push aborted.
+```
+
 Run the integrity check script before committing (optional but recommended):
 
 ```powershell
@@ -208,7 +228,7 @@ Exit codes:
 - 0 clean
 - 2 anomaly (possible manual edit)
 
-Add this to CI or a pre-push hook to prevent accidental corruption.
+Hooks already enforce this locally; you can still add the script to CI for defense-in-depth.
 
 Dirty example (simulated manual line appended):
 ```powershell
