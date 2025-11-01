@@ -47,3 +47,46 @@ describe('agent command (sections quick/workflow/rules)', () => {
     expect(parsed[0]).toHaveProperty('name');
   });
 });
+
+describe('agent command new sections (patterns, components, examples)', () => {
+  it('returns compressed patterns summary with counts', () => {
+    const json = execSync('node dist/index.js agent --sections patterns --json', { encoding: 'utf-8' });
+    const parsed = JSON.parse(json);
+    const list = parsed.sections.patterns.patterns;
+    expect(Array.isArray(list)).toBe(true);
+    expect(list.length).toBeGreaterThan(0);
+    for (const p of list) {
+      expect(p.counts.must).toBe(p.mustIds.length);
+      expect(p.counts.should).toBe(p.shouldIds.length);
+    }
+  });
+
+  it('returns component summaries with requiredProps and optionalProps', () => {
+    const json = execSync('node dist/index.js agent --sections components --json', { encoding: 'utf-8' });
+    const parsed = JSON.parse(json);
+    const comps = parsed.sections.components.components;
+    expect(comps.find((c: any) => c.name === 'Text')).toBeTruthy();
+    const text = comps.find((c: any) => c.name === 'Text');
+    expect(text.requiredProps).toContain('id');
+    expect(Array.isArray(text.optionalProps)).toBe(true);
+  });
+
+  it('returns examples metadata without embedding JSON bodies', () => {
+    const json = execSync('node dist/index.js agent --sections examples --json', { encoding: 'utf-8' });
+    const parsed = JSON.parse(json);
+    const examples = parsed.sections.examples.examples;
+    expect(Array.isArray(examples)).toBe(true);
+    const hf = examples.find((e: any) => e.id === 'happy-form');
+    expect(hf).toBeTruthy();
+    expect(hf).not.toHaveProperty('code');
+    expect(hf.file).toMatch(/examples\/happy-form\.json$/);
+  });
+
+  it('supports multiple new sections simultaneously', () => {
+    const json = execSync('node dist/index.js agent --sections patterns,components,examples --json', { encoding: 'utf-8' });
+    const parsed = JSON.parse(json);
+    expect(parsed.sections.patterns).toBeTruthy();
+    expect(parsed.sections.components).toBeTruthy();
+    expect(parsed.sections.examples).toBeTruthy();
+  });
+});

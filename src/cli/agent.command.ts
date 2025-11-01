@@ -14,7 +14,7 @@
  */
 
 import { Command } from 'commander';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { EXIT_INVALID_INPUT } from '../utils/exit-codes.js';
@@ -28,9 +28,9 @@ export const AGENT_SECTION_NAMES = [
   'quick',        // Quick usage / minimal cheat sheet
   'workflow',     // Recommended pipeline stages (LUMA-85)
   'rules',        // Pattern rule ids per pattern (LUMA-85)
-  'patterns',     // UX pattern overview (later bead)
-  'components',   // Component schema quick refs (later bead)
-  'examples',     // Example scaffold fragments (later bead)
+  'patterns',     // UX pattern overview (LUMA-86)
+  'components',   // Component schema quick refs (LUMA-86)
+  'examples',     // Example scaffold metadata (LUMA-86)
   'links',        // Helpful command/topic references (later bead)
   'meta'          // Envelope/meta description (later bead)
 ];
@@ -119,6 +119,109 @@ function assembleRules(): Record<string, unknown> {
   return { patterns };
 }
 
+// ---- LUMA-86 Additional Sections --------------------------------------------------
+
+interface PatternSummaryEntry {
+  name: string;
+  mustIds: string[];
+  shouldIds: string[];
+  counts: { must: number; should: number };
+}
+
+function assemblePatterns(): Record<string, unknown> {
+  const patterns: PatternSummaryEntry[] = getAllPatterns()
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(p => ({
+      name: p.name,
+      mustIds: p.must.map(r => r.id),
+      shouldIds: p.should.map(r => r.id),
+      counts: { must: p.must.length, should: p.should.length },
+    }));
+  return { patterns };
+}
+
+interface ComponentSummaryEntry {
+  name: string;
+  requiredProps: string[];
+  optionalProps: string[];
+}
+
+// Read component-schemas.json once lazily (cached) to avoid repeated IO.
+let componentSchemasCache: any | undefined;
+function loadComponentSchemas(): any {
+  if (!componentSchemasCache) {
+    const path = join(__dirname, '../data/component-schemas.json');
+    componentSchemasCache = JSON.parse(readFileSync(path, 'utf-8'));
+  }
+  return componentSchemasCache;
+}
+
+function assembleComponents(): Record<string, unknown> {
+  const schemas = loadComponentSchemas();
+  const components: ComponentSummaryEntry[] = Object.keys(schemas)
+    .sort()
+    .map(name => {
+      const schema = schemas[name];
+      const required: string[] = Array.isArray(schema.required) ? schema.required.slice().sort() : [];
+      // Derive optional by diffing properties keys vs required
+      const propertyKeys = schema.properties ? Object.keys(schema.properties) : [];
+      const optional = propertyKeys.filter(k => !required.includes(k)).sort();
+      return { name, requiredProps: required, optionalProps: optional };
+    });
+  return { components };
+}
+
+interface ExampleMetaEntry {
+  id: string; // filename without extension
+  file: string; // relative path from repo root
+  description: string;
+  patternsIllustrated: string[];
+}
+
+const EXAMPLE_PATTERN_HEURISTICS: { [id: string]: string[] } = {
+  'happy-form': ['Form.Basic'],
+  'pattern-failures': ['Form.Basic'],
+  'overflow-table': ['Table.Simple'],
+  'responsive-demo': ['Table.Simple', 'Form.Basic'],
+  'login': ['Form.Basic'],
+  // progressive disclosure examples could be added in future if present
+};
+
+const EXAMPLE_DESCRIPTIONS: { [id: string]: string } = {
+  'happy-form': 'Valid form scaffold (expected pass)',
+  'pattern-failures': 'Form with MUST violations to illustrate failures',
+  'overflow-table': 'Table demonstrating horizontal overflow scenario',
+  'responsive-demo': 'Demo scaffold with multiple responsive behaviors',
+  'login': 'Login form example',
+  'keyboard-issues': 'Scaffold exhibiting keyboard flow issues',
+  'broken-form': 'Intentionally broken form scaffold for ingest errors',
+  'invalid-version': 'Scaffold with invalid schemaVersion to test version check',
+};
+
+function assembleExamples(): Record<string, unknown> {
+  const examplesDir = join(__dirname, '../../examples');
+  let files: string[] = [];
+  try {
+    files = readdirSync(examplesDir).filter(f => f.endsWith('.json'));
+  } catch {
+    // Directory may not exist in some packaged contexts; return empty set.
+    return { examples: [] };
+  }
+  const examples: ExampleMetaEntry[] = files
+    .sort()
+    .map(file => {
+      const id = file.replace(/\.json$/, '');
+      return {
+        id,
+        file: `examples/${file}`,
+        description: EXAMPLE_DESCRIPTIONS[id] || 'Example scaffold',
+        patternsIllustrated: EXAMPLE_PATTERN_HEURISTICS[id] || [],
+      };
+    });
+  return { examples };
+}
+
 function buildEnvelope(version: string, selected: string[]): AgentEnvelope {
   const sections: Record<string, unknown> = {};
   for (const name of selected) {
@@ -131,6 +234,15 @@ function buildEnvelope(version: string, selected: string[]): AgentEnvelope {
         break;
       case 'rules':
         sections.rules = assembleRules();
+        break;
+      case 'patterns':
+        sections.patterns = assemblePatterns();
+        break;
+      case 'components':
+        sections.components = assembleComponents();
+        break;
+      case 'examples':
+        sections.examples = assembleExamples();
         break;
       default:
         // Placeholder until implemented in later beads
