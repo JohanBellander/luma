@@ -194,3 +194,25 @@ luma flow my-form.json --coverage
 
 PRs welcome: https://github.com/JohanBellander/luma.
 
+### Issue Tracking Integrity
+
+All work is tracked with `bd (beads)`; **policy (LUMA-82): do NOT edit `.beads/issues.jsonl` manually**.
+
+Run the integrity check script before committing (optional but recommended):
+
+```powershell
+pwsh scripts/validate-beads-integrity.ps1
+```
+
+Exit codes:
+- 0 clean
+- 2 anomaly (possible manual edit)
+
+Add this to CI or a pre-push hook to prevent accidental corruption.
+
+Dirty example (simulated manual line appended):
+```powershell
+pwsh scripts/validate-beads-integrity.ps1
+{"code":"MANUAL_EDIT_DETECTED","message":"ID numeric sequence regression: 77 after 120","line":121}
+```
+

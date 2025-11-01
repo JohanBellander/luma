@@ -89,3 +89,20 @@ luma flow ui/screens/onboarding.mock.json --patterns Form.Basic,Table.Simple,Gui
 ```
 
 > Skipping this checklist risks partial validation (e.g., Form.Basic passes while Guided.Flow violations remain hidden).
+
+### Governance / Integrity Policy
+
+🚫 **Never edit** `.beads/issues.jsonl` **directly; always use the `bd` CLI (or MCP server)**. Manual edits risk:
+- Losing dependency edges (blocked / discovered-from)
+- Producing hidden / orphaned issues not surfaced in `bd ready`
+- Causing daemon overwrite races and silent data loss
+
+To verify repository integrity run:
+```powershell
+pwsh scripts/validate-beads-integrity.ps1
+```
+Exit codes:
+- `0` = clean
+- `2` = manual edit or structural anomaly detected
+
+Add this script to CI / pre-push if stricter enforcement is desired.
