@@ -250,6 +250,53 @@ luma flow my-form.json --coverage
 #   - Gap: Guided.Flow (Found multi-step indicators (...))
 ```
 
+## Focused Error-Only Output (LUMA-110)
+
+When refining a scaffold, AI agents often only need blocking issues (MUST failures, critical errors) and can ignore warnings to reduce tokens. The following commands now support `--errors-only` to suppress non-blocking severities in console output and provide filtered arrays in JSON:
+
+Supported commands:
+- `ingest`
+- `layout`
+- `keyboard`
+- `flow`
+
+Behavior:
+1. Console output hides `warn` / `info` issues (shows only `error` and `critical`).
+2. JSON output remains backward-compatible (original arrays preserved) and adds additive fields:
+	 - `filteredIssues` (ingest, keyboard)
+	 - `filteredLayouts` (layout) – each layout object has its own filtered `issues`
+	 - `filteredPatterns` (flow) – pattern objects with only error/critical issues
+3. A suppression note is shown if any non-error issues were hidden.
+
+Example:
+```powershell
+luma ingest examples/pattern-failures.json --errors-only
+```
+Sample JSON fragment (`--json --errors-only`):
+```json
+{
+	"issues": [ /* full set */ ],
+	"filteredIssues": [ { "severity": "error", "id": "field-has-label" } ]
+}
+```
+
+Flow command filtered patterns fragment:
+```json
+{
+	"patterns": [ /* full results */ ],
+	"filteredPatterns": [
+		{ "pattern": "Form.Basic", "issues": [ { "severity": "critical", "id": "actions-exist" } ] }
+	]
+}
+```
+
+Use cases:
+- Minimize token usage during iterative fix cycles
+- Faster agent parsing (smaller JSON arrays)
+- Clear signal of current blockers
+
+If you need all issues again, simply omit `--errors-only`.
+
 ## Contributing
 
 PRs welcome: https://github.com/JohanBellander/luma.

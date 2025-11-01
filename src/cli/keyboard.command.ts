@@ -28,9 +28,10 @@ export function createKeyboardCommand(): Command {
     .option('--state <state>', 'Form state to analyze (e.g., "default", "error")')
     .option('--viewport <width>', 'Viewport width for responsive overrides (e.g., "320")', parseInt)
     .option('--json', 'Output results as JSON to stdout')
+    .option('--errors-only', 'Show only error/critical issues (suppresses warnings)')
   .option('--run-folder <path>', 'Explicit run folder path (for deterministic testing)')
   .option('--run-id <id>', 'Explicit run id (creates/uses .ui/runs/<id>)')
-  .action(async (file: string, options: { state?: string; viewport?: number; json?: boolean; runFolder?: string; runId?: string }) => {
+  .action(async (file: string, options: { state?: string; viewport?: number; json?: boolean; runFolder?: string; runId?: string; errorsOnly?: boolean }) => {
       try {
         // Read scaffold file
         const scaffoldText = readFileSync(file, 'utf-8');
@@ -55,7 +56,8 @@ export function createKeyboardCommand(): Command {
         if (options.json) {
           const jsonOutput = {
             ...output,
-            runFolder: runFolder
+            runFolder: runFolder,
+            ...(options.errorsOnly ? { filteredIssues: output.issues.filter(i => i.severity === 'error' || i.severity === 'critical') } : {})
           };
           console.log(JSON.stringify(jsonOutput, null, 2));
         } else {
@@ -71,11 +73,15 @@ export function createKeyboardCommand(): Command {
             }
           }
 
-          if (output.issues.length > 0) {
-            logger.info(`Issues found (${output.issues.length}):`);
-            for (const issue of output.issues) {
+          const visibleIssues = options.errorsOnly ? output.issues.filter(i => i.severity === 'error' || i.severity === 'critical') : output.issues;
+          if (visibleIssues.length > 0) {
+            logger.info(`Issues found (${visibleIssues.length}):${options.errorsOnly ? ' (errors only)' : ''}`);
+            for (const issue of visibleIssues) {
               const prefix = issue.severity === 'error' || issue.severity === 'critical' ? '❌' : '⚠️';
               logger.info(`  ${prefix} [${issue.severity}] ${issue.message}`);
+            }
+            if (options.errorsOnly && output.issues.length !== visibleIssues.length) {
+              logger.info(`(Suppressed ${output.issues.length - visibleIssues.length} non-error issues)`);
             }
           } else {
             logger.info('No issues found');

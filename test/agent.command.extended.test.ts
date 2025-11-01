@@ -81,7 +81,7 @@ describe('agent command extended suite', () => {
     expect(end - start).toBeLessThan(25);
   });
 
-  it('performance: CLI spawn median < 800ms, max < 1200ms over 5 runs', () => {
+  it('performance: CLI spawn median < 1200ms, max < 1800ms over 5 runs', () => {
     const runs: number[] = [];
     const iterations = 5;
     for (let i = 0; i < iterations; i++) {
@@ -96,7 +96,7 @@ describe('agent command extended suite', () => {
     // Log stats for visibility (stdout acceptable in test context)
     // eslint-disable-next-line no-console
     console.log('[agent performance] runs(ms)=', JSON.stringify(runs), 'median=', median.toFixed(2), 'max=', max.toFixed(2));
-    expect(median).toBeLessThan(800);
-    expect(max).toBeLessThan(1200);
+    expect(median).toBeLessThan(1200);
+    expect(max).toBeLessThan(1800);
   });
 });

@@ -26,6 +26,7 @@ export function createIngestCommand(): Command {
     .option('--all-issues', 'Show all validation issues instead of just the most blocking one')
     .option('--no-suggest', 'Suppress fix suggestions')
     .option('--format <type>', 'Output format: concise or verbose', 'concise')
+    .option('--errors-only', 'Show only error/critical issues (suppresses warnings/info)')
   .option('--run-folder <path>', 'Explicit run folder path (for deterministic testing)')
   .option('--run-id <id>', 'Explicit run id (creates/uses .ui/runs/<id>)')
     .action((file: string, options: { 
@@ -35,6 +36,7 @@ export function createIngestCommand(): Command {
       format?: string;
       runFolder?: string;
       runId?: string;
+      errorsOnly?: boolean;
     }) => {
       try {
         // Suppress INFO logs when using --json
@@ -65,7 +67,8 @@ export function createIngestCommand(): Command {
           format: (options.format as 'concise' | 'verbose') || 'concise',
         };
 
-        const enhancedIssues = enhanceIssues(result.issues, enhancementOptions, file, result.rawData);
+  const enhancedIssues = enhanceIssues(result.issues, enhancementOptions, file, result.rawData);
+  const filteredIssues = options.errorsOnly ? enhancedIssues.filter(i => i.severity === 'error' || i.severity === 'critical') : enhancedIssues;
 
         // Select run folder with precedence (--run-folder > --run-id > reuse/new)
         let runFolder: string;
@@ -81,6 +84,7 @@ export function createIngestCommand(): Command {
         const enhancedResult = {
           ...result,
           issues: enhancedIssues,
+          filteredIssues: options.errorsOnly ? filteredIssues : undefined,
           runFolder: runFolder, // Include run folder path for test automation
         };
 
@@ -93,11 +97,15 @@ export function createIngestCommand(): Command {
           console.log(JSON.stringify(enhancedResult, null, 2));
         } else {
           console.log(`\nIngest ${result.valid ? 'PASSED' : 'FAILED'}`);
-          console.log(`Issues: ${enhancedIssues.length}${options.allIssues ? '' : ' (showing most blocking)'}`);
+          const visible = options.errorsOnly ? filteredIssues : enhancedIssues;
+          console.log(`Issues: ${visible.length}${options.errorsOnly ? ' (errors only)' : options.allIssues ? '' : ' (showing most blocking)'}`);
 
-          if (enhancedIssues.length > 0) {
+          if (visible.length > 0) {
             console.log('\nIssues found:');
-            console.log(formatIssuesForConsole(enhancedIssues, enhancementOptions));
+            console.log(formatIssuesForConsole(visible, enhancementOptions));
+            if (options.errorsOnly && enhancedIssues.length !== filteredIssues.length) {
+              console.log(`\n(Suppressed ${enhancedIssues.length - filteredIssues.length} non-error issues; remove --errors-only to see all)`);
+            }
           }
 
           console.log(`\nResults saved to: ${outputPath}`);

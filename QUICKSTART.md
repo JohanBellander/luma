@@ -151,10 +151,23 @@ luma ingest broken.json
 luma ingest broken.json --all-issues
 ```
 
+### Reducing Noise During Iteration (Errors Only)
+For token efficiency while fixing blocking problems you can hide warnings:
+```bash
+luma ingest broken.json --errors-only
+```
+Console shows only error/critical; JSON adds `filteredIssues` alongside full `issues`.
+
 ## Step 3: Compute Layout
 
 ```bash
 luma layout my-form.json --viewports 320x640,1024x768
+```
+
+Use errors-only to focus on blocking layout problems (e.g., overflow) and suppress warnings:
+```bash
+luma layout my-form.json --viewports 320x640,1024x768 --errors-only --json
+# JSON contains layout_*.json plus additive field filteredLayouts
 ```
 
 **What it does:** Simulates how the UI would layout at different screen sizes.
@@ -176,6 +189,11 @@ Check the layout files:
 luma keyboard my-form.json
 ```
 
+Focus only on unreachable / blocking focus issues:
+```bash
+luma keyboard my-form.json --errors-only --json | jq '.filteredIssues'
+```
+
 **What it does:** Determines tab order and checks for unreachable interactive elements.
 
 **Expected output:**
@@ -192,6 +210,12 @@ Check `.ui/runs/<timestamp>/keyboard.json` for the full tab sequence.
 ```bash
 luma flow my-form.json --patterns Form.Basic
 ```
+
+During pattern refinement you may want only MUST failures (blocking). Use:
+```bash
+luma flow my-form.json --patterns Form.Basic --errors-only --json | jq '.filteredPatterns'
+```
+Additive field `filteredPatterns` lists each pattern with only error/critical issues.
 
 **What it does:** Checks compliance with UX patterns (labels, actions, disclosure, guided flow, etc.).
 

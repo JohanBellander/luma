@@ -20,9 +20,10 @@ export function createFlowCommand(): Command {
   .option('--no-auto', 'Disable auto pattern selection when --patterns omitted')
   .option('--json', 'Output JSON only')
   .option('--coverage', 'Include pattern coverage metrics in output')
+    .option('--errors-only', 'Show only error/critical MUST failures (suppresses warnings/SHOULD)')
     .option('--run-folder <path>', 'Explicit run folder path (for deterministic testing)')
     .option('--run-id <id>', 'Explicit run id (creates/uses .ui/runs/<id>)')
-  .action(async (file: string, options: { patterns?: string; json?: boolean; runFolder?: string; runId?: string; auto?: boolean; coverage?: boolean }) => {
+  .action(async (file: string, options: { patterns?: string; json?: boolean; runFolder?: string; runId?: string; auto?: boolean; coverage?: boolean; errorsOnly?: boolean }) => {
       try {
         const patterns: Pattern[] = [];
         let explicitPatternNames: string[] = [];
@@ -147,12 +148,51 @@ export function createFlowCommand(): Command {
               }
             }
           }
+          // Display pattern issues (filtered if errors-only)
+          const visiblePatterns = options.errorsOnly ? output.patterns.map(p => ({
+            pattern: p.pattern,
+            source: p.source,
+            mustPassed: p.mustPassed,
+            mustFailed: p.mustFailed,
+            shouldPassed: p.shouldPassed,
+            shouldFailed: p.shouldFailed,
+            issues: p.issues.filter(i => i.severity === 'error' || i.severity === 'critical')
+          })) : output.patterns;
+          let totalVisibleIssues = 0;
+          for (const p of visiblePatterns) {
+            if (p.issues.length > 0) {
+              console.log(`[INFO] Pattern ${p.pattern}: ${p.issues.length} issues${options.errorsOnly ? ' (errors only)' : ''}`);
+              for (const issue of p.issues) {
+                const prefix = issue.severity === 'error' || issue.severity === 'critical' ? '❌' : '⚠️';
+                console.log(`  ${prefix} [${issue.severity}] ${issue.message}`);
+              }
+              totalVisibleIssues += p.issues.length;
+              if (options.errorsOnly) {
+                const suppressed = output.patterns.find(orig => orig.pattern === p.pattern)?.issues.length || 0;
+                if (suppressed > p.issues.length) {
+                  console.log(`  (Suppressed ${suppressed - p.issues.length} non-error issues)`);
+                }
+              }
+            }
+          }
+          if (totalVisibleIssues === 0) {
+            console.log(`[INFO] No ${options.errorsOnly ? 'error' : ''} issues found across patterns`);
+          }
         } else {
           const jsonOutput = {
             ...output,
             runFolder: runDir,
             autoSelected: autoSelected,
             ...(coverage ? { coverage } : {})
+            ,...(options.errorsOnly ? { filteredPatterns: output.patterns.map(p => ({
+              pattern: p.pattern,
+              source: p.source,
+              mustPassed: p.mustPassed,
+              mustFailed: p.mustFailed,
+              shouldPassed: p.shouldPassed,
+              shouldFailed: p.shouldFailed,
+              issues: p.issues.filter(i => i.severity === 'error' || i.severity === 'critical')
+            })) } : {})
           };
           console.log(JSON.stringify(jsonOutput, null, 2));
         }
