@@ -4,7 +4,7 @@
  */
 
 import { Command } from 'commander';
-import { getAllPatterns, getPattern, listPatternNames } from '../core/patterns/pattern-registry.js';
+import { getAllPatterns, getPattern, listPatternNames, getAliases, _getRegistry } from '../core/patterns/pattern-registry.js';
 import { readFileSync } from 'fs';
 import { ingest } from '../core/ingest/ingest.js';
 import type { Node } from '../types/node.js';
@@ -97,7 +97,8 @@ function suggestPatterns(screenRoot: Node): PatternSuggestion[] {
 }
 
 interface PatternListItem {
-  name: string;
+  name: string; // canonical name
+  aliases: string[]; // alias names
   source: {
     name: string;
     url: string;
@@ -173,8 +174,10 @@ export function createPatternsCommand(): Command {
       if (options.list) {
         // List all patterns
         const patterns = getAllPatterns();
+        // Build list items with aliases (registry maps canonical names -> pattern)
         const list: PatternListItem[] = patterns.map(pattern => ({
           name: pattern.name,
+          aliases: getAliases(pattern.name),
           source: {
             name: pattern.source.name,
             url: pattern.source.url,
@@ -189,6 +192,7 @@ export function createPatternsCommand(): Command {
           console.log('Available Patterns:');
           for (const item of list) {
             console.log(`  ${item.name} (${item.source.name})`);
+            console.log(`    Aliases: ${item.aliases.length ? item.aliases.join(', ') : '(none)'}`);
             console.log(`    MUST rules: ${item.mustRules}, SHOULD rules: ${item.shouldRules}`);
             console.log(`    Source: ${item.source.url}`);
           }
