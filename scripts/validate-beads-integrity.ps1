@@ -61,11 +61,13 @@ foreach ($line in $lines) {
   $idNumbers += $n
 }
 
-# Monotonic non-decreasing check (allow gaps but not regressions)
-$prev = -1
+# Duplicate detection (order is no longer enforced; historical out-of-order lines permitted)
+$seen = @{}
 foreach ($n in $idNumbers) {
-  if ($n -lt $prev) { Fail "ID numeric sequence regression: $n after $prev" 'SEQUENCE_REGRESSION' }
-  $prev = $n
+  if ($seen.ContainsKey($n)) {
+    Fail "Duplicate ID numeric suffix detected: $n" 'DUPLICATE_ID'
+  }
+  $seen[$n] = $true
 }
 
 Write-Host '[OK] Beads integrity check passed.'
