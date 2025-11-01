@@ -527,7 +527,40 @@ const shouldRules: PatternRule[] = [
     id: 'wizard-primary-below-fold',
     level: 'should',
     description: 'Primary action should appear within initial viewport (smallest breakpoint)',
-    check: (_root: Node) => [], // deferred layout integration
+    check: (root: Node) => {
+      // Layout integration approach:
+      // During chained run, the layout stage precedes flow. We allow injection of a synthetic
+      // map root.__layoutFrames: Record<nodeId, Frame[]> and root.__smallestViewportHeight: number
+      // (This keeps pattern module decoupled from layout internals; avoids direct imports.)
+      // If absent, we skip emitting issues (graceful degradation).
+      const framesMap: Record<string, { id: string; x: number; y: number; w: number; h: number }[]> | undefined = (root as any).__layoutFrames;
+      const smallestViewportHeight: number | undefined = (root as any).__smallestViewportHeight;
+      if (!framesMap || !smallestViewportHeight) return [];
+      const scopes = resolveGuidedFlowScopes(root);
+      const issues: Issue[] = [];
+      for (const scope of scopes) {
+        for (const step of scope.steps) {
+          // Determine primary action: finish button preferred else next.
+          const primaryBtn = step.buttons.find(b => b.roleHint === 'primary' && /finish/i.test(b.text || '')) || step.buttons.find(b => b.roleHint === 'primary');
+          if (!primaryBtn) continue;
+          const frames = framesMap[primaryBtn.id];
+          if (!frames || frames.length === 0) continue;
+          // Use first frame (smallest viewport) coordinates.
+          const f = frames[0];
+          const bottom = f.y + f.h;
+          if (bottom > smallestViewportHeight) {
+            issues.push(makeIssue('wizard-primary-below-fold', primaryBtn, `Primary action '${primaryBtn.id}' below fold (bottom=${bottom} > viewportHeight=${smallestViewportHeight})`, {
+              frame: { x: f.x, y: f.y, w: f.w, h: f.h },
+              viewportHeight: smallestViewportHeight,
+              foldY: smallestViewportHeight,
+              stepIndex: step.index,
+              buttonId: primaryBtn.id,
+            }, 'warn'));
+          }
+        }
+      }
+      return issues;
+    },
   },
 ];
 
