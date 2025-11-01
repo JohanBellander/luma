@@ -60,6 +60,40 @@ luma init
 - [AGENT-RULES-SCAFFOLD.md](./AGENT-RULES-SCAFFOLD.md) — Scaffold contract (spacing scale, required fields)
 - [CHANGELOG.md](./CHANGELOG.md) — Version history
 
+## Pattern Suggestions
+
+You can ask LUMA to heuristically suggest which UX patterns apply to a scaffold before running full validation:
+
+```bash
+luma patterns --suggest my-scaffold.json --json
+```
+
+Output format:
+
+```json
+{
+	"suggestions": [
+		{ "pattern": "Form.Basic", "reason": "Detected Form node with 3 field(s) and 2 action(s)", "confidence": "high" },
+		{ "pattern": "Table.Simple", "reason": "Detected Table node (5 columns, responsive.strategy=scroll)", "confidence": "high" },
+		{ "pattern": "Progressive.Disclosure", "reason": "Found collapsible disclosure behavior on one or more nodes", "confidence": "high" },
+		{ "pattern": "Guided.Flow", "reason": "Found multi-step indicators (next, previous) suggesting a wizard flow", "confidence": "medium" }
+	]
+}
+```
+
+Confidence scale:
+- high – direct structural match (Form node with fields/actions, Table columns, explicit disclosure behaviors)
+- medium – multiple hints (next/previous buttons implying multi-step flow)
+- low – single weak hint (a lone Next button or guidedFlow metadata without other indicators)
+
+Use suggestions to decide which patterns to include when running:
+
+```bash
+luma flow scaffold.json --patterns Form.Basic,Table.Simple
+```
+
+Suggestions add <5% execution time compared to listing patterns and never block validation; empty output means no strong pattern indicators were detected.
+
 ## License
 
 ISC
