@@ -18,7 +18,9 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { EXIT_INVALID_INPUT } from '../utils/exit-codes.js';
-import { getAllPatterns } from '../core/patterns/pattern-registry.js';
+import { getAllPatterns, _getRegistry } from '../core/patterns/pattern-registry.js';
+import { logger } from '../utils/logger.js';
+import { performance } from 'node:perf_hooks';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -261,7 +263,14 @@ function assembleMeta(): Record<string, unknown> {
   return { meta };
 }
 
+// Simple memoization cache keyed by sorted section list string
+const envelopeCache: Map<string, AgentEnvelope> = new Map();
 export function buildEnvelope(version: string, selected: string[]): AgentEnvelope {
+  const key = selected.slice().sort().join('|');
+  if (envelopeCache.has(key)) {
+    return envelopeCache.get(key)!;
+  }
+  const start = performance.now();
   const sections: Record<string, unknown> = {};
   for (const name of selected) {
     switch (name) {
@@ -290,15 +299,23 @@ export function buildEnvelope(version: string, selected: string[]): AgentEnvelop
         sections.meta = assembleMeta();
         break;
       default:
-        // Placeholder until implemented in later beads
         sections[name] = {};
     }
   }
-  return {
+  const envelope: AgentEnvelope = {
     version,
     generatedAt: new Date().toISOString(),
     sections,
   };
+  const end = performance.now();
+  const duration = end - start;
+  if (duration > 100) {
+    logger.debug(`agent envelope generation slow (${duration.toFixed(2)}ms) sections=${selected.length}`);
+  } else {
+    logger.debug(`agent envelope generated in ${duration.toFixed(2)}ms`);
+  }
+  envelopeCache.set(key, envelope);
+  return envelope;
 }
 
 function uniqueOrdered<T>(items: T[]): T[] {
@@ -404,7 +421,9 @@ export function createAgentCommand(): Command {
         process.exit(EXIT_INVALID_INPUT);
       }
 
-      const envelope = buildEnvelope(version, requested);
+  // Stability: ensure requested order is canonical (AGENT_SECTION_NAMES order)
+  const canonicalOrder = AGENT_SECTION_NAMES.filter(n => requested.includes(n));
+  const envelope = buildEnvelope(version, canonicalOrder);
 
       if (options.get) {
         const { ok, value } = resolveDotPath(envelope, options.get);
@@ -424,17 +443,16 @@ export function createAgentCommand(): Command {
       }
 
       if (options.json) {
-        console.log(JSON.stringify(envelope, null, 2));
+        // Determinism: sort top-level section keys
+        const stable = { ...envelope, sections: Object.keys(envelope.sections).sort().reduce((acc, k) => { acc[k] = (envelope.sections as any)[k]; return acc; }, {} as Record<string, unknown>) };
+        console.log(JSON.stringify(stable, null, 2));
         return;
       }
 
-      // Pretty output
       console.log(`Agent Knowledge Envelope (v${envelope.version})`);
       console.log('Generated:', envelope.generatedAt);
-      console.log('Sections included (placeholders):');
-      for (const s of requested) {
-        console.log(' - ' + s);
-      }
+      console.log('Sections included (canonical order):');
+      for (const s of canonicalOrder) console.log(' - ' + s);
       console.log('\n(To view raw JSON: use --json)');
     });
 

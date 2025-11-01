@@ -12,9 +12,26 @@ export enum LogLevel {
 class Logger {
   private level: LogLevel = LogLevel.INFO;
 
+  constructor() {
+    // Allow environment variable override e.g. LUMA_LOG_LEVEL=debug
+    const env = (process.env.LUMA_LOG_LEVEL || '').toLowerCase();
+    switch (env) {
+      case 'debug':
+        this.level = LogLevel.DEBUG; break;
+      case 'info':
+        this.level = LogLevel.INFO; break;
+      case 'warn':
+        this.level = LogLevel.WARN; break;
+      case 'error':
+        this.level = LogLevel.ERROR; break;
+    }
+  }
+
   setLevel(level: LogLevel): void {
     this.level = level;
   }
+
+  getLevel(): LogLevel { return this.level; }
 
   debug(message: string, ...args: unknown[]): void {
     if (this.level <= LogLevel.DEBUG) {
