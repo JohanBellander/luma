@@ -178,12 +178,41 @@ Check `.ui/runs/<timestamp>/keyboard.json` for the full tab sequence.
 luma flow my-form.json --patterns Form.Basic
 ```
 
-**What it does:** Checks compliance with GOV.UK Form.Basic pattern (fields have labels, actions exist, etc.).
+**What it does:** Checks compliance with UX patterns (labels, actions, disclosure, guided flow, etc.).
 
-**Expected output:**
+### Implicit Pattern Identification (v1.1 LUMA-75)
+
+If you omit the `--patterns` flag, LUMA will automatically select high-confidence patterns based on scaffold heuristics (e.g., detects a `Form` node and activates `Form.Basic`, detects collapsible disclosure behaviors and activates `Progressive.Disclosure`).
+
+```bash
+# Auto-selects patterns (e.g., Form.Basic) based on scaffold contents
+luma flow my-form.json
+
+# Suppress auto-selection (validate zero patterns unless explicitly provided)
+luma flow my-form.json --no-auto
+```
+
+To see why patterns were auto-selected, use JSON output:
+```bash
+luma flow my-form.json --json | jq '.autoSelected'
+```
+
+Provide explicit patterns to override implicit selection:
+```bash
+luma flow my-form.json --patterns Form.Basic,Table.Simple
+```
+
+**Expected output (explicit):**
 ```
 ✓ Pattern validation complete
 ✓ Form.Basic: PASS (0 MUST failures, 0 SHOULD warnings)
+→ Run folder: .ui/runs/<timestamp>
+```
+
+**Expected output (implicit auto-selection):**
+```
+✓ Pattern validation complete
+✓ Auto-selected patterns: Form.Basic
 → Run folder: .ui/runs/<timestamp>
 ```
 

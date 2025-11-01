@@ -8,74 +8,110 @@ import type { Pattern } from './types.js';
 import { FormBasic } from './form-basic.js';
 import { TableSimple } from './table-simple.js';
 import { ProgressiveDisclosure } from './progressive-disclosure.js';
+import { GuidedFlow } from './guided-flow.js';
 
 /**
- * Registry of all available patterns.
+ * Internal structure for pattern registration including aliases.
  */
-const patterns: Map<string, Pattern> = new Map();
-
-// Register patterns
-patterns.set('form', FormBasic);
-patterns.set('Form.Basic', FormBasic);
-patterns.set('table', TableSimple);
-patterns.set('Table.Simple', TableSimple);
-patterns.set('progressive-disclosure', ProgressiveDisclosure);
-patterns.set('Progressive.Disclosure', ProgressiveDisclosure);
+interface RegisteredPattern {
+  pattern: Pattern;
+  aliases: string[]; // alias names (case-insensitive matching)
+}
 
 /**
- * Get a pattern by name.
- * Supports both short names (form, table) and full names (Form.Basic, Table.Simple).
- * 
- * @param name - Pattern name (case-insensitive)
- * @returns Pattern if found, undefined otherwise
+ * Canonical pattern registry.
+ * Keys are canonical pattern names; each entry declares its alias set.
+ */
+const registry: Map<string, RegisteredPattern> = new Map([
+  [
+    'Form.Basic',
+    {
+      pattern: FormBasic,
+      aliases: ['form', 'form-basic'],
+    },
+  ],
+  [
+    'Table.Simple',
+    {
+      pattern: TableSimple,
+      aliases: ['table', 'table-simple'],
+    },
+  ],
+  [
+    'Progressive.Disclosure',
+    {
+      pattern: ProgressiveDisclosure,
+      aliases: ['progressive-disclosure', 'pd'],
+    },
+  ],
+  [
+    'Guided.Flow',
+    {
+      pattern: GuidedFlow,
+      aliases: ['guided-flow', 'wizard', 'flow-wizard'],
+    },
+  ],
+]);
+
+/**
+ * Reverse alias index for O(1) alias lookup.
+ */
+const aliasIndex: Map<string, string> = new Map(); // alias -> canonical name
+for (const [canonical, entry] of registry.entries()) {
+  for (const alias of entry.aliases) {
+    aliasIndex.set(alias.toLowerCase(), canonical);
+  }
+  // Also map lowercase canonical to itself for case-insensitive match
+  aliasIndex.set(canonical.toLowerCase(), canonical);
+}
+
+/**
+ * Resolve a pattern by name or alias (case-insensitive).
  */
 export function getPattern(name: string): Pattern | undefined {
-  const normalizedName = name.toLowerCase();
-  
-  // Try exact match first
-  if (patterns.has(name)) {
-    return patterns.get(name);
-  }
-  
-  // Try case-insensitive match
-  for (const [key, pattern] of patterns.entries()) {
-    if (key.toLowerCase() === normalizedName) {
-      return pattern;
-    }
-  }
-  
-  return undefined;
+  if (!name) return undefined;
+  const lowered = name.toLowerCase();
+  const canonical = aliasIndex.get(lowered);
+  if (!canonical) return undefined;
+  return registry.get(canonical)?.pattern;
 }
 
 /**
- * Get all registered patterns.
- * 
- * @returns Array of all patterns
+ * Return all canonical pattern objects.
  */
 export function getAllPatterns(): Pattern[] {
-  // Return unique patterns (avoid duplicates from aliases)
-  const unique = new Set<Pattern>();
-  for (const pattern of patterns.values()) {
-    unique.add(pattern);
-  }
-  return Array.from(unique);
+  return Array.from(registry.values()).map(r => r.pattern);
 }
 
 /**
- * List all pattern names (both short and full names).
- * 
- * @returns Array of pattern names
+ * List all names (canonical + aliases) for backward compatibility.
  */
 export function listPatternNames(): string[] {
-  return Array.from(patterns.keys());
+  const names: string[] = [];
+  for (const [canonical, entry] of registry.entries()) {
+    names.push(canonical);
+    for (const alias of entry.aliases) names.push(alias);
+  }
+  return names;
 }
 
 /**
- * Check if a pattern exists.
- * 
- * @param name - Pattern name
- * @returns True if pattern exists
+ * Get aliases for a canonical pattern name.
+ */
+export function getAliases(canonical: string): string[] {
+  return registry.get(canonical)?.aliases ?? [];
+}
+
+/**
+ * Check if a pattern exists by any name.
  */
 export function hasPattern(name: string): boolean {
   return getPattern(name) !== undefined;
+}
+
+/**
+ * Export internal registry for advanced consumers (tests).
+ */
+export function _getRegistry(): Map<string, RegisteredPattern> {
+  return registry;
 }

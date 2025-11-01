@@ -412,28 +412,21 @@ describe('Integration: LUMA v1.1 Complete Workflow', () => {
   describe('Output Artifacts Verification', () => {
     it('should verify all expected output files are created in run folder', { timeout: 15000 }, () => {
       const scaffoldPath = join(TEST_OUTPUT_DIR, 'artifacts-test.json');
-      
+      const artifactsRunFolder = join(process.cwd(), '.ui', 'runs', 'artifacts-verification');
+
       // Generate scaffold
-      execSync(
-        `node dist/index.js scaffold new --pattern todo-list --out ${scaffoldPath} --force`,
-        { encoding: 'utf-8' }
-      );
-      
-      // Run full pipeline
-      execSync(`node dist/index.js ingest ${scaffoldPath}`, { encoding: 'utf-8' });
-      
-      // Get the run folder created by ingest
-      const runFolder = getMostRecentRunFolder();
-      
-      execSync(`node dist/index.js layout ${scaffoldPath} --viewports 768x1024`, { encoding: 'utf-8' });
-      execSync(`node dist/index.js keyboard ${scaffoldPath}`, { encoding: 'utf-8' });
-      execSync(`node dist/index.js flow ${scaffoldPath} --patterns table`, { encoding: 'utf-8' });
-      execSync(`node dist/index.js score ${runFolder}`, { encoding: 'utf-8' });
-      
-      const reportPath = join(runFolder, 'report.html');
-      execSync(`node dist/index.js report ${runFolder} --out ${reportPath}`, { encoding: 'utf-8' });
-      
-      // Verify all output files exist
+      execSync(`node dist/index.js scaffold new --pattern todo-list --out ${scaffoldPath} --force`, { encoding: 'utf-8' });
+
+      // Run full pipeline with deterministic run folder
+      execSync(`node dist/index.js ingest ${scaffoldPath} --run-folder ${artifactsRunFolder}`, { encoding: 'utf-8' });
+      execSync(`node dist/index.js layout ${scaffoldPath} --viewports 768x1024 --run-folder ${artifactsRunFolder}`, { encoding: 'utf-8' });
+      execSync(`node dist/index.js keyboard ${scaffoldPath} --run-folder ${artifactsRunFolder}`, { encoding: 'utf-8' });
+      execSync(`node dist/index.js flow ${scaffoldPath} --patterns table --run-folder ${artifactsRunFolder}`, { encoding: 'utf-8' });
+      execSync(`node dist/index.js score ${artifactsRunFolder}`, { encoding: 'utf-8' });
+
+      const reportPath = join(artifactsRunFolder, 'report.html');
+      execSync(`node dist/index.js report ${artifactsRunFolder} --out ${reportPath}`, { encoding: 'utf-8' });
+
       const expectedFiles = [
         'ingest.json',
         'layout_768x1024.json',
@@ -442,12 +435,10 @@ describe('Integration: LUMA v1.1 Complete Workflow', () => {
         'score.json',
         'report.html'
       ];
-      
+
       expectedFiles.forEach(filename => {
-        const filepath = join(runFolder, filename);
+        const filepath = join(artifactsRunFolder, filename);
         expect(existsSync(filepath)).toBe(true);
-        
-        // Verify files are non-empty
         const stats = statSync(filepath);
         expect(stats.size).toBeGreaterThan(0);
       });

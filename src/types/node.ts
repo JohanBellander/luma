@@ -31,6 +31,12 @@ export interface BaseNode {
    */
   behaviors?: {
     disclosure?: DisclosureBehavior;
+    /**
+     * Optional guided flow hints for multi-step wizard flows.
+     * Presence of these hints can auto-activate the Guided.Flow pattern.
+     * Non-breaking: absence never causes validation failure.
+     */
+    guidedFlow?: GuidedFlowBehavior;
   };
   /**
    * Optional affordances array for visual/interaction hints.
@@ -49,6 +55,38 @@ export interface DisclosureBehavior {
   defaultState?: 'collapsed' | 'expanded'; // default collapsed if omitted
   controlsId?: string; // id of explicit control button (optional)
   ariaSummaryText?: string; // optional accessible summary override
+}
+
+/**
+ * Hint structure for guided multi-step flows (wizard pattern).
+ * Adding this is optional; if present it can trigger Guided.Flow pattern activation.
+ */
+export interface GuidedFlowBehavior {
+  role: 'wizard' | 'step'; // identifies container vs step
+  /**
+   * Index of the step (1-based). Required when role === 'step'.
+   */
+  stepIndex?: number;
+  /**
+   * Total number of steps. Recommended on wizard and steps for consistency; if omitted, derived.
+   */
+  totalSteps?: number;
+  /**
+   * Explicit next action button id (optional).
+   */
+  nextId?: string;
+  /**
+   * Explicit previous action button id (optional, not used on first step).
+   */
+  prevId?: string;
+  /**
+   * Indicates presence of a progress indicator node. Wizard role may set hasProgress true.
+   */
+  hasProgress?: boolean;
+  /**
+   * Optional id referencing a Text or progress indicator node.
+   */
+  progressNodeId?: string;
 }
 
 export type StackDirection = 'vertical' | 'horizontal';
