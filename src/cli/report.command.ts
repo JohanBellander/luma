@@ -12,10 +12,19 @@ export function createReportCommand(): Command {
   
   cmd
     .description('Generate HTML report from run folder')
-    .argument('<run-dir>', 'Path to run folder containing analysis artifacts')
+    .argument('[run-dir]', 'Path to run folder containing analysis artifacts (optional if --run-id provided)')
+    .option('--run-id <id>', 'Run id alias for .ui/runs/<id>')
     .option('--out <file>', 'Output file path', 'report.html')
-    .action((runDir: string, options: { out: string }) => {
+    .action((runDir: string | undefined, options: { out: string; runId?: string }) => {
       try {
+        if (!runDir) {
+          if (options.runId) {
+            runDir = resolve('.ui/runs/' + options.runId);
+          } else {
+            console.error('Error: run folder required (provide argument or --run-id)');
+            process.exit(4);
+          }
+        }
         const runPath = resolve(runDir);
         const html = renderReport(runPath);
         

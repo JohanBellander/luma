@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import { readFileSync, writeFileSync } from 'node:fs';
 import type { Scaffold } from '../types/scaffold.js';
 import { analyzeKeyboardFlow } from '../core/keyboard/keyboard.js';
-import { createRunFolder, getRunFilePath } from '../utils/run-folder.js';
+import { getRunFilePath, selectRunFolder } from '../utils/run-folder.js';
 import { logger } from '../utils/logger.js';
 import {
   EXIT_SUCCESS,
@@ -28,8 +28,9 @@ export function createKeyboardCommand(): Command {
     .option('--state <state>', 'Form state to analyze (e.g., "default", "error")')
     .option('--viewport <width>', 'Viewport width for responsive overrides (e.g., "320")', parseInt)
     .option('--json', 'Output results as JSON to stdout')
-    .option('--run-folder <path>', 'Explicit run folder path (for deterministic testing)')
-    .action(async (file: string, options: { state?: string; viewport?: number; json?: boolean; runFolder?: string }) => {
+  .option('--run-folder <path>', 'Explicit run folder path (for deterministic testing)')
+  .option('--run-id <id>', 'Explicit run id (creates/uses .ui/runs/<id>)')
+  .action(async (file: string, options: { state?: string; viewport?: number; json?: boolean; runFolder?: string; runId?: string }) => {
       try {
         // Read scaffold file
         const scaffoldText = readFileSync(file, 'utf-8');
@@ -38,8 +39,14 @@ export function createKeyboardCommand(): Command {
         // Analyze keyboard flow
         const output = analyzeKeyboardFlow(scaffold, options.viewport, options.state);
 
-        // Create run folder and write output
-        const runFolder = createRunFolder(process.cwd(), options.runFolder);
+        // Select run folder
+        let runFolder: string;
+        try {
+          runFolder = selectRunFolder({ explicitPath: options.runFolder, runId: options.runId });
+        } catch (e: any) {
+          logger.error(e.message);
+          process.exit(EXIT_INVALID_INPUT);
+        }
         const outputPath = getRunFilePath(runFolder, 'keyboard.json');
         writeFileSync(outputPath, JSON.stringify(output, null, 2), 'utf-8');
         logger.info(`Keyboard analysis written to: ${outputPath}`);

@@ -4,7 +4,7 @@ import { parseViewport } from '../types/viewport.js';
 import type { Scaffold } from '../types/scaffold.js';
 import type { LayoutOutput } from '../types/output.js';
 import { computeLayout } from '../core/layout/layout.js';
-import { createRunFolder, getRunFilePath } from '../utils/run-folder.js';
+import { getRunFilePath, selectRunFolder } from '../utils/run-folder.js';
 import { logger } from '../utils/logger.js';
 import {
   EXIT_SUCCESS,
@@ -29,8 +29,9 @@ export function createLayoutCommand(): Command {
     .argument('<file>', 'Path to scaffold JSON file')
     .option('--viewports <viewports>', 'Comma-separated viewport sizes (e.g., "320x640,768x1024")', '320x640,768x1024')
     .option('--json', 'Output results as JSON to stdout')
-    .option('--run-folder <path>', 'Explicit run folder path (for deterministic testing)')
-    .action(async (file: string, options: { viewports: string; json?: boolean; runFolder?: string }) => {
+  .option('--run-folder <path>', 'Explicit run folder path (for deterministic testing)')
+  .option('--run-id <id>', 'Explicit run id (creates/uses .ui/runs/<id>)')
+  .action(async (file: string, options: { viewports: string; json?: boolean; runFolder?: string; runId?: string }) => {
       try {
         // Read scaffold file
         const scaffoldText = readFileSync(file, 'utf-8');
@@ -40,8 +41,14 @@ export function createLayoutCommand(): Command {
         const viewportStrings = options.viewports.split(',').map(s => s.trim());
         const viewports = viewportStrings.map(parseViewport);
 
-        // Create run folder for this execution
-        const runFolder = createRunFolder(process.cwd(), options.runFolder);
+        // Select run folder
+        let runFolder: string;
+        try {
+          runFolder = selectRunFolder({ explicitPath: options.runFolder, runId: options.runId });
+        } catch (e: any) {
+          logger.error(e.message);
+          process.exit(EXIT_INVALID_INPUT);
+        }
 
         // Compute layout for each viewport
         const outputs: LayoutOutput[] = [];

@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { ingest } from '../core/ingest/ingest.js';
 import { validatePatterns } from '../core/patterns/validator.js';
 import { getPattern } from '../core/patterns/pattern-registry.js';
-import { createRunFolder, getRunFilePath } from '../utils/run-folder.js';
+import { getRunFilePath, selectRunFolder } from '../utils/run-folder.js';
 import type { Pattern } from '../core/patterns/types.js';
 import type { Scaffold } from '../types/scaffold.js';
 import { suggestPatterns, hasDisclosureHints, hasGuidedFlowHints, type PatternSuggestion } from '../core/patterns/suggestions.js';
@@ -21,7 +21,8 @@ export function createFlowCommand(): Command {
   .option('--json', 'Output JSON only')
   .option('--coverage', 'Include pattern coverage metrics in output')
     .option('--run-folder <path>', 'Explicit run folder path (for deterministic testing)')
-  .action(async (file: string, options: { patterns?: string; json?: boolean; runFolder?: string; auto?: boolean; coverage?: boolean }) => {
+    .option('--run-id <id>', 'Explicit run id (creates/uses .ui/runs/<id>)')
+  .action(async (file: string, options: { patterns?: string; json?: boolean; runFolder?: string; runId?: string; auto?: boolean; coverage?: boolean }) => {
       try {
         const patterns: Pattern[] = [];
         let explicitPatternNames: string[] = [];
@@ -89,7 +90,13 @@ export function createFlowCommand(): Command {
         
         const output = validatePatterns(patterns, scaffold.screen.root);
 
-        const runDir = createRunFolder(process.cwd(), options.runFolder);
+        let runDir: string;
+        try {
+          runDir = selectRunFolder({ explicitPath: options.runFolder, runId: options.runId });
+        } catch (e: any) {
+          console.error('[ERROR]', e.message);
+          process.exit(2);
+        }
         const flowPath = getRunFilePath(runDir, 'flow.json');
         writeFileSync(flowPath, JSON.stringify(output, null, 2));
 

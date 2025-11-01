@@ -38,11 +38,20 @@ export function createScoreCommand(): Command {
 
   command
     .description('Aggregate scores from analysis artifacts')
-    .argument('<run-dir>', 'Path to run folder containing artifacts')
+    .argument('[run-dir]', 'Path to run folder containing artifacts (optional if --run-id provided)')
     .option('--weights <json>', 'Custom weights JSON (e.g., \'{"patternFidelity":0.5,...}\')')
     .option('--json', 'Output results as JSON to stdout')
-    .action(async (runDir: string, options: { weights?: string; json?: boolean }) => {
+    .option('--run-id <id>', 'Run id alias for .ui/runs/<id> (use instead of <run-dir>)')
+    .action(async (runDir: string | undefined, options: { weights?: string; json?: boolean; runId?: string }) => {
       try {
+        if (!runDir) {
+          if (options.runId) {
+            runDir = join(process.cwd(), '.ui', 'runs', options.runId);
+          } else {
+            logger.error('Run directory argument required unless --run-id provided');
+            process.exit(EXIT_INTERNAL_ERROR);
+          }
+        }
         // Parse custom weights if provided
         let weights: ScoreWeights = DEFAULT_WEIGHTS;
         if (options.weights) {

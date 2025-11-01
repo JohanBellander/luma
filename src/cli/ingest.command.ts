@@ -7,7 +7,7 @@ import { readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { ingest } from '../core/ingest/ingest.js';
 import { enhanceIssues, formatIssuesForConsole, type ErrorEnhancementOptions } from '../core/ingest/error-enhancer.js';
-import { createRunFolder, getRunFilePath } from '../utils/run-folder.js';
+import { getRunFilePath, selectRunFolder } from '../utils/run-folder.js';
 import {
   EXIT_SUCCESS,
   EXIT_INVALID_INPUT,
@@ -26,13 +26,15 @@ export function createIngestCommand(): Command {
     .option('--all-issues', 'Show all validation issues instead of just the most blocking one')
     .option('--no-suggest', 'Suppress fix suggestions')
     .option('--format <type>', 'Output format: concise or verbose', 'concise')
-    .option('--run-folder <path>', 'Explicit run folder path (for deterministic testing)')
+  .option('--run-folder <path>', 'Explicit run folder path (for deterministic testing)')
+  .option('--run-id <id>', 'Explicit run id (creates/uses .ui/runs/<id>)')
     .action((file: string, options: { 
       json?: boolean;
       allIssues?: boolean;
       suggest?: boolean;
       format?: string;
       runFolder?: string;
+      runId?: string;
     }) => {
       try {
         // Suppress INFO logs when using --json
@@ -65,8 +67,14 @@ export function createIngestCommand(): Command {
 
         const enhancedIssues = enhanceIssues(result.issues, enhancementOptions, file, result.rawData);
 
-        // Create run folder
-        const runFolder = createRunFolder(process.cwd(), options.runFolder);
+        // Select run folder with precedence (--run-folder > --run-id > reuse/new)
+        let runFolder: string;
+        try {
+          runFolder = selectRunFolder({ explicitPath: options.runFolder, runId: options.runId });
+        } catch (e: any) {
+          console.error(`Error: ${e.message}`);
+          process.exit(EXIT_INVALID_INPUT);
+        }
         const outputPath = getRunFilePath(runFolder, 'ingest.json');
 
         // Create enhanced result
