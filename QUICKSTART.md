@@ -375,6 +375,34 @@ Use cases:
 - Confirm responsive overrides reduced overflow
 - Track impact of pattern additions on layout stability
 
+## Optional: Directly Diff Two Scaffolds (diff)
+
+When iterating on the scaffold JSON itself (adding fields, adjusting properties) you can see structural and validation deltas without generating full run folders:
+
+```powershell
+luma diff old.json new.json --json | jq '.changedNodes[0]'
+```
+
+Console output summarizes added / removed / modified nodes plus validation issue changes and pattern suggestion activation deltas.
+
+JSON schema:
+```
+{
+  "addedNodes": [],
+  "removedNodes": [],
+  "changedNodes": [
+    { "id": "email-field", "changeType": "modified", "changedProps": [{"key":"required","before":false,"after":true}] }
+  ],
+  "issueDelta": { "addedIssues": [], "resolvedIssues": [] },
+  "patternSuggestions": { "before": [], "after": [], "added": [], "removed": [] }
+}
+```
+
+Use cases:
+- Quickly review impact of adding a new action button
+- Confirm a property tweak resolved a validation error
+- See when a pattern heuristic newly activates (e.g., Guided.Flow)
+
 ## Iteration Flags Reference
 
 Combine flags to optimize iterative cycles (token & time efficiency):

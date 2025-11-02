@@ -66,3 +66,30 @@ export interface ReportOutput {
     patterns: Issue[];
   };
 }
+
+// Scaffold diff output (LUMA-133)
+export interface ScaffoldNodeChange {
+  id: string;
+  before?: any; // normalized node structure before (absent if added)
+  after?: any;  // normalized node structure after (absent if removed)
+  changeType: 'added' | 'removed' | 'modified';
+  // Shallow property delta summary for quick console reporting
+  changedProps?: Array<{ key: string; before: any; after: any }>;
+}
+
+export interface ScaffoldDiffOutput {
+  addedNodes: any[]; // nodes added (normalized)
+  removedNodes: any[]; // nodes removed (normalized)
+  changedNodes: ScaffoldNodeChange[]; // nodes with property-level changes
+  issueDelta: {
+    addedIssues: Issue[];
+    resolvedIssues: Issue[];
+  };
+  // Optional pattern suggestion delta (auto heuristics) to highlight activation changes
+  patternSuggestions?: {
+    before: Array<{ pattern: string; confidence: string; confidenceScore: number }>;
+    after: Array<{ pattern: string; confidence: string; confidenceScore: number }>;
+    added: string[];
+    removed: string[];
+  };
+}
