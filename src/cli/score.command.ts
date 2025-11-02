@@ -41,8 +41,10 @@ export function createScoreCommand(): Command {
     .argument('[run-dir]', 'Path to run folder containing artifacts (optional if --run-id provided)')
     .option('--weights <json>', 'Custom weights JSON (e.g., \'{"patternFidelity":0.5,...}\')')
     .option('--json', 'Output results as JSON to stdout')
-    .option('--run-id <id>', 'Run id alias for .ui/runs/<id> (use instead of <run-dir>)')
-    .action(async (runDir: string | undefined, options: { weights?: string; json?: boolean; runId?: string }) => {
+  .option('--run-id <id>', 'Run id alias for .ui/runs/<id> (use instead of <run-dir>)')
+  .option('--quick', 'Skip detailed category breakdown (show overall + PASS/FAIL only)')
+  .option('--dry-run', 'Do not write score.json artifact (simulate only)')
+  .action(async (runDir: string | undefined, options: { weights?: string; json?: boolean; runId?: string; quick?: boolean; dryRun?: boolean }) => {
       try {
         if (!runDir) {
           if (options.runId) {
@@ -106,10 +108,7 @@ export function createScoreCommand(): Command {
         const categories: CategoryScores = {
           patternFidelity: scorePatternFidelity(flowOutput.patterns),
           flowReachability: scoreFlowReachability(keyboardOutput),
-          hierarchyGrouping: scoreHierarchyGrouping(
-            keyboardOutput.issues,
-            layoutIssues
-          ),
+          hierarchyGrouping: scoreHierarchyGrouping(keyboardOutput.issues, layoutIssues),
           responsiveBehavior: scoreResponsiveBehavior(layoutIssues),
         };
 
@@ -122,27 +121,36 @@ export function createScoreCommand(): Command {
           criteria
         );
 
-        // Write score.json
+        // Write score.json (unless dry-run)
         const scorePath = join(runDir, 'score.json');
-        writeFileSync(scorePath, JSON.stringify(scoreOutput, null, 2), 'utf-8');
-        logger.info(`Score written to: ${scorePath}`);
+        if (options.dryRun) {
+          logger.info('[dry-run] Skipped writing score.json artifact');
+        } else {
+          writeFileSync(scorePath, JSON.stringify(scoreOutput, null, 2), 'utf-8');
+          logger.info(`Score written to: ${scorePath}`);
+        }
 
         // Output results
         if (options.json) {
           console.log(JSON.stringify(scoreOutput, null, 2));
         } else {
-          logger.info(`\nCategory Scores:`);
-          logger.info(`  Pattern Fidelity:      ${categories.patternFidelity}/100`);
-          logger.info(`  Flow & Reachability:   ${categories.flowReachability}/100`);
-          logger.info(`  Hierarchy & Grouping:  ${categories.hierarchyGrouping}/100`);
-          logger.info(`  Responsive Behavior:   ${categories.responsiveBehavior}/100`);
+          if (!options.quick) {
+            logger.info(`\nCategory Scores:`);
+            logger.info(`  Pattern Fidelity:      ${categories.patternFidelity}/100`);
+            logger.info(`  Flow & Reachability:   ${categories.flowReachability}/100`);
+            logger.info(`  Hierarchy & Grouping:  ${categories.hierarchyGrouping}/100`);
+            logger.info(`  Responsive Behavior:   ${categories.responsiveBehavior}/100`);
+          }
           logger.info(`\nOverall Score: ${scoreOutput.overall}/100`);
-          logger.info(`\nResult: ${scoreOutput.pass ? 'PASS' : 'FAIL'}`);
-          
+          logger.info(`Result: ${scoreOutput.pass ? 'PASS' : 'FAIL'}${options.quick ? ' (--quick)' : ''}`);
           if (!scoreOutput.pass) {
-            logger.error(`\nFail Reasons:`);
-            for (const reason of scoreOutput.failReasons) {
-              logger.error(`  - ${reason}`);
+            if (options.quick) {
+              logger.error(`Fail Reasons (${scoreOutput.failReasons.length}): (elided due to --quick)`);
+            } else {
+              logger.error(`\nFail Reasons:`);
+              for (const reason of scoreOutput.failReasons) {
+                logger.error(`  - ${reason}`);
+              }
             }
           }
         }

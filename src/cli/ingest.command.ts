@@ -27,6 +27,8 @@ export function createIngestCommand(): Command {
     .option('--no-suggest', 'Suppress fix suggestions')
     .option('--format <type>', 'Output format: concise or verbose', 'concise')
     .option('--errors-only', 'Show only error/critical issues (suppresses warnings/info)')
+    .option('--quick', 'Skip non-essential enhancements (suggestions, verbose formatting) for faster iteration')
+    .option('--dry-run', 'Do not write ingest.json artifact (simulate only)')
   .option('--run-folder <path>', 'Explicit run folder path (for deterministic testing)')
   .option('--run-id <id>', 'Explicit run id (creates/uses .ui/runs/<id>)')
     .action((file: string, options: { 
@@ -37,6 +39,8 @@ export function createIngestCommand(): Command {
       runFolder?: string;
       runId?: string;
       errorsOnly?: boolean;
+      quick?: boolean;
+      dryRun?: boolean;
     }) => {
       try {
         // Suppress INFO logs when using --json
@@ -62,9 +66,9 @@ export function createIngestCommand(): Command {
 
         // Enhance errors with suggestions and nextAction
         const enhancementOptions: ErrorEnhancementOptions = {
-          allIssues: options.allIssues,
-          noSuggest: options.suggest === false, // Commander converts --no-suggest to suggest: false
-          format: (options.format as 'concise' | 'verbose') || 'concise',
+          allIssues: options.quick ? false : options.allIssues, // quick mode: only most critical
+          noSuggest: options.quick ? true : options.suggest === false, // quick mode disables suggestions
+          format: options.quick ? 'concise' : ((options.format as 'concise' | 'verbose') || 'concise'),
         };
 
   const enhancedIssues = enhanceIssues(result.issues, enhancementOptions, file, result.rawData);
@@ -89,8 +93,12 @@ export function createIngestCommand(): Command {
         };
 
         // Write result to run folder
-        writeFileSync(outputPath, JSON.stringify(enhancedResult, null, 2));
-        logger.info(`Ingest result written to: ${outputPath}`);
+        if (options.dryRun) {
+          logger.info('[dry-run] Skipped writing ingest.json artifact');
+        } else {
+          writeFileSync(outputPath, JSON.stringify(enhancedResult, null, 2));
+          logger.info(`Ingest result written to: ${outputPath}`);
+        }
 
         // Output to console
         if (options.json) {
@@ -108,7 +116,11 @@ export function createIngestCommand(): Command {
             }
           }
 
-          console.log(`\nResults saved to: ${outputPath}`);
+          if (options.dryRun) {
+            console.log(`\n[dry-run] ingest.json not written (would be: ${outputPath})`);
+          } else {
+            console.log(`\nResults saved to: ${outputPath}`);
+          }
         }
 
         // Exit with appropriate code

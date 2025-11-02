@@ -20,10 +20,12 @@ export function createFlowCommand(): Command {
   .option('--no-auto', 'Disable auto pattern selection when --patterns omitted')
   .option('--json', 'Output JSON only')
   .option('--coverage', 'Include pattern coverage metrics in output')
-    .option('--errors-only', 'Show only error/critical MUST failures (suppresses warnings/SHOULD)')
-    .option('--run-folder <path>', 'Explicit run folder path (for deterministic testing)')
-    .option('--run-id <id>', 'Explicit run id (creates/uses .ui/runs/<id>)')
-  .action(async (file: string, options: { patterns?: string; json?: boolean; runFolder?: string; runId?: string; auto?: boolean; coverage?: boolean; errorsOnly?: boolean }) => {
+  .option('--errors-only', 'Show only error/critical MUST failures (suppresses warnings/SHOULD)')
+  .option('--quick', 'Skip verbose per-issue listing (show counts only)')
+  .option('--dry-run', 'Do not write flow.json artifact (simulate only)')
+  .option('--run-folder <path>', 'Explicit run folder path (for deterministic testing)')
+  .option('--run-id <id>', 'Explicit run id (creates/uses .ui/runs/<id>)')
+  .action(async (file: string, options: { patterns?: string; json?: boolean; runFolder?: string; runId?: string; auto?: boolean; coverage?: boolean; errorsOnly?: boolean; quick?: boolean; dryRun?: boolean }) => {
       try {
         const patterns: Pattern[] = [];
         let explicitPatternNames: string[] = [];
@@ -129,12 +131,16 @@ export function createFlowCommand(): Command {
           process.exit(2);
         }
         const flowPath = getRunFilePath(runDir, 'flow.json');
-        writeFileSync(flowPath, JSON.stringify(output, null, 2));
+        if (options.dryRun) {
+          console.log('[INFO] [dry-run] Skipped writing flow.json artifact');
+        } else {
+          writeFileSync(flowPath, JSON.stringify(output, null, 2));
+        }
 
         const coverage = options.coverage ? computeCoverage(allSuggestions.length ? allSuggestions : suggestPatterns(scaffold.screen.root), patterns.map(p => p.name)) : undefined;
 
         if (!options.json) {
-          console.log('[INFO] Flow analysis written to:', flowPath);
+          console.log('[INFO] Flow analysis ' + (options.dryRun ? '(dry-run simulated)' : 'written to:'), options.dryRun ? flowPath + ' (not saved)' : flowPath);
           if (autoSelected.length > 0) {
             console.log('[INFO] Auto-selected patterns:', autoSelected.map(s => `${s.pattern}(${s.confidence})`).join(', '));
           } else if (explicitPatternNames.length === 0 && options.auto === false) {
@@ -162,17 +168,21 @@ export function createFlowCommand(): Command {
           for (const p of visiblePatterns) {
             if (p.issues.length > 0) {
               console.log(`[INFO] Pattern ${p.pattern}: ${p.issues.length} issues${options.errorsOnly ? ' (errors only)' : ''}`);
-              for (const issue of p.issues) {
-                const prefix = issue.severity === 'error' || issue.severity === 'critical' ? '❌' : '⚠️';
-                console.log(`  ${prefix} [${issue.severity}] ${issue.message}`);
-              }
-              totalVisibleIssues += p.issues.length;
-              if (options.errorsOnly) {
-                const suppressed = output.patterns.find(orig => orig.pattern === p.pattern)?.issues.length || 0;
-                if (suppressed > p.issues.length) {
-                  console.log(`  (Suppressed ${suppressed - p.issues.length} non-error issues)`);
+              if (options.quick) {
+                console.log('  (Issue details elided due to --quick)');
+              } else {
+                for (const issue of p.issues) {
+                  const prefix = issue.severity === 'error' || issue.severity === 'critical' ? '❌' : '⚠️';
+                  console.log(`  ${prefix} [${issue.severity}] ${issue.message}`);
+                }
+                if (options.errorsOnly) {
+                  const suppressed = output.patterns.find(orig => orig.pattern === p.pattern)?.issues.length || 0;
+                  if (suppressed > p.issues.length) {
+                    console.log(`  (Suppressed ${suppressed - p.issues.length} non-error issues)`);
+                  }
                 }
               }
+              totalVisibleIssues += p.issues.length;
             }
           }
           if (totalVisibleIssues === 0) {
