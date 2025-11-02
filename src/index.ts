@@ -50,6 +50,10 @@ const loaderEntries: LoaderEntry[] = [
     // @ts-ignore - dynamic import resolves after build transpiles .ts to .js
     await import('./cli/validate.command.js')
   ).createValidateCommand() }, // .js for built output; TS source exists
+  { name: 'analyze', loader: async () => (
+    // @ts-ignore dynamic import post-build
+    await import('./cli/analyze.command.js')
+  ).createAnalyzeCommand() },
   { name: 'agent-verify', loader: async () => (await import('./cli/agent-verify.command.js')).createAgentVerifyCommand() }
 ];
 
