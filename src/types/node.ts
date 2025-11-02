@@ -25,6 +25,13 @@ export interface BaseNode {
   maxSize?: SizeConstraint;
   at?: ResponsiveOverrides; // responsive overrides keyed by "<=N" or ">=N"
   /**
+   * Optional pattern annotation (non-functional v1.0):
+   * Allows authors to tag nodes with a known pattern name (e.g., "Form.Basic", "Table.Simple").
+   * Ingest will emit a warning if the annotation does not match a known pattern or alias.
+   * This is a forward-looking affordance for future pattern-aware explain/summary commands.
+   */
+  pattern?: string;
+  /**
    * Optional behaviors metadata for non-visual semantics.
    * Progressive Disclosure pattern will look for behaviors.disclosure hints.
    * Non-breaking: absence of this object never causes validation failure.

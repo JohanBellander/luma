@@ -10,6 +10,7 @@ import type { Node } from '../../types/node.js';
 import { scaffoldSchema } from './validator.js';
 import { validateSchemaVersion } from './schema-version.js';
 import { normalizeScaffold } from './normalize.js';
+import { hasPattern } from '../patterns/pattern-registry.js';
 
 /**
  * Find duplicate node IDs
@@ -142,6 +143,41 @@ function validateFormStates(node: Node): Issue[] {
 }
 
 /**
+ * Collect optional pattern annotation warnings (non-blocking).
+ * Emits a warn issue when a node carries a 'pattern' property that does not
+ * resolve to a known pattern or alias. Forward-looking; annotations are
+ * ignored if valid for now.
+ */
+function collectPatternAnnotationIssues(node: Node): Issue[] {
+  const annIssues: Issue[] = [];
+  function walk(n: Node) {
+    const annotated = (n as any).pattern as string | undefined;
+    if (annotated) {
+      if (!hasPattern(annotated)) {
+        annIssues.push({
+          id: 'unknown-pattern-annotation',
+          severity: 'warn',
+          message: `Pattern annotation '${annotated}' is not a known pattern or alias`,
+          nodeId: n.id,
+          suggestion: 'Remove or correct the pattern name (see: luma patterns --list)',
+        });
+      }
+    }
+    switch (n.type) {
+      case 'Stack':
+      case 'Grid':
+        n.children.forEach(walk); break;
+      case 'Box':
+        if (n.child) walk(n.child); break;
+      case 'Form':
+        n.fields.forEach(walk); n.actions.forEach(walk); break;
+    }
+  }
+  walk(node);
+  return annIssues;
+}
+
+/**
  * Ingest and validate a scaffold
  */
 export function ingest(rawData: unknown): IngestOutput {
@@ -190,6 +226,7 @@ export function ingest(rawData: unknown): IngestOutput {
           
           // Check if this is a discriminator error (no matching union member)
           const note = (err as any).note;
+
           if (unionErrors.length === 0 || note === 'No matching discriminator') {
             // This is a discriminator mismatch - keep the union error
             const fullPath = err.path.length > 0 ? '/' + err.path.join('/') : undefined;
@@ -455,6 +492,9 @@ export function ingest(rawData: unknown): IngestOutput {
 
     const formStateIssues = validateFormStates(normalized.screen.root);
     issues.push(...formStateIssues);
+
+  // Pattern annotation warnings (non-blocking)
+  issues.push(...collectPatternAnnotationIssues(normalized.screen.root));
 
     // Check if there are any errors or critical issues
     const hasBlockingIssues = issues.some(
