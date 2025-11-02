@@ -24,6 +24,7 @@ export function layoutGrid(
   const minColWidth = node.minColWidth;
 
   // Check spacing scale
+  // Allow implicit zero even if not declared in spacingScale
   if (gap !== 0 && !ctx.spacingScale.includes(gap)) {
     ctx.issues.push({
       id: `spacing-off-scale-${node.id}-gap`,

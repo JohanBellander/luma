@@ -18,7 +18,8 @@ export function layoutBox(
   const padding = node.padding ?? 0;
 
   // Check spacing scale
-  if (!ctx.spacingScale.includes(padding)) {
+  // Allow implicit zero even if not declared in spacingScale
+  if (padding !== 0 && !ctx.spacingScale.includes(padding)) {
     ctx.issues.push({
       id: `spacing-off-scale-${node.id}-padding`,
       severity: 'warn',
