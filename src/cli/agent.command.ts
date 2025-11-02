@@ -21,6 +21,7 @@ import { EXIT_INVALID_INPUT } from '../utils/exit-codes.js';
 import { getAllPatterns, _getRegistry } from '../core/patterns/pattern-registry.js';
 import { logger } from '../utils/logger.js';
 import { performance } from 'node:perf_hooks';
+import { LUMA_VERSION } from '../version.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -360,10 +361,8 @@ export function createAgentCommand(): Command {
     .option('--list-sections', 'List available section names')
     .option('--json', 'Output JSON')
     .action((options: { sections?: string; all?: boolean; get?: string; listSections?: boolean; json?: boolean }) => {
-      // Read version from package.json (same as index.ts approach)
-      const packageJsonPath = join(__dirname, '../../package.json');
-      const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
-      const version: string = packageJson.version;
+  // Use centralized version (avoids extra FS read per invocation)
+  const version: string = LUMA_VERSION;
 
       // 1. Handle --list-sections early
       if (options.listSections) {
