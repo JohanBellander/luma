@@ -86,6 +86,46 @@ Use cases:
 
 Future planned formats: `react-component`, `astro`, `markdown-doc` (tracked separately).
 
+### Layout Diff (Compare Two Runs)
+
+Use the layout diff command to quickly spot frame changes and new/removed overflow issues between two validation runs (e.g., before vs after a spacing tweak):
+
+```powershell
+# Produce two runs (example)
+luma layout my-form.json --viewports 320x640,768x1024
+# Modify scaffold locally, then run again
+luma layout my-form.json --viewports 320x640,768x1024
+
+# List run folders (newest last)
+Get-ChildItem .ui/runs | Select-Object Name
+
+# Diff the two most recent run IDs
+luma layout-diff .ui/runs/<older-run> .ui/runs/<newer-run> --json | jq '.diffs[0]'
+```
+
+Console output highlights per-viewport differences; JSON includes `added`, `removed`, and `changed` node frames with `dx`, `dy`, `dw`, `dh` metrics plus issue delta summaries.
+
+Common use cases:
+- Verify a spacingScale adjustment didn’t push primary actions below the fold.
+- Detect unintended growth causing horizontal overflow.
+- Audit impact of responsive overrides on critical frames.
+
+### Iteration & Output Flags Reference
+
+Central table of cross-command flags for faster agent lookup:
+
+| Flag | Commands | Purpose |
+|------|----------|---------|
+| `--quick` | ingest, layout, keyboard, flow, score, report, export | Elide verbose details (issue listings, styles) for faster/smaller output |
+| `--dry-run` | ingest, layout, keyboard, flow, score, report, export | Skip artifact file writes (simulate only) |
+| `--errors-only` | ingest, layout, keyboard, flow | Suppress warning/info severities (console) & add filtered arrays in JSON |
+| `--coverage` | flow | Include pattern activation coverage metrics (`coverage` field) |
+| `--json` | all core commands | Emit JSON machine-readable output (where supported) |
+| `--no-auto` | flow | Disable implicit high-confidence pattern auto-selection |
+| `--run-id` | export | Shortcut to reference `.ui/runs/<id>` using `.` as input |
+
+> Tip: Combine `--quick --errors-only --json` when aggressively minimizing tokens during iterative fix cycles.
+
 ## Runtime Knowledge (Agent Command)
 
 Use the dynamic agent command to retrieve only the information you need in a deterministic JSON envelope. This replaces large static docs and reduces token usage for AI agents.
@@ -208,6 +248,8 @@ Heuristic examples:
 - Guided.Flow: multi-step hints accumulate; single weak hint keeps score below 50.
 
 Auto-selection (when `luma flow` omits `--patterns`): patterns with `confidenceScore >= 80` are activated automatically unless `--no-auto` is passed.
+
+> Confidence Scoring Guidance: High (≥80) suggests immediate validation; Medium (50–79) review for potential inclusion; Low (<50) often indicates insufficient structural hints—defer until scaffold evolves.
 
 Use suggestions (and scores) to decide which patterns to include when running:
 

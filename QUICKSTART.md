@@ -344,6 +344,58 @@ Open the HTML file in your browser to see:
 - All issues grouped by severity
 - Per-viewport results
 
+## Optional: Compare Layouts Between Runs (layout-diff)
+
+When refining spacing, responsive overrides, or component sizing you can diff two layout runs to inspect frame shifts and issue deltas.
+
+```powershell
+# Run baseline
+luma layout my-form.json --viewports 320x640,768x1024
+
+# Edit scaffold (e.g., adjust gap/padding) then run again
+luma layout my-form.json --viewports 320x640,768x1024
+
+# List run folders to obtain IDs
+Get-ChildItem .ui/runs | Select-Object Name
+
+# Diff the two runs (replace <old> <new>)
+luma layout-diff .ui/runs/<old> .ui/runs/<new>
+
+# JSON for programmatic analysis
+luma layout-diff .ui/runs/<old> .ui/runs/<new> --json | jq '.diffs[0]'
+```
+
+Output highlights:
+- Changed frames with dx, dy, dw, dh
+- Added / removed nodes
+- Issue changes (e.g., overflow-x resolved)
+
+Use cases:
+- Validate spacing adjustments didn’t hide primary actions
+- Confirm responsive overrides reduced overflow
+- Track impact of pattern additions on layout stability
+
+## Iteration Flags Reference
+
+Combine flags to optimize iterative cycles (token & time efficiency):
+
+| Flag | Commands | Effect |
+|------|----------|--------|
+| `--quick` | ingest, layout, keyboard, flow, score, report, export | Elide verbose details (issue listings/styles) |
+| `--errors-only` | ingest, layout, keyboard, flow | Show only blocking severities; JSON adds filtered arrays |
+| `--dry-run` | ingest, layout, keyboard, flow, score, report, export | Skip artifact file writes |
+| `--coverage` | flow | Include `coverage` activation metrics |
+| `--json` | core commands | Structured machine-readable output |
+| `--no-auto` | flow | Disable implicit pattern auto-selection |
+| `--run-id` | export | Shorthand to reference run folder using `.` input |
+
+Recommended minimal iteration combo:
+```powershell
+luma ingest scaffold.json --quick --errors-only --json
+```
+
+Then escalate to full detail (omit flags) before scoring and reporting.
+
 ## (Important) Chaining Commands Into One Run Folder
 
 Each command creates a NEW timestamped run folder. To ensure `score` sees all artifacts (ingest, layout, keyboard, flow), chain the commands so they execute sequentially in a single folder.
