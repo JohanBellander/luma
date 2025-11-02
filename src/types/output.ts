@@ -18,6 +18,26 @@ export interface LayoutOutput {
   issues: Issue[];
 }
 
+export interface LayoutDiffChange {
+  id: string;
+  before?: Frame; // undefined if added
+  after?: Frame;  // undefined if removed
+  delta?: { dx: number; dy: number; dw: number; dh: number }; // present if moved/resized
+  changeType: 'added' | 'removed' | 'moved' | 'resized' | 'moved_resized' | 'unchanged';
+}
+
+export interface LayoutDiffOutput {
+  viewport: string;
+  added: Frame[];
+  removed: Frame[];
+  changed: LayoutDiffChange[]; // moved / resized breakdown
+  unchangedCount: number;
+  issueDelta: {
+    added: Issue[];
+    removed: Issue[];
+  };
+}
+
 export interface KeyboardOutput {
   sequence: string[]; // ordered nodeIds
   unreachable: string[]; // focusable nodeIds not reached

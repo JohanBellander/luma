@@ -34,6 +34,7 @@ const loaderEntries: LoaderEntry[] = [
   { name: 'scaffold', loader: async () => (await import('./cli/scaffold.command.js')).createScaffoldCommand() },
   { name: 'ingest', loader: async () => (await import('./cli/ingest.command.js')).createIngestCommand() },
   { name: 'layout', loader: async () => (await import('./cli/layout.command.js')).createLayoutCommand() },
+  { name: 'layout-diff', loader: async () => (await import('./cli/layout-diff.command.js')).createLayoutDiffCommand() },
   { name: 'keyboard', loader: async () => (await import('./cli/keyboard.command.js')).createKeyboardCommand() },
   { name: 'flow', loader: async () => (await import('./cli/flow.command.js')).createFlowCommand() },
   { name: 'score', loader: async () => (await import('./cli/score.command.js')).createScoreCommand() },
