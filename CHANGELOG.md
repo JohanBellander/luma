@@ -27,6 +27,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unknown sections / paths emit structured errors with exit code 2.
 - Future enhancement candidates (tracked separately): array indexing (`rules.MUST[0]`), wildcard selection, and partial section streaming.
 
+---
+
+## [0.1.97] - 2025-11-02
+
+### Added
+- **Analyze Command (LUMA-129)** – Single-pass pipeline: `ingest → layout → keyboard → flow → score` in one run folder via `luma analyze <file>`. Supports `--patterns <list>|auto`, `--viewports`, `--json`, consolidating multi-step workflows for AI agents.
+- **Patterns Auto Token (LUMA-127)** – Accepts `--patterns auto` (or `--patterns=auto`) in `flow`, `validate`, and `analyze` to trigger high-confidence implicit pattern selection without specifying a manual list. JSON outputs include `autoSelected` array with confidence metadata.
+- **Enhanced Error UX (LUMA-128 / 1.1.0)** – Error enhancer upgrades invalid node type & union mismatch messages with: valid type list, contextual example snippet, structural position guidance, and resolution hints referencing `luma explain scaffold-examples`.
+- **New Documentation Topics (LUMA-126)** – Added topics: `scaffold-examples`, `pattern-usage`, `best-practices`, `error-glossary` for richer AI agent guidance (retrievable via `luma explain --topic <name>`).
+
+### Changed
+- Validation output now prioritizes and displays a single blocking error first (enhanced guidance) unless `--all-issues` provided.
+- Pattern auto-selection integrated into `validate` and `analyze` flows when no explicit pattern list is supplied (with token support for explicit opt-in via `auto`).
+
+### Documentation
+- Expanded QUICKSTART to cover scaffold generation, auto pattern selection, enhanced error examples, and iteration flags.
+- CHANGELOG cross-references agent feedback-driven improvements LUMA-126..130 for traceability.
+- README updated with `--patterns auto`, analyze command usage, and enriched error snippet examples.
+
+### DX
+- Reduced multi-command friction through `luma analyze` consolidating artifact creation.
+- Lower token & cognitive load: single critical error surface, optional suppression of non-blocking severities via `--errors-only` across core commands.
+- Predictable pattern activation path (explicit list, implicit high-confidence auto selection, or suppression via `--no-auto`).
+
+### Traceability
+- Issues addressed: LUMA-126, LUMA-127, LUMA-128, LUMA-129, LUMA-130 (tests). Epic: LUMA-125.
+
+---
+
 ## [0.1.76] - 2025-11-01
 
 ### Added
