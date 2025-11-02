@@ -39,6 +39,7 @@ const loaderEntries: LoaderEntry[] = [
   { name: 'keyboard', loader: async () => (await import('./cli/keyboard.command.js')).createKeyboardCommand() },
   { name: 'flow', loader: async () => (await import('./cli/flow.command.js')).createFlowCommand() },
   { name: 'score', loader: async () => (await import('./cli/score.command.js')).createScoreCommand() },
+  { name: 'watch', loader: async () => (await import('./cli/watch.command.js')).createWatchCommand() },
   { name: 'capabilities', loader: async () => (await import('./cli/capabilities.command.js')).createCapabilitiesCommand() },
   { name: 'schema', loader: async () => (await import('./cli/schema.command.js')).createSchemaCommand() },
   { name: 'patterns', loader: async () => (await import('./cli/patterns.command.js')).createPatternsCommand() },
