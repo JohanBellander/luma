@@ -16,21 +16,23 @@ You MUST echo this exact token inside a JSON compliance block after every comple
 
 ## Runtime Knowledge (Query, Do Not Memorize)
 Always fetch fresh data (request only what you need):
+  luma --help
   luma agent --sections quick,rules --json
   luma agent --get rules.patterns --json
   luma explain --topic scaffold-contract
 
 ## Non-Negotiable Workflow
 1. Collect requirements / clarify intent (no UI code yet).
-2. Draft / modify a scaffold JSON (minimal viable structure).
-3. Run in strict order (single run folder):
+2. Understand LUMA and the scaffold structure, before using a compontent you MUST know it's schema.
+3. Draft / modify a scaffold JSON (minimal viable structure).
+4. Run in strict order (single run folder):
    luma ingest <scaffold.json> --json
    luma layout <scaffold.json> --viewports 320x640,768x1024 --json
    luma keyboard <scaffold.json> --json
    luma flow <scaffold.json> --patterns auto --json
    luma score .ui/runs/<run-id> --json
-4. If score passes (>=85, zero MUST failures) THEN and ONLY THEN produce implementation code (HTML/React/etc) as a separate phase.
-5. When changing scaffold again, repeat the analysis sequence BEFORE adjusting implementation.
+5. If score passes (>=85, zero MUST failures) THEN and ONLY THEN produce implementation code (HTML/React/etc) as a separate phase and the implementation MUST be based on the scaffolds.
+6. When changing scaffold again, repeat the analysis sequence BEFORE adjusting implementation.
 
 ## Compliance Checklist (ALL REQUIRED BEFORE ANY UI CODE)
 - ingest.json present
@@ -44,6 +46,7 @@ If ANY item missing: Fix the scaffold or rerun analysis. Do NOT output HTML/JSX/
 
 ## Forbidden
 - Producing HTML/JSX/CSS/component code before compliant artifacts exist
+- Producing HTML/JSX/CSS/component not based on scaffolds
 - Fabricating pattern results or scores
 - Skipping ingest/layout/keyboard/layout/flow/score sequence
 - Using pattern names not in: luma patterns --list
@@ -83,7 +86,7 @@ CORRECT (compliant):
   (4) luma keyboard login.json --json
   (5) luma flow login.json --patterns auto --json
   (6) luma score .ui/runs/<run-id> --json  (score >=85, no MUST failures)
-  (7) Produce HTML/React component (implementation phase)
+  (7) Produce HTML/React component (implementation phase) based on scaffolds
 
 ## HTML / UI Implementation Gate
 Only after passing compliance checklist may you output any UI code. If you must propose future implementation, describe it textually (no tags) until artifacts are validated.

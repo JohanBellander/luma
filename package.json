@@ -1,6 +1,6 @@
 {
   "name": "luma",
-  "version": "0.1.105",
+  "version": "0.1.106",
   "description": "A CLI tool that evaluates UI scaffolds for structure, flow, and UX pattern fidelity without requiring a browser or CSS rendering.",
   "main": "dist/index.js",
   "type": "module",
