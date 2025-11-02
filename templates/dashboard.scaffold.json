@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "1.0.0",
+  "screen": {
+    "id": "analytics-dashboard",
+    "title": "Analytics Dashboard",
+    "root": {
+      "id": "dash-root",
+      "type": "Stack",
+      "direction": "vertical",
+      "gap": 24,
+      "padding": 24,
+      "children": [
+        { "id": "dash-title", "type": "Text", "text": "Key Metrics" },
+        {
+          "id": "stats-table",
+          "type": "Table",
+          "title": "Performance Stats",
+          "columns": [
+            { "id": "c-metric", "header": "Metric" },
+            { "id": "c-value", "header": "Value" }
+          ],
+          "rows": [
+            { "id": "row-visits", "cells": ["Visits", "12,340"] },
+            { "id": "row-conv", "cells": ["Conversion", "4.7%"] }
+          ]
+        },
+        {
+          "id": "quick-action-form",
+          "type": "Form",
+          "title": "Create Alert",
+          "fields": [
+            { "id": "alert-name", "type": "Field", "label": "Alert Name", "inputType": "text", "required": true },
+            { "id": "threshold", "type": "Field", "label": "Threshold", "inputType": "number", "required": true }
+          ],
+          "actions": [
+            { "id": "create-alert", "type": "Button", "text": "Create", "roleHint": "primary", "minSize": { "w": 44, "h": 44 } },
+            { "id": "cancel-alert", "type": "Button", "text": "Cancel", "roleHint": "secondary", "minSize": { "w": 44, "h": 44 } }
+          ],
+          "states": ["default", "submitting", "error"]
+        }
+      ]
+    }
+  },
+  "settings": {
+    "spacingScale": [4, 8, 12, 16, 24, 32, 48],
+    "minTouchTarget": { "w": 44, "h": 44 },
+    "breakpoints": ["320x640", "768x1024", "1280x800"]
+  }
+}

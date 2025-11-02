@@ -114,6 +114,7 @@ export const initCommand = new Command('init')
   .description('Initialize LUMA in the current project (AGENTS.md) and optionally copy example scaffolds')
   .option('--example <name>', 'Copy a single example scaffold into ./examples')
   .option('--examples', 'Copy ALL example scaffolds into ./examples (skip existing)')
+  .option('--template <name>', 'Copy a scaffold template (crm|dashboard|ecommerce) into the current directory')
   .action((opts: { example?: string; examples?: boolean }) => {
   const cwd = process.cwd();
   const targetDir = process.env.LUMA_INIT_TARGET ? path.resolve(process.env.LUMA_INIT_TARGET) : cwd;
@@ -182,10 +183,36 @@ export const initCommand = new Command('init')
     } else if (opts.examples) {
       for (const ex of availableExamples) reports.push(copyExample(ex, destDir));
     }
+    
+    // Template handling (LUMA-134)
+    // Template files live in templates/<name>.scaffold.json and are copied verbatim to targetDir
+    const templateName: string | undefined = (process.argv.includes('--template'))
+      ? (() => { const idx = process.argv.indexOf('--template'); return process.argv[idx + 1]; })()
+      : undefined;
+    if (templateName) {
+      const allowed = ['crm', 'dashboard', 'ecommerce'];
+      if (!allowed.includes(templateName)) {
+        console.error(`\x1b[31m✗ Template '${templateName}' not supported. Allowed: ${allowed.join(', ')}\x1b[0m`);
+        process.exit(3);
+      }
+      const templateFile = path.join(repoRoot, 'templates', `${templateName}.scaffold.json`);
+      if (!fs.existsSync(templateFile)) {
+        console.error(`\x1b[31m✗ Template file missing: ${templateFile}\x1b[0m`);
+        process.exit(3);
+      }
+      const dest = path.join(targetDir, `${templateName}.scaffold.json`);
+      if (fs.existsSync(dest)) {
+        console.log(`\x1b[33m⚠ Template destination already exists, skipping copy: ${path.basename(dest)}\x1b[0m`);
+      } else {
+        fs.copyFileSync(templateFile, dest);
+        console.log(`\x1b[32m✓ Copied scaffold template: ${path.basename(dest)}\x1b[0m`);
+      }
+    }
 
     console.log('\n\x1b[1mNext steps:\x1b[0m');
     console.log('  • Review AGENTS.md to ensure the content is properly integrated');
   if (!opts.example && !opts.examples) console.log('  • (Optional) Re-run with --example <name> or --examples to copy scaffold examples');
+    if (!templateName) console.log('  • (Optional) Re-run with --template <crm|dashboard|ecommerce> to add a scaffold template');
     console.log('  • Run `luma --help` to see available commands');
     if (reports.length) {
       console.log('\n\x1b[1mExample copy results:\x1b[0m');

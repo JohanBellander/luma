@@ -37,4 +37,22 @@ describe('init command example copying', () => {
       expect(err.stderr.toString()).toContain("Example 'does-not-exist' not found");
     }
   });
+
+  it('copies a crm template with --template crm', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'luma-init-template-crm-'));
+    const output = run(`node dist/index.js init --template crm`, { LUMA_INIT_TARGET: tmp });
+    expect(output).toContain('Copied scaffold template');
+    expect(fs.existsSync(path.join(tmp, 'crm.scaffold.json'))).toBe(true);
+  });
+
+  it('errors on unsupported template name', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'luma-init-template-bad-'));
+    try {
+      run(`node dist/index.js init --template unknown`, { LUMA_INIT_TARGET: tmp });
+      expect.fail('Should have thrown');
+    } catch (err: any) {
+      expect(err.status).toBe(3);
+      expect(err.stderr.toString()).toContain("Template 'unknown' not supported");
+    }
+  });
 });
