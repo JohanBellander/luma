@@ -137,22 +137,50 @@ export function createScoreCommand(): Command {
         } else {
           if (!options.quick) {
             if (options.table) {
-              // Render table header
-              const rows: Array<[string,string,string]> = [
-                ['Category', 'Score', 'Weight'],
-                ['Pattern Fidelity', `${categories.patternFidelity.toFixed(1)}`, `${(weights.patternFidelity*100).toFixed(0)}%`],
-                ['Flow & Reachability', `${categories.flowReachability.toFixed(1)}`, `${(weights.flowReachability*100).toFixed(0)}%`],
-                ['Hierarchy & Grouping', `${categories.hierarchyGrouping.toFixed(1)}`, `${(weights.hierarchyGrouping*100).toFixed(0)}%`],
-                ['Responsive Behavior', `${categories.responsiveBehavior.toFixed(1)}`, `${(weights.responsiveBehavior*100).toFixed(0)}%`],
+              // Render table with weighted contributions
+              // Contribution = Score * Weight (normalized weight already sums to 1.0)
+              const rows: Array<[string,string,string,string]> = [
+                ['Category', 'Score', 'Weight', 'Contribution'],
+                [
+                  'Pattern Fidelity',
+                  `${categories.patternFidelity.toFixed(1)}`,
+                  `${(weights.patternFidelity*100).toFixed(0)}%`,
+                  (categories.patternFidelity * weights.patternFidelity).toFixed(2)
+                ],
+                [
+                  'Flow & Reachability',
+                  `${categories.flowReachability.toFixed(1)}`,
+                  `${(weights.flowReachability*100).toFixed(0)}%`,
+                  (categories.flowReachability * weights.flowReachability).toFixed(2)
+                ],
+                [
+                  'Hierarchy & Grouping',
+                  `${categories.hierarchyGrouping.toFixed(1)}`,
+                  `${(weights.hierarchyGrouping*100).toFixed(0)}%`,
+                  (categories.hierarchyGrouping * weights.hierarchyGrouping).toFixed(2)
+                ],
+                [
+                  'Responsive Behavior',
+                  `${categories.responsiveBehavior.toFixed(1)}`,
+                  `${(weights.responsiveBehavior*100).toFixed(0)}%`,
+                  (categories.responsiveBehavior * weights.responsiveBehavior).toFixed(2)
+                ],
+                [
+                  'Overall',
+                  `${scoreOutput.overall.toFixed(1)}`,
+                  '100%',
+                  scoreOutput.overall.toFixed(2)
+                ]
               ];
               const colWidths = [
                 Math.max(...rows.map(r=>r[0].length)),
                 Math.max(...rows.map(r=>r[1].length)),
                 Math.max(...rows.map(r=>r[2].length)),
+                Math.max(...rows.map(r=>r[3].length)),
               ];
-              const renderRow = (r: [string,string,string], header=false) => {
-                const line = `${r[0].padEnd(colWidths[0])} | ${r[1].padStart(colWidths[1])} | ${r[2].padStart(colWidths[2])}`;
-                if (header) return line + '\n' + '-'.repeat(colWidths[0]) + '-+-' + '-'.repeat(colWidths[1]) + '-+-' + '-'.repeat(colWidths[2]);
+              const renderRow = (r: [string,string,string,string], header=false) => {
+                const line = `${r[0].padEnd(colWidths[0])} | ${r[1].padStart(colWidths[1])} | ${r[2].padStart(colWidths[2])} | ${r[3].padStart(colWidths[3])}`;
+                if (header) return line + '\n' + '-'.repeat(colWidths[0]) + '-+-' + '-'.repeat(colWidths[1]) + '-+-' + '-'.repeat(colWidths[2]) + '-+-' + '-'.repeat(colWidths[3]);
                 return line;
               };
               logger.info('\nScore Breakdown (tabular):');

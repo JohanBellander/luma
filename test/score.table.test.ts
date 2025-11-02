@@ -41,11 +41,12 @@ describe('score command --table output', () => {
     const runDir = ensureRunArtifacts();
   const scoreOutput = execSync(`node dist/index.js score ${runDir} --table`, { encoding: 'utf-8' });
     expect(scoreOutput).toContain('Score Breakdown (tabular):');
-    expect(scoreOutput).toMatch(/Category +\| +Score +\| +Weight/);
+  expect(scoreOutput).toMatch(/Category +\| +Score +\| +Weight +\| +Contribution/);
     expect(scoreOutput).toMatch(/Pattern Fidelity/);
     expect(scoreOutput).toMatch(/Flow & Reachability/);
     expect(scoreOutput).toMatch(/Hierarchy & Grouping/);
     expect(scoreOutput).toMatch(/Responsive Behavior/);
+  expect(scoreOutput).toMatch(/Overall/);
   });
 
   it('does not render table without --table flag', () => {
