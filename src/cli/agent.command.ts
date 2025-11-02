@@ -266,6 +266,7 @@ interface PatternSummaryEntry {
   mustIds: string[];
   shouldIds: string[];
   counts: { must: number; should: number };
+  aliases: string[]; // canonical pattern aliases exposed for agent retrieval (LUMA new chore)
 }
 
 function assemblePatterns(): Record<string, unknown> {
@@ -277,6 +278,7 @@ function assemblePatterns(): Record<string, unknown> {
       mustIds: p.must.map(r => r.id),
       shouldIds: p.should.map(r => r.id),
       counts: { must: p.must.length, should: p.should.length },
+      aliases: _getRegistry().get(p.name)?.aliases ?? [],
     }));
   return { patterns };
 }

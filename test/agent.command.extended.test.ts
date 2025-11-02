@@ -81,6 +81,17 @@ describe('agent command extended suite', () => {
     expect(end - start).toBeLessThan(25);
   });
 
+  it('includes aliases in patterns section entries', () => {
+    const json = run('node dist/index.js agent --sections patterns --json');
+    const parsed = JSON.parse(json);
+    const patterns = parsed.patterns?.patterns || parsed.sections?.patterns?.patterns;
+    expect(Array.isArray(patterns)).toBe(true);
+    const formBasic = patterns.find((p: any) => p.name === 'Form.Basic');
+    expect(formBasic).toBeTruthy();
+    expect(Array.isArray(formBasic.aliases)).toBe(true);
+    expect(formBasic.aliases).toContain('form');
+  });
+
   it('performance: CLI spawn median < 1200ms, max < 1800ms over 5 runs', () => {
     const runs: number[] = [];
     const iterations = 5;
