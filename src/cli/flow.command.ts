@@ -16,7 +16,7 @@ export function createFlowCommand(): Command {
   command
     .description('Validate scaffold against UX patterns (auto-selects patterns with confidenceScore >= 80 when --patterns omitted)')
     .argument('<file>', 'Path to scaffold JSON file')
-    .option('--patterns <list>', 'Comma-separated list of patterns (optional; if omitted, auto-select high-confidence suggestions)')
+  .option('--patterns <list>', 'Comma-separated list of patterns, or "auto" token (treats as omission with auto-selection; same as leaving flag out)')
   .option('--no-auto', 'Disable auto pattern selection when --patterns omitted')
   .option('--json', 'Output JSON only')
   .option('--coverage', 'Include pattern coverage metrics in output')
@@ -31,6 +31,12 @@ export function createFlowCommand(): Command {
         let explicitPatternNames: string[] = [];
         if (options.patterns) {
           explicitPatternNames = options.patterns.split(',').map(p => p.trim()).filter(p => p.length > 0);
+          // Support '--patterns auto' token (LUMA-127). If only 'auto' present treat as no explicit patterns.
+          if (explicitPatternNames.length === 1 && explicitPatternNames[0].toLowerCase() === 'auto') {
+            explicitPatternNames = [];
+          }
+          // If mixed list containing 'auto' + others, ignore 'auto'.
+          explicitPatternNames = explicitPatternNames.filter(n => n.toLowerCase() !== 'auto');
           for (const name of explicitPatternNames) {
             const pattern = getPattern(name);
             if (!pattern) {
@@ -86,7 +92,7 @@ export function createFlowCommand(): Command {
   let autoSelected: PatternSuggestion[] = [];
   let allSuggestions: PatternSuggestion[] = [];
   // By default commander sets option.auto === true unless --no-auto passed (then false)
-  if (explicitPatternNames.length === 0 && options.auto !== false) {
+        if (explicitPatternNames.length === 0 && options.auto !== false) {
           allSuggestions = suggestPatterns(scaffold.screen.root);
           // Use numeric confidence threshold (LUMA-117). Preserve legacy high confidence behavior by threshold >= HIGH_CONFIDENCE_THRESHOLD.
           autoSelected = allSuggestions.filter(s => s.confidenceScore >= HIGH_CONFIDENCE_THRESHOLD);

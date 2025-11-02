@@ -54,7 +54,7 @@ export function createValidateCommand(): Command {
   command
     .description('Run full validation pipeline (ingest, layout, keyboard, flow)')
     .argument('<file>', 'Path to scaffold JSON file')
-    .option('--patterns <list>', 'Comma-separated list of patterns to activate (otherwise auto-select high-confidence)')
+  .option('--patterns <list>', 'Comma-separated list of patterns or "auto" token (otherwise auto-select high-confidence)')
     .option('--no-auto', 'Disable auto pattern selection when --patterns omitted')
     .option('--viewports <list>', 'Comma-separated viewports (default: 320x640,768x1024)', '320x640,768x1024')
     .option('--json', 'Output machine-readable JSON summary')
@@ -173,6 +173,12 @@ export function createValidateCommand(): Command {
         let explicitPatternNames: string[] = [];
         if (options.patterns) {
           explicitPatternNames = options.patterns.split(',').map(p => p.trim()).filter(Boolean);
+          // Support '--patterns auto' token (LUMA-127). If only 'auto' treat as no explicit patterns.
+          if (explicitPatternNames.length === 1 && explicitPatternNames[0].toLowerCase() === 'auto') {
+            explicitPatternNames = [];
+          }
+          // If mixed list containing 'auto', drop it.
+          explicitPatternNames = explicitPatternNames.filter(n => n.toLowerCase() !== 'auto');
           for (const name of explicitPatternNames) {
             const p = getPattern(name);
             if (!p) {

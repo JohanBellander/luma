@@ -247,14 +247,16 @@ Heuristic examples:
 - Progressive.Disclosure: base 60 + collapsible behaviors * 5.
 - Guided.Flow: multi-step hints accumulate; single weak hint keeps score below 50.
 
-Auto-selection (when `luma flow` omits `--patterns`): patterns with `confidenceScore >= 80` are activated automatically unless `--no-auto` is passed.
+Auto-selection (when `luma flow` omits `--patterns` or uses `--patterns auto` token): patterns with `confidenceScore >= 80` are activated automatically unless `--no-auto` is passed.
 
 > Confidence Scoring Guidance: High (≥80) suggests immediate validation; Medium (50–79) review for potential inclusion; Low (<50) often indicates insufficient structural hints—defer until scaffold evolves.
 
-Use suggestions (and scores) to decide which patterns to include when running:
+Use suggestions (and scores) to decide which patterns to include when running (or rely on the `auto` token):
 
 ```bash
 luma flow scaffold.json --patterns Form.Basic,Table.Simple
+# Equivalent to omitting flag (auto-select high confidence)
+luma flow scaffold.json --patterns auto
 ```
 
 Suggestions add <5% execution time compared to listing patterns and never block validation; empty output means no strong pattern indicators were detected. Numeric scoring enables future tuning without breaking existing consumers relying on the categorical field.
