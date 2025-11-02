@@ -107,6 +107,41 @@ export function createRunFolder(baseDir: string = process.cwd(), explicitPath?: 
 }
 
 /**
+ * Resolve a run folder from a user-provided run ID (safe subset of characters)
+ * Creates the folder if it does not exist.
+ * @param runId - User provided ID (e.g. "login-flow-1")
+ * @param baseDir - Base directory (defaults to CWD)
+ */
+export function resolveRunFolderFromId(runId: string, baseDir: string = process.cwd()): string {
+  // Enforce safe characters to prevent path traversal or injection.
+  // Allow alphanumerics, dash, underscore. Reject others.
+  if (!/^[A-Za-z0-9_-]+$/.test(runId)) {
+    throw new Error(`Invalid run id '${runId}'. Allowed characters: A-Z a-z 0-9 - _`);
+  }
+  const folder = join(baseDir, RUN_FOLDER_BASE, runId);
+  if (!existsSync(folder)) {
+    mkdirSync(folder, { recursive: true });
+  }
+  return folder;
+}
+
+/**
+ * Helper to choose run folder based on precedence:
+ * 1. explicit runFolder path (from --run-folder)
+ * 2. runId (from --run-id) resolved under .ui/runs/
+ * 3. reuse recent or create new timestamped
+ */
+export function selectRunFolder(opts: { explicitPath?: string; runId?: string; baseDir?: string }): string {
+  const { explicitPath, runId, baseDir = process.cwd() } = opts;
+  if (explicitPath && runId) {
+    throw new Error('Cannot specify both explicit run folder path and run id');
+  }
+  if (explicitPath) return createRunFolder(baseDir, explicitPath);
+  if (runId) return resolveRunFolderFromId(runId, baseDir);
+  return createRunFolder(baseDir);
+}
+
+/**
  * Get the path to a file within a run folder
  * @param runFolder - Path to the run folder
  * @param filename - Name of the file

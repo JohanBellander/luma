@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "1.0.0",
+  "screen": {
+    "id": "crm-dashboard",
+    "title": "CRM Overview",
+    "root": {
+      "id": "crm-root",
+      "type": "Stack",
+      "direction": "vertical",
+      "gap": 24,
+      "padding": 24,
+      "children": [
+        { "id": "crm-title", "type": "Text", "text": "Customer Relationship Manager" },
+        {
+          "id": "lead-form",
+          "type": "Form",
+          "title": "Add Lead",
+          "fields": [
+            { "id": "lead-name", "type": "Field", "label": "Name", "inputType": "text", "required": true },
+            { "id": "lead-email", "type": "Field", "label": "Email", "inputType": "email", "required": true }
+          ],
+          "actions": [
+            { "id": "save-lead", "type": "Button", "text": "Save", "roleHint": "primary", "minSize": { "w": 44, "h": 44 } },
+            { "id": "cancel-lead", "type": "Button", "text": "Cancel", "roleHint": "secondary", "minSize": { "w": 44, "h": 44 } }
+          ],
+          "states": ["default", "submitting", "error"]
+        },
+        {
+          "id": "contacts-table",
+          "type": "Table",
+          "title": "Recent Contacts",
+          "columns": [
+            { "id": "col-name", "header": "Name" },
+            { "id": "col-email", "header": "Email" },
+            { "id": "col-status", "header": "Status" }
+          ],
+          "rows": [
+            { "id": "row-1", "cells": ["Alice", "alice@example.com", "Active"] },
+            { "id": "row-2", "cells": ["Bob", "bob@example.com", "Prospect"] }
+          ]
+        }
+      ]
+    }
+  },
+  "settings": {
+    "spacingScale": [4, 8, 12, 16, 24, 32, 48],
+    "minTouchTarget": { "w": 44, "h": 44 },
+    "breakpoints": ["320x640", "768x1024", "1280x800"]
+  }
+}

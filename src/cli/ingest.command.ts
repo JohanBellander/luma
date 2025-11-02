@@ -7,7 +7,7 @@ import { readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { ingest } from '../core/ingest/ingest.js';
 import { enhanceIssues, formatIssuesForConsole, type ErrorEnhancementOptions } from '../core/ingest/error-enhancer.js';
-import { createRunFolder, getRunFilePath } from '../utils/run-folder.js';
+import { getRunFilePath, selectRunFolder } from '../utils/run-folder.js';
 import {
   EXIT_SUCCESS,
   EXIT_INVALID_INPUT,
@@ -26,13 +26,21 @@ export function createIngestCommand(): Command {
     .option('--all-issues', 'Show all validation issues instead of just the most blocking one')
     .option('--no-suggest', 'Suppress fix suggestions')
     .option('--format <type>', 'Output format: concise or verbose', 'concise')
-    .option('--run-folder <path>', 'Explicit run folder path (for deterministic testing)')
+    .option('--errors-only', 'Show only error/critical issues (suppresses warnings/info)')
+    .option('--quick', 'Skip non-essential enhancements (suggestions, verbose formatting) for faster iteration')
+    .option('--dry-run', 'Do not write ingest.json artifact (simulate only)')
+  .option('--run-folder <path>', 'Explicit run folder path (for deterministic testing)')
+  .option('--run-id <id>', 'Explicit run id (creates/uses .ui/runs/<id>)')
     .action((file: string, options: { 
       json?: boolean;
       allIssues?: boolean;
       suggest?: boolean;
       format?: string;
       runFolder?: string;
+      runId?: string;
+      errorsOnly?: boolean;
+      quick?: boolean;
+      dryRun?: boolean;
     }) => {
       try {
         // Suppress INFO logs when using --json
@@ -58,41 +66,61 @@ export function createIngestCommand(): Command {
 
         // Enhance errors with suggestions and nextAction
         const enhancementOptions: ErrorEnhancementOptions = {
-          allIssues: options.allIssues,
-          noSuggest: options.suggest === false, // Commander converts --no-suggest to suggest: false
-          format: (options.format as 'concise' | 'verbose') || 'concise',
+          allIssues: options.quick ? false : options.allIssues, // quick mode: only most critical
+          noSuggest: options.quick ? true : options.suggest === false, // quick mode disables suggestions
+          format: options.quick ? 'concise' : ((options.format as 'concise' | 'verbose') || 'concise'),
         };
 
-        const enhancedIssues = enhanceIssues(result.issues, enhancementOptions, file, result.rawData);
+  const enhancedIssues = enhanceIssues(result.issues, enhancementOptions, file, result.rawData);
+  const filteredIssues = options.errorsOnly ? enhancedIssues.filter(i => i.severity === 'error' || i.severity === 'critical') : enhancedIssues;
 
-        // Create run folder
-        const runFolder = createRunFolder(process.cwd(), options.runFolder);
+        // Select run folder with precedence (--run-folder > --run-id > reuse/new)
+        let runFolder: string;
+        try {
+          runFolder = selectRunFolder({ explicitPath: options.runFolder, runId: options.runId });
+        } catch (e: any) {
+          console.error(`Error: ${e.message}`);
+          process.exit(EXIT_INVALID_INPUT);
+        }
         const outputPath = getRunFilePath(runFolder, 'ingest.json');
 
         // Create enhanced result
         const enhancedResult = {
           ...result,
           issues: enhancedIssues,
+          filteredIssues: options.errorsOnly ? filteredIssues : undefined,
           runFolder: runFolder, // Include run folder path for test automation
         };
 
         // Write result to run folder
-        writeFileSync(outputPath, JSON.stringify(enhancedResult, null, 2));
-        logger.info(`Ingest result written to: ${outputPath}`);
+        if (options.dryRun) {
+          logger.info('[dry-run] Skipped writing ingest.json artifact');
+        } else {
+          writeFileSync(outputPath, JSON.stringify(enhancedResult, null, 2));
+          logger.info(`Ingest result written to: ${outputPath}`);
+        }
 
         // Output to console
         if (options.json) {
           console.log(JSON.stringify(enhancedResult, null, 2));
         } else {
           console.log(`\nIngest ${result.valid ? 'PASSED' : 'FAILED'}`);
-          console.log(`Issues: ${enhancedIssues.length}${options.allIssues ? '' : ' (showing most blocking)'}`);
+          const visible = options.errorsOnly ? filteredIssues : enhancedIssues;
+          console.log(`Issues: ${visible.length}${options.errorsOnly ? ' (errors only)' : options.allIssues ? '' : ' (showing most blocking)'}`);
 
-          if (enhancedIssues.length > 0) {
+          if (visible.length > 0) {
             console.log('\nIssues found:');
-            console.log(formatIssuesForConsole(enhancedIssues, enhancementOptions));
+            console.log(formatIssuesForConsole(visible, enhancementOptions));
+            if (options.errorsOnly && enhancedIssues.length !== filteredIssues.length) {
+              console.log(`\n(Suppressed ${enhancedIssues.length - filteredIssues.length} non-error issues; remove --errors-only to see all)`);
+            }
           }
 
-          console.log(`\nResults saved to: ${outputPath}`);
+          if (options.dryRun) {
+            console.log(`\n[dry-run] ingest.json not written (would be: ${outputPath})`);
+          } else {
+            console.log(`\nResults saved to: ${outputPath}`);
+          }
         }
 
         // Exit with appropriate code

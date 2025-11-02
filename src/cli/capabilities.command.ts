@@ -141,6 +141,14 @@ export function createCapabilitiesCommand(): Command {
               { flag: '--json', description: 'Output result as JSON' },
             ],
           },
+          {
+            name: 'agent-verify',
+            description: 'Verify agent integration readiness (AGENTS.md, scripts, config)',
+            arguments: [],
+            options: [
+              { flag: '--json', description: 'Output result as JSON' },
+            ],
+          },
         ],
         exitCodes: [
           { code: 0, name: 'SUCCESS', description: 'No blocking issues' },

@@ -53,6 +53,139 @@ Requires Node.js ≥ 18.
 luma init
 ```
 
+### Prototype Export (New: html-prototype)
+
+After a scaffold passes ingest (and optionally flow/layout checks) you can generate a lightweight HTML prototype for quick visual/interaction review without writing production UI code yet:
+
+```powershell
+luma export my-form.json --format html-prototype
+```
+
+Outputs `prototype.html` in the current directory by default. Open it in a browser to see:
+- Screen title as heading
+- Basic layout structure (Stacks rendered as flex containers)
+- Form fields with labels & required indicators
+- Primary / secondary buttons styled minimally
+
+Options:
+- `--out custom.html` specify output file
+- `--quick` omit inline styles & generator comment (minimal markup only)
+- `--json` emit metadata instead of file output (includes node count, schemaVersion)
+- `--dry-run` skip writing file while still printing success message
+
+Run-folder input (export from a previous chained validation run):
+```powershell
+luma export .ui/runs/<run-id> --format html-prototype
+```
+You may also use `--run-id <id>` with `.` as input.
+
+Use cases:
+- Human review of scaffold semantics before implementation
+- Sharing a quick clickable artifact with stakeholders
+- Comparing variants (generate multiple prototypes from differing scaffolds)
+
+Future planned formats: `react-component`, `astro`, `markdown-doc` (tracked separately).
+
+### Layout Diff (Compare Two Runs)
+
+Use the layout diff command to quickly spot frame changes and new/removed overflow issues between two validation runs (e.g., before vs after a spacing tweak):
+
+```powershell
+# Produce two runs (example)
+luma layout my-form.json --viewports 320x640,768x1024
+# Modify scaffold locally, then run again
+luma layout my-form.json --viewports 320x640,768x1024
+
+# List run folders (newest last)
+Get-ChildItem .ui/runs | Select-Object Name
+
+# Diff the two most recent run IDs
+luma layout-diff .ui/runs/<older-run> .ui/runs/<newer-run> --json | jq '.diffs[0]'
+```
+
+Console output highlights per-viewport differences; JSON includes `added`, `removed`, and `changed` node frames with `dx`, `dy`, `dw`, `dh` metrics plus issue delta summaries.
+
+Common use cases:
+- Verify a spacingScale adjustment didn’t push primary actions below the fold.
+- Detect unintended growth causing horizontal overflow.
+- Audit impact of responsive overrides on critical frames.
+
+### Iteration & Output Flags Reference
+
+Central table of cross-command flags for faster agent lookup:
+
+| Flag | Commands | Purpose |
+|------|----------|---------|
+| `--quick` | ingest, layout, keyboard, flow, score, report, export | Elide verbose details (issue listings, styles) for faster/smaller output |
+| `--dry-run` | ingest, layout, keyboard, flow, score, report, export | Skip artifact file writes (simulate only) |
+| `--errors-only` | ingest, layout, keyboard, flow | Suppress warning/info severities (console) & add filtered arrays in JSON |
+| `--coverage` | flow | Include pattern activation coverage metrics (`coverage` field) |
+| `--json` | all core commands | Emit JSON machine-readable output (where supported) |
+| `--no-auto` | flow | Disable implicit high-confidence pattern auto-selection |
+| `--run-id` | export | Shortcut to reference `.ui/runs/<id>` using `.` as input |
+
+> Tip: Combine `--quick --errors-only --json` when aggressively minimizing tokens during iterative fix cycles.
+
+## Runtime Knowledge (Agent Command)
+
+Use the dynamic agent command to retrieve only the information you need in a deterministic JSON envelope. This replaces large static docs and reduces token usage for AI agents.
+
+List available sections:
+```bash
+luma agent --list-sections
+```
+
+Fetch a subset (only quick + rules):
+```bash
+luma agent --sections quick,rules --json
+```
+
+Dot-path retrieval (returns just that subtree):
+```bash
+luma agent --get quick --json
+```
+
+All sections:
+```bash
+luma agent --all --json
+```
+
+Determinism: Keys are stable and ordering is canonical; only `generatedAt` timestamp varies per invocation.
+
+Dot-path grammar (v1): `section(.segment)*` with simple alphanumeric/underscore segments. **Deep indexing into arrays (e.g. `patterns.Form.Basic.must[0]`) and wildcards are intentionally NOT supported** in the first version. Retrieve the full section and filter client-side if you need individual items.
+
+Typical integration flow for an agent:
+1. `luma agent --sections quick,components,patterns --json` to cache core knowledge.
+2. Build scaffold.
+3. Run validation pipeline.
+4. Optionally fetch `rules` section later for pattern rule IDs.
+
+## Agent Integration Verification
+
+Use the `agent-verify` command to quickly audit that a repository has the expected agent workflow assets and governance policies:
+
+```bash
+luma agent-verify --json
+```
+
+Checks performed (v1):
+* `agents_md` – Presence of `AGENTS.md` and required governance/pattern hint lines
+* `beads_integrity_script` – Presence of `scripts/validate-beads-integrity.ps1` (Windows integrity enforcement)
+* `package_json_scripts` – Basic `test` or `build` scripts defined
+* `tsconfig_present` – Presence of TypeScript config (for projects using TS)
+
+Exit code: 0 if all pass, 2 if any fail (suitable for CI gating). Human output shows ✓/✗ markers; JSON output includes per-check detail fields.
+
+Error examples:
+```bash
+luma agent --sections unknown --json   # => code: UNKNOWN_SECTION (exit 2)
+luma agent --get rules.invalidPath --json  # => code: UNKNOWN_PATH (exit 2)
+```
+
+Performance target: full envelope generation (<60ms typical) cached in-process; repeat requests for the same section set are memoized.
+
+> Tip: Persist the JSON output alongside your run folder to ensure reproducible agent context across sessions.
+
 ## Documentation
 
 - [SPECIFICATION.md](./SPECIFICATION.md) — Full data & behavior spec
@@ -68,31 +201,65 @@ You can ask LUMA to heuristically suggest which UX patterns apply to a scaffold 
 luma patterns --suggest my-scaffold.json --json
 ```
 
-Output format:
+Output format (v1.1+ now includes numeric `confidenceScore`):
 
 ```json
 {
 	"suggestions": [
-		{ "pattern": "Form.Basic", "reason": "Detected Form node with 3 field(s) and 2 action(s)", "confidence": "high" },
-		{ "pattern": "Table.Simple", "reason": "Detected Table node (5 columns, responsive.strategy=scroll)", "confidence": "high" },
-		{ "pattern": "Progressive.Disclosure", "reason": "Found collapsible disclosure behavior on one or more nodes", "confidence": "high" },
-		{ "pattern": "Guided.Flow", "reason": "Found multi-step indicators (next, previous) suggesting a wizard flow", "confidence": "medium" }
+		{
+			"pattern": "Form.Basic",
+			"reason": "Detected Form node with 3 field(s) and 2 action(s)",
+			"confidence": "high",
+			"confidenceScore": 92
+		},
+		{
+			"pattern": "Table.Simple",
+			"reason": "Detected Table node (5 columns, responsive.strategy=scroll)",
+			"confidence": "high",
+			"confidenceScore": 88
+		},
+		{
+			"pattern": "Progressive.Disclosure",
+			"reason": "Found collapsible disclosure behavior on one or more nodes",
+			"confidence": "high",
+			"confidenceScore": 83
+		},
+		{
+			"pattern": "Guided.Flow",
+			"reason": "Found multi-step indicators (next, previous) suggesting a wizard flow",
+			"confidence": "medium",
+			"confidenceScore": 56
+		}
 	]
 }
 ```
 
-Confidence scale:
-- high – direct structural match (Form node with fields/actions, Table columns, explicit disclosure behaviors)
-- medium – multiple hints (next/previous buttons implying multi-step flow)
-- low – single weak hint (a lone Next button or guidedFlow metadata without other indicators)
+Confidence representation:
+- `confidenceScore` (0–100) is the primary numeric signal (added in LUMA-117). Thresholds:
+	- High ≥ 80
+	- Medium ≥ 50 and < 80
+	- Low < 50
+- Legacy `confidence` string retained for backward compatibility; treat it as a coarse bucket of the numeric score.
 
-Use suggestions to decide which patterns to include when running:
+Heuristic examples:
+- Form.Basic: base 70 + (#fields * 4) + (#actions * 3) capped at 100.
+- Table.Simple: base 60 + column count * 5 (capped) + scroll strategy bonus.
+- Progressive.Disclosure: base 60 + collapsible behaviors * 5.
+- Guided.Flow: multi-step hints accumulate; single weak hint keeps score below 50.
+
+Auto-selection (when `luma flow` omits `--patterns` or uses `--patterns auto` token): patterns with `confidenceScore >= 80` are activated automatically unless `--no-auto` is passed.
+
+> Confidence Scoring Guidance: High (≥80) suggests immediate validation; Medium (50–79) review for potential inclusion; Low (<50) often indicates insufficient structural hints—defer until scaffold evolves.
+
+Use suggestions (and scores) to decide which patterns to include when running (or rely on the `auto` token):
 
 ```bash
 luma flow scaffold.json --patterns Form.Basic,Table.Simple
+# Equivalent to omitting flag (auto-select high confidence)
+luma flow scaffold.json --patterns auto
 ```
 
-Suggestions add <5% execution time compared to listing patterns and never block validation; empty output means no strong pattern indicators were detected.
+Suggestions add <5% execution time compared to listing patterns and never block validation; empty output means no strong pattern indicators were detected. Numeric scoring enables future tuning without breaking existing consumers relying on the categorical field.
 
 ## Guided.Flow Pattern (Multi-Step Wizards)
 
@@ -190,7 +357,96 @@ luma flow my-form.json --coverage
 #   - Gap: Guided.Flow (Found multi-step indicators (...))
 ```
 
+## Focused Error-Only Output (LUMA-110)
+
+When refining a scaffold, AI agents often only need blocking issues (MUST failures, critical errors) and can ignore warnings to reduce tokens. The following commands now support `--errors-only` to suppress non-blocking severities in console output and provide filtered arrays in JSON:
+
+Supported commands:
+- `ingest`
+- `layout`
+- `keyboard`
+- `flow`
+
+Behavior:
+1. Console output hides `warn` / `info` issues (shows only `error` and `critical`).
+2. JSON output remains backward-compatible (original arrays preserved) and adds additive fields:
+	 - `filteredIssues` (ingest, keyboard)
+	 - `filteredLayouts` (layout) – each layout object has its own filtered `issues`
+	 - `filteredPatterns` (flow) – pattern objects with only error/critical issues
+3. A suppression note is shown if any non-error issues were hidden.
+
+Example:
+```powershell
+luma ingest examples/pattern-failures.json --errors-only
+```
+Sample JSON fragment (`--json --errors-only`):
+```json
+{
+	"issues": [ /* full set */ ],
+	"filteredIssues": [ { "severity": "error", "id": "field-has-label" } ]
+}
+```
+
+Flow command filtered patterns fragment:
+```json
+{
+	"patterns": [ /* full results */ ],
+	"filteredPatterns": [
+		{ "pattern": "Form.Basic", "issues": [ { "severity": "critical", "id": "actions-exist" } ] }
+	]
+}
+```
+
+Use cases:
+- Minimize token usage during iterative fix cycles
+- Faster agent parsing (smaller JSON arrays)
+- Clear signal of current blockers
+
+If you need all issues again, simply omit `--errors-only`.
+
 ## Contributing
 
 PRs welcome: https://github.com/JohanBellander/luma.
+
+### Issue Tracking Integrity
+
+All work is tracked with `bd (beads)`; **policy (LUMA-82): do NOT edit `.beads/issues.jsonl` manually**.
+
+#### Automated Enforcement (LUMA-80)
+
+The repository ships a pre-push Git hook that now automatically runs the integrity check and blocks pushes when anomalies are detected (e.g., sequence regression, malformed JSON lines).
+
+Enable hooks (one-time):
+```powershell
+npm run setup-hooks
+```
+Then any `git push` will:
+1. Run `scripts/validate-beads-integrity.ps1` (or `.sh` on POSIX)
+2. Abort with exit code 2 if an anomaly is found (preventing corrupt history)
+3. Auto-increment patch version if `package.json` version unchanged in the last commit (lightweight tracking of incremental changes)
+
+Sample blocked push output:
+```text
+[pre-push] Running beads integrity check...
+{"code":"SEQUENCE_REGRESSION","message":"ID numeric sequence regression: 77 after 120","line":121}
+[pre-push] ❌ Beads integrity anomaly detected. Push aborted.
+```
+
+Run the integrity check script before committing (optional but recommended):
+
+```powershell
+pwsh scripts/validate-beads-integrity.ps1
+```
+
+Exit codes:
+- 0 clean
+- 2 anomaly (possible manual edit)
+
+Hooks already enforce this locally; you can still add the script to CI for defense-in-depth.
+
+Dirty example (simulated manual line appended):
+```powershell
+pwsh scripts/validate-beads-integrity.ps1
+{"code":"MANUAL_EDIT_DETECTED","message":"ID numeric sequence regression: 77 after 120","line":121}
+```
 

@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import { readFileSync, writeFileSync } from 'node:fs';
 import type { Scaffold } from '../types/scaffold.js';
 import { analyzeKeyboardFlow } from '../core/keyboard/keyboard.js';
-import { createRunFolder, getRunFilePath } from '../utils/run-folder.js';
+import { getRunFilePath, selectRunFolder } from '../utils/run-folder.js';
 import { logger } from '../utils/logger.js';
 import {
   EXIT_SUCCESS,
@@ -28,8 +28,12 @@ export function createKeyboardCommand(): Command {
     .option('--state <state>', 'Form state to analyze (e.g., "default", "error")')
     .option('--viewport <width>', 'Viewport width for responsive overrides (e.g., "320")', parseInt)
     .option('--json', 'Output results as JSON to stdout')
-    .option('--run-folder <path>', 'Explicit run folder path (for deterministic testing)')
-    .action(async (file: string, options: { state?: string; viewport?: number; json?: boolean; runFolder?: string }) => {
+    .option('--errors-only', 'Show only error/critical issues (suppresses warnings)')
+      .option('--quick', 'Skip verbose issue listing and unreachable node expansion')
+      .option('--dry-run', 'Do not write keyboard.json artifact (simulate only)')
+  .option('--run-folder <path>', 'Explicit run folder path (for deterministic testing)')
+  .option('--run-id <id>', 'Explicit run id (creates/uses .ui/runs/<id>)')
+  .action(async (file: string, options: { state?: string; viewport?: number; json?: boolean; runFolder?: string; runId?: string; errorsOnly?: boolean; quick?: boolean; dryRun?: boolean }) => {
       try {
         // Read scaffold file
         const scaffoldText = readFileSync(file, 'utf-8');
@@ -38,37 +42,64 @@ export function createKeyboardCommand(): Command {
         // Analyze keyboard flow
         const output = analyzeKeyboardFlow(scaffold, options.viewport, options.state);
 
-        // Create run folder and write output
-        const runFolder = createRunFolder(process.cwd(), options.runFolder);
+        // Select run folder
+        let runFolder: string;
+        try {
+          runFolder = selectRunFolder({ explicitPath: options.runFolder, runId: options.runId });
+        } catch (e: any) {
+          logger.error(e.message);
+          process.exit(EXIT_INVALID_INPUT);
+        }
         const outputPath = getRunFilePath(runFolder, 'keyboard.json');
-        writeFileSync(outputPath, JSON.stringify(output, null, 2), 'utf-8');
-        logger.info(`Keyboard analysis written to: ${outputPath}`);
+        if (options.dryRun) {
+          logger.info('[dry-run] Skipped writing keyboard.json artifact');
+        } else {
+          writeFileSync(outputPath, JSON.stringify(output, null, 2), 'utf-8');
+          logger.info(`Keyboard analysis written to: ${outputPath}`);
+        }
 
         // Output results
         if (options.json) {
           const jsonOutput = {
             ...output,
-            runFolder: runFolder
+            runFolder: runFolder,
+            ...(options.errorsOnly ? { filteredIssues: output.issues.filter(i => i.severity === 'error' || i.severity === 'critical') } : {})
           };
           console.log(JSON.stringify(jsonOutput, null, 2));
         } else {
-          logger.info(`Tab sequence (${output.sequence.length} focusable nodes):`);
-          for (let i = 0; i < output.sequence.length; i++) {
-            logger.info(`  ${i + 1}. ${output.sequence[i]}`);
-          }
-
-          if (output.unreachable.length > 0) {
-            logger.error(`Unreachable nodes (${output.unreachable.length}):`);
-            for (const id of output.unreachable) {
-              logger.error(`  - ${id}`);
+          if (options.quick) {
+            logger.info(`Tab sequence length: ${output.sequence.length} (elided via --quick)`);
+          } else {
+            logger.info(`Tab sequence (${output.sequence.length} focusable nodes):`);
+            for (let i = 0; i < output.sequence.length; i++) {
+              logger.info(`  ${i + 1}. ${output.sequence[i]}`);
             }
           }
 
-          if (output.issues.length > 0) {
-            logger.info(`Issues found (${output.issues.length}):`);
-            for (const issue of output.issues) {
-              const prefix = issue.severity === 'error' || issue.severity === 'critical' ? '❌' : '⚠️';
-              logger.info(`  ${prefix} [${issue.severity}] ${issue.message}`);
+          if (output.unreachable.length > 0) {
+            if (options.quick) {
+              logger.error(`Unreachable nodes: ${output.unreachable.length} (list elided via --quick)`);
+            } else {
+              logger.error(`Unreachable nodes (${output.unreachable.length}):`);
+              for (const id of output.unreachable) {
+                logger.error(`  - ${id}`);
+              }
+            }
+          }
+
+          const visibleIssues = options.errorsOnly ? output.issues.filter(i => i.severity === 'error' || i.severity === 'critical') : output.issues;
+          if (visibleIssues.length > 0) {
+            logger.info(`Issues found (${visibleIssues.length}):${options.errorsOnly ? ' (errors only)' : ''}`);
+            if (options.quick) {
+              logger.info('  (Issue details elided due to --quick)');
+            } else {
+              for (const issue of visibleIssues) {
+                const prefix = issue.severity === 'error' || issue.severity === 'critical' ? '❌' : '⚠️';
+                logger.info(`  ${prefix} [${issue.severity}] ${issue.message}`);
+              }
+              if (options.errorsOnly && output.issues.length !== visibleIssues.length) {
+                logger.info(`(Suppressed ${output.issues.length - visibleIssues.length} non-error issues)`);
+              }
             }
           } else {
             logger.info('No issues found');

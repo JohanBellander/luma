@@ -235,35 +235,38 @@ describe('Backward Compatibility: v1.0 Scaffolds', () => {
 
   describe('pattern-failures.json - Pattern MUST Violations', () => {
     const scaffoldPath = join(EXAMPLES_DIR, 'pattern-failures.json');
+    // Deterministic run folder to avoid race conditions with timestamp reuse threshold
+    const compatPatternFailuresFolder = join(process.cwd(), '.ui', 'runs', 'compat-pattern-failures');
     let runFolder: string;
 
     it('should ingest successfully despite future pattern violations', () => {
       execSync(
-        `node dist/index.js ingest ${scaffoldPath}`,
+        `node dist/index.js ingest ${scaffoldPath} --run-folder ${compatPatternFailuresFolder}`,
         { encoding: 'utf-8' }
       );
 
-      runFolder = getMostRecentRunFolder();
+      runFolder = compatPatternFailuresFolder;
       expect(existsSync(join(runFolder, 'ingest.json'))).toBe(true);
     });
 
     it('should detect MUST violations during flow analysis', { timeout: 15000 }, () => {
       execSync(
-        `node dist/index.js layout ${scaffoldPath} --viewports 1024x768`,
+        `node dist/index.js layout ${scaffoldPath} --viewports 1024x768 --run-folder ${compatPatternFailuresFolder}`,
         { encoding: 'utf-8' }
       );
 
       execSync(
-        `node dist/index.js keyboard ${scaffoldPath}`,
+        `node dist/index.js keyboard ${scaffoldPath} --run-folder ${compatPatternFailuresFolder}`,
         { encoding: 'utf-8' }
       );
 
-      // Flow will exit with error code due to MUST failures
+      // Flow will exit with error code due to MUST failures (exit code 3) but artifact should exist
       const result = execCommand(
-        `node dist/index.js flow ${scaffoldPath} --patterns form`
+        `node dist/index.js flow ${scaffoldPath} --patterns form --run-folder ${compatPatternFailuresFolder}`
       );
+      expect(result).toBeNull(); // Non-zero exit expected
 
-      runFolder = getMostRecentRunFolder();
+      runFolder = compatPatternFailuresFolder;
       const flowPath = join(runFolder, 'flow.json');
       expect(existsSync(flowPath)).toBe(true);
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env pwsh
 # PowerShell pre-push hook - Auto-increment patch version
+# Now also runs beads integrity check (blocks push on anomaly) before version bump.
 
 $ErrorActionPreference = 'Stop'
 
@@ -7,6 +8,22 @@ $ErrorActionPreference = 'Stop'
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Split-Path -Parent $scriptDir
 $packageJsonPath = Join-Path -Path $repoRoot -ChildPath 'package.json'
+
+Write-Host "[pre-push] Running beads integrity check..." -ForegroundColor Cyan
+$integrityScript = Join-Path (Join-Path $repoRoot 'scripts') 'validate-beads-integrity.ps1'
+if (Test-Path $integrityScript) {
+    & $integrityScript
+    $integrityExit = $LASTEXITCODE
+    if ($integrityExit -eq 2) {
+        Write-Host '[pre-push] Integrity anomaly detected. Push aborted.' -ForegroundColor Red
+        exit 2
+    }
+    else {
+        Write-Host '[pre-push] Integrity clean.' -ForegroundColor Green
+    }
+} else {
+    Write-Host '[pre-push] (info) Integrity script missing; skipping.' -ForegroundColor Yellow
+}
 
 $packageJson = Get-Content $packageJsonPath -Raw | ConvertFrom-Json
 $currentVersion = $packageJson.version
@@ -35,7 +52,7 @@ if ($currentVersion -eq $stagedVersion) {
     $newPatch = $patch + 1
     $newVersion = "$major.$minor.$newPatch"
     
-    Write-Host "Auto-incrementing version: $currentVersion -> $newVersion" -ForegroundColor Cyan
+    Write-Host "[pre-push] Auto-incrementing version: $currentVersion -> $newVersion" -ForegroundColor Cyan
     
     # Update package.json preserving formatting
     $packageContent = Get-Content $packageJsonPath -Raw
@@ -46,9 +63,9 @@ if ($currentVersion -eq $stagedVersion) {
     git add package.json
     git commit --amend --no-edit --no-verify
     
-    Write-Host "Version bumped to $newVersion" -ForegroundColor Green
+    Write-Host "[pre-push] Version bumped to $newVersion" -ForegroundColor Green
 } else {
-    Write-Host "Version already updated manually: $currentVersion" -ForegroundColor Yellow
+    Write-Host "[pre-push] Version already updated manually: $currentVersion" -ForegroundColor Yellow
 }
 
 exit 0

@@ -231,7 +231,21 @@ function generateSuggestion(issue: Issue, actualData?: any): string | undefined 
       // Handle union errors with specific component type lists
       if (msg.includes('invalid_union') || issue.found === 'none of the union members matched') {
         if (pointer.includes('/root') || pointer.includes('/child') || pointer.includes('/children')) {
-          return `Expected a valid node type. Must be one of: ${VALID_NODE_TYPES.join(', ')}. Check that the 'type' property is set correctly.`;
+          // Provide enriched guidance: list valid types, example snippet matching structural context, next steps
+          const example: Record<string, any> = {
+            Stack: '{ "id": "stack-1", "type": "Stack", "direction": "vertical", "children": [] }',
+            Grid: '{ "id": "grid-1", "type": "Grid", "columns": 2, "children": [] }',
+            Box: '{ "id": "box-1", "type": "Box", "child": { /* nested node */ } }',
+            Text: '{ "id": "text-1", "type": "Text", "text": "Heading" }',
+            Button: '{ "id": "btn-1", "type": "Button", "text": "Submit", "roleHint": "primary" }',
+            Field: '{ "id": "field-1", "type": "Field", "label": "Email", "inputType": "email" }',
+            Form: '{ "id": "form-1", "type": "Form", "fields": [{ "id": "f1", "type": "Field", "label": "Name" }], "actions": [{ "id": "submit", "type": "Button", "text": "Save" }], "states": ["default"] }',
+            Table: '{ "id": "table-1", "type": "Table", "title": "Results", "columns": ["Name"], "responsive": { "strategy": "wrap" } }'
+          };
+          const exampleSnippets = VALID_NODE_TYPES.map(t => `${t}: ${example[t]}`).join('\n');
+          return `Expected a valid node type. Must be one of: ${VALID_NODE_TYPES.join(', ')}.\n` +
+            `Example nodes (choose one matching your intent):\n${exampleSnippets}\n` +
+            `If you intended a semantic pattern (e.g., guided steps, disclosure), start with a supported structural type and add behaviors.roleHint or run: luma explain --topic scaffold-examples`;
         }
       }
 

@@ -3,11 +3,22 @@ import { traversePreOrder } from '../keyboard/traversal.js';
 
 export type Confidence = 'high' | 'medium' | 'low';
 
+/**
+ * Numeric confidence score (0-100) added (LUMA-117) for finer-grained auto-selection.
+ * We preserve the legacy categorical confidence for backward compatibility with
+ * existing consumers & tests.
+ */
 export interface PatternSuggestion {
   pattern: string;
   reason: string;
-  confidence: Confidence;
+  confidence: Confidence; // legacy categorical level
+  confidenceScore: number; // numeric (0-100)
 }
+
+// Threshold used by auto-selection to activate patterns implicitly when --patterns omitted.
+// (High confidence historically). We now map: high>=80, medium>=50, low<50.
+export const HIGH_CONFIDENCE_THRESHOLD = 80;
+export const MEDIUM_CONFIDENCE_THRESHOLD = 50;
 
 /**
  * Detect if any node in the tree has progressive disclosure hints.
@@ -81,22 +92,33 @@ export function suggestPatterns(root: Node): PatternSuggestion[] {
 
   if (hasForm) {
     const reason = `Detected Form node with ${formFields} field(s) and ${formActions} action(s)`;
-    suggestions.push({ pattern: 'Form.Basic', reason, confidence: 'high' });
+    const score = 95; // direct structural match
+    suggestions.push({ pattern: 'Form.Basic', reason, confidence: 'high', confidenceScore: score });
   }
   if (hasTable) {
     const reason = `Detected Table node (${tableColumns} columns, responsive.strategy=${tableResponsiveStrategy || 'none'})`;
-    suggestions.push({ pattern: 'Table.Simple', reason, confidence: tableColumns > 0 ? 'high' : 'medium' });
+    const score = tableColumns > 0 ? 90 : 60; // columns presence drives confidence
+    suggestions.push({ pattern: 'Table.Simple', reason, confidence: tableColumns > 0 ? 'high' : 'medium', confidenceScore: score });
   }
   if (hasDisclosure) {
     const reason = 'Found collapsible disclosure behavior on one or more nodes';
-    suggestions.push({ pattern: 'Progressive.Disclosure', reason, confidence: 'high' });
+    suggestions.push({ pattern: 'Progressive.Disclosure', reason, confidence: 'high', confidenceScore: 92 });
   }
   if (guidedFlowIndicators >= 2) {
     const reason = `Found multi-step indicators (${guidedFlowIndicatorsDetails.slice(0, 5).join(', ')}) suggesting a wizard flow`;
-    suggestions.push({ pattern: 'Guided.Flow', reason, confidence: guidedFlowIndicators > 3 ? 'high' : 'medium' });
+    const score = guidedFlowIndicators > 3 ? 88 : 70;
+    suggestions.push({ pattern: 'Guided.Flow', reason, confidence: guidedFlowIndicators > 3 ? 'high' : 'medium', confidenceScore: score });
   } else if (guidedFlowIndicators === 1) {
     const reason = `Single guided-flow hint (${guidedFlowIndicatorsDetails[0]}) detected`;
-    suggestions.push({ pattern: 'Guided.Flow', reason, confidence: 'low' });
+    suggestions.push({ pattern: 'Guided.Flow', reason, confidence: 'low', confidenceScore: 40 });
+  }
+
+  // Normalize any legacy objects without confidenceScore (future-proofing if extended elsewhere)
+  for (const s of suggestions) {
+    if (typeof s.confidenceScore !== 'number') {
+      // Fallback mapping if missing (should not occur in current implementation)
+      s.confidenceScore = s.confidence === 'high' ? 85 : s.confidence === 'medium' ? 60 : 35;
+    }
   }
 
   return suggestions;

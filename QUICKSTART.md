@@ -44,6 +44,21 @@ luma init
 
 This displays instructions for adding LUMA workflow documentation to AGENTS.md and CLAUDE.md files.
 
+You can also bootstrap example scaffolds immediately:
+
+```bash
+# Copy a single example scaffold into ./examples
+luma init --example happy-form
+
+# Copy ALL available example scaffolds
+luma init --examples
+```
+
+All copied examples can be inspected with:
+```bash
+luma agent --sections examples --json
+```
+
 ## Step 1: Prepare Your Scaffold
 
 **Option A: Use scaffold generation (recommended)**
@@ -136,10 +151,23 @@ luma ingest broken.json
 luma ingest broken.json --all-issues
 ```
 
+### Reducing Noise During Iteration (Errors Only)
+For token efficiency while fixing blocking problems you can hide warnings:
+```bash
+luma ingest broken.json --errors-only
+```
+Console shows only error/critical; JSON adds `filteredIssues` alongside full `issues`.
+
 ## Step 3: Compute Layout
 
 ```bash
 luma layout my-form.json --viewports 320x640,1024x768
+```
+
+Use errors-only to focus on blocking layout problems (e.g., overflow) and suppress warnings:
+```bash
+luma layout my-form.json --viewports 320x640,1024x768 --errors-only --json
+# JSON contains layout_*.json plus additive field filteredLayouts
 ```
 
 **What it does:** Simulates how the UI would layout at different screen sizes.
@@ -161,6 +189,11 @@ Check the layout files:
 luma keyboard my-form.json
 ```
 
+Focus only on unreachable / blocking focus issues:
+```bash
+luma keyboard my-form.json --errors-only --json | jq '.filteredIssues'
+```
+
 **What it does:** Determines tab order and checks for unreachable interactive elements.
 
 **Expected output:**
@@ -178,11 +211,19 @@ Check `.ui/runs/<timestamp>/keyboard.json` for the full tab sequence.
 luma flow my-form.json --patterns Form.Basic
 ```
 
+During pattern refinement you may want only MUST failures (blocking). Use:
+```bash
+luma flow my-form.json --patterns Form.Basic --errors-only --json | jq '.filteredPatterns'
+```
+Additive field `filteredPatterns` lists each pattern with only error/critical issues.
+
 **What it does:** Checks compliance with UX patterns (labels, actions, disclosure, guided flow, etc.).
 
 ### Implicit Pattern Identification (v1.1 LUMA-75)
 
-If you omit the `--patterns` flag, LUMA will automatically select high-confidence patterns based on scaffold heuristics (e.g., detects a `Form` node and activates `Form.Basic`, detects collapsible disclosure behaviors and activates `Progressive.Disclosure`).
+If you omit the `--patterns` flag, LUMA will automatically select high-confidence patterns based on scaffold heuristics. (e.g., detects a `Form` node and activates `Form.Basic`, detects collapsible disclosure behaviors and activates `Progressive.Disclosure`).
+
+Scoring model (LUMA-117): each suggestion now includes a numeric `confidenceScore` (0–100). Auto-selection uses `confidenceScore >= 80` (high bucket). Medium (50–79) and low (<50) are reported but not auto-selected.
 
 ```bash
 # Auto-selects patterns (e.g., Form.Basic) based on scaffold contents
@@ -194,7 +235,11 @@ luma flow my-form.json --no-auto
 
 To see why patterns were auto-selected, use JSON output:
 ```bash
-luma flow my-form.json --json | jq '.autoSelected'
+# Show auto-selected patterns with scores
+luma flow my-form.json --json | jq '.autoSelected[] | {pattern, confidenceScore, reason}'
+
+# List all suggestions (even if not auto-selected) by invoking patterns suggest command
+luma patterns --suggest my-form.json --json | jq '.suggestions | sort_by(-.confidenceScore)'
 ```
 
 Provide explicit patterns to override implicit selection:
@@ -212,11 +257,11 @@ luma flow my-form.json --patterns Form.Basic,Table.Simple
 **Expected output (implicit auto-selection):**
 ```
 ✓ Pattern validation complete
-✓ Auto-selected patterns: Form.Basic
+✓ Auto-selected patterns: Form.Basic( high 92 )
 → Run folder: .ui/runs/<timestamp>
 ```
 
-Check `.ui/runs/<timestamp>/flow.json` for detailed pattern results.
+Check `.ui/runs/<timestamp>/flow.json` for detailed pattern results. JSON includes `autoSelected` array with both `confidence` and `confidenceScore` fields for backward compatibility.
 
 ## Step 6: Calculate Overall Score
 
@@ -249,6 +294,43 @@ Replace `<latest-timestamp>` with the most recent run folder from the previous s
 luma report .ui/runs/<timestamp>
 ```
 
+## Optional: Generate a Prototype (html-prototype)
+
+If you want a quick, lightweight HTML artifact of your scaffold (for stakeholder review or fast iteration) generate a prototype directly from either the scaffold file or a run folder:
+
+```bash
+# From scaffold file
+luma export my-form.json --format html-prototype
+
+# From run folder (after chaining ingest/layout/keyboard/flow)
+luma export .ui/runs/<timestamp> --format html-prototype
+```
+
+Default output: `prototype.html` in the current working directory (override with `--out`).
+
+Key options:
+- `--quick`  Strip styles and comments for minimal markup
+- `--json`   Output metadata only (no file write) e.g. `{ "nodes": 12, "format": "html-prototype" }`
+- `--dry-run` Simulate without writing file
+- `--run-id <id>` Use `.ui/runs/<id>` without typing full path (pass `.` as input)
+
+Example minimal metadata invocation:
+```bash
+luma export my-form.json --format html-prototype --json
+```
+
+What the prototype includes (v1):
+- Title and heading
+- Stack → flex container
+- Form → labels, required indicators, actions group
+- Field → label + input (type preserved)
+- Button → primary / secondary styling hint
+- Text → paragraph
+
+Not included (yet): responsive adjustments, keyboard focus styles, pattern annotations. Purpose is fast semantic preview, not production UI.
+
+Future targets: `react-component`, `markdown-doc`, enriched accessibility hints.
+
 **What it does:** Creates a visual HTML report summarizing all analysis results.
 
 **Expected output:**
@@ -262,16 +344,93 @@ Open the HTML file in your browser to see:
 - All issues grouped by severity
 - Per-viewport results
 
+## Optional: Compare Layouts Between Runs (layout-diff)
+
+When refining spacing, responsive overrides, or component sizing you can diff two layout runs to inspect frame shifts and issue deltas.
+
+```powershell
+# Run baseline
+luma layout my-form.json --viewports 320x640,768x1024
+
+# Edit scaffold (e.g., adjust gap/padding) then run again
+luma layout my-form.json --viewports 320x640,768x1024
+
+# List run folders to obtain IDs
+Get-ChildItem .ui/runs | Select-Object Name
+
+# Diff the two runs (replace <old> <new>)
+luma layout-diff .ui/runs/<old> .ui/runs/<new>
+
+# JSON for programmatic analysis
+luma layout-diff .ui/runs/<old> .ui/runs/<new> --json | jq '.diffs[0]'
+```
+
+Output highlights:
+- Changed frames with dx, dy, dw, dh
+- Added / removed nodes
+- Issue changes (e.g., overflow-x resolved)
+
+Use cases:
+- Validate spacing adjustments didn’t hide primary actions
+- Confirm responsive overrides reduced overflow
+- Track impact of pattern additions on layout stability
+
+## Optional: Directly Diff Two Scaffolds (diff)
+
+When iterating on the scaffold JSON itself (adding fields, adjusting properties) you can see structural and validation deltas without generating full run folders:
+
+```powershell
+luma diff old.json new.json --json | jq '.changedNodes[0]'
+```
+
+Console output summarizes added / removed / modified nodes plus validation issue changes and pattern suggestion activation deltas.
+
+JSON schema:
+```
+{
+  "addedNodes": [],
+  "removedNodes": [],
+  "changedNodes": [
+    { "id": "email-field", "changeType": "modified", "changedProps": [{"key":"required","before":false,"after":true}] }
+  ],
+  "issueDelta": { "addedIssues": [], "resolvedIssues": [] },
+  "patternSuggestions": { "before": [], "after": [], "added": [], "removed": [] }
+}
+```
+
+Use cases:
+- Quickly review impact of adding a new action button
+- Confirm a property tweak resolved a validation error
+- See when a pattern heuristic newly activates (e.g., Guided.Flow)
+
+## Iteration Flags Reference
+
+Combine flags to optimize iterative cycles (token & time efficiency):
+
+| Flag | Commands | Effect |
+|------|----------|--------|
+| `--quick` | ingest, layout, keyboard, flow, score, report, export | Elide verbose details (issue listings/styles) |
+| `--errors-only` | ingest, layout, keyboard, flow | Show only blocking severities; JSON adds filtered arrays |
+| `--dry-run` | ingest, layout, keyboard, flow, score, report, export | Skip artifact file writes |
+| `--coverage` | flow | Include `coverage` activation metrics |
+| `--json` | core commands | Structured machine-readable output |
+| `--no-auto` | flow | Disable implicit pattern auto-selection |
+| `--run-id` | export | Shorthand to reference run folder using `.` input |
+
+Recommended minimal iteration combo:
+```powershell
+luma ingest scaffold.json --quick --errors-only --json
+```
+
+Then escalate to full detail (omit flags) before scoring and reporting.
+
 ## (Important) Chaining Commands Into One Run Folder
 
 Each command creates a NEW timestamped run folder. To ensure `score` sees all artifacts (ingest, layout, keyboard, flow), chain the commands so they execute sequentially in a single folder.
 
 Windows PowerShell:
 ```powershell
-luma ingest my-form.json; \
-luma layout my-form.json --viewports 320x640,768x1024; \
-luma keyboard my-form.json; \
-luma flow my-form.json --patterns Form.Basic
+luma ingest my-form.json; luma layout my-form.json --viewports 320x640,768x1024; luma keyboard my-form.json; luma flow my-form.json --patterns Form.Basic
 ```
 
 macOS/Linux:
@@ -407,7 +566,32 @@ luma layout examples/overflow-table.json --viewports 320x640
 - Explore [pattern definitions](./SPECIFICATION.md#7-ux-pattern-library)
 - Learn about [scoring formulas](./SPECIFICATION.md#8-scoring--thresholds)
 - Understand [exit codes](./SPECIFICATION.md#10-exit-codes)
-- Review [AGENTS.md](./AGENTS.md) if you're an AI agent integrating LUMA.
+- Retrieve dynamic agent runtime knowledge: `luma agent --sections quick,rules --json`
+- Review the minimal pointer in [AGENTS.md](./AGENTS.md) (it defers to `luma agent`).
+
+### Agent Command (Runtime Knowledge)
+
+Instead of loading large static docs, query only what you need:
+```bash
+luma agent --list-sections                 # show available sections
+luma agent --sections quick,rules --json   # minimal envelope
+luma agent --get quick --json              # just the quick section
+```
+
+All sections (cached after first build):
+```bash
+luma agent --all --json
+```
+
+Dot-path limitations: simple dotted keys only (e.g. `quick`, `rules.patterns`). **No array indexing or wildcard paths (`patterns.Form.Basic.must[0]`) supported in v1.** Fetch the section then filter client-side if needed.
+
+Error examples:
+```bash
+luma agent --sections unknown --json   # UNKNOWN_SECTION (exit 2)
+luma agent --get rules.bad --json      # UNKNOWN_PATH (exit 2)
+```
+
+Determinism: Output ordering is stable; only timestamps differ.
 
 ## Troubleshooting
 

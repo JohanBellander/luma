@@ -14,6 +14,7 @@ const baseNodeSchema = z.object({
   minSize: z.object({ w: z.number().optional(), h: z.number().optional() }).optional(),
   maxSize: z.object({ w: z.number().optional(), h: z.number().optional() }).optional(),
   at: z.record(z.string(), z.any()).optional(), // Responsive overrides
+  pattern: z.string().optional(), // optional pattern annotation (validated post-parse)
   behaviors: z
     .object({
       disclosure: z

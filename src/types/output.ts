@@ -18,6 +18,26 @@ export interface LayoutOutput {
   issues: Issue[];
 }
 
+export interface LayoutDiffChange {
+  id: string;
+  before?: Frame; // undefined if added
+  after?: Frame;  // undefined if removed
+  delta?: { dx: number; dy: number; dw: number; dh: number }; // present if moved/resized
+  changeType: 'added' | 'removed' | 'moved' | 'resized' | 'moved_resized' | 'unchanged';
+}
+
+export interface LayoutDiffOutput {
+  viewport: string;
+  added: Frame[];
+  removed: Frame[];
+  changed: LayoutDiffChange[]; // moved / resized breakdown
+  unchangedCount: number;
+  issueDelta: {
+    added: Issue[];
+    removed: Issue[];
+  };
+}
+
 export interface KeyboardOutput {
   sequence: string[]; // ordered nodeIds
   unreachable: string[]; // focusable nodeIds not reached
@@ -44,5 +64,32 @@ export interface ReportOutput {
     layout: LayoutOutput[];
     keyboard: KeyboardOutput;
     patterns: Issue[];
+  };
+}
+
+// Scaffold diff output (LUMA-133)
+export interface ScaffoldNodeChange {
+  id: string;
+  before?: any; // normalized node structure before (absent if added)
+  after?: any;  // normalized node structure after (absent if removed)
+  changeType: 'added' | 'removed' | 'modified';
+  // Shallow property delta summary for quick console reporting
+  changedProps?: Array<{ key: string; before: any; after: any }>;
+}
+
+export interface ScaffoldDiffOutput {
+  addedNodes: any[]; // nodes added (normalized)
+  removedNodes: any[]; // nodes removed (normalized)
+  changedNodes: ScaffoldNodeChange[]; // nodes with property-level changes
+  issueDelta: {
+    addedIssues: Issue[];
+    resolvedIssues: Issue[];
+  };
+  // Optional pattern suggestion delta (auto heuristics) to highlight activation changes
+  patternSuggestions?: {
+    before: Array<{ pattern: string; confidence: string; confidenceScore: number }>;
+    after: Array<{ pattern: string; confidence: string; confidenceScore: number }>;
+    added: string[];
+    removed: string[];
   };
 }

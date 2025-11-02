@@ -24,13 +24,14 @@ export function layoutGrid(
   const minColWidth = node.minColWidth;
 
   // Check spacing scale
+  // Allow implicit zero even if not declared in spacingScale
   if (gap !== 0 && !ctx.spacingScale.includes(gap)) {
     ctx.issues.push({
       id: `spacing-off-scale-${node.id}-gap`,
       severity: 'warn',
       message: `Grid gap ${gap} not in spacingScale`,
       nodeId: node.id,
-      jsonPointer: `/screens/0/root`,
+  jsonPointer: `/screen/root`,
     });
   }
 
@@ -70,7 +71,7 @@ export function layoutGrid(
         severity: 'error',
         message: `Child ${child.id} width ${childW} exceeds Grid cell width ${cellW}`,
         nodeId: child.id,
-        jsonPointer: `/screens/0/root`,
+  jsonPointer: `/screen/root`,
       });
     }
 

@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "1.0.0",
+  "screen": {
+    "id": "ecommerce-admin",
+    "title": "Ecommerce Management",
+    "root": {
+      "id": "ecom-root",
+      "type": "Stack",
+      "direction": "vertical",
+      "gap": 24,
+      "padding": 24,
+      "children": [
+        { "id": "ecom-title", "type": "Text", "text": "Product & Orders" },
+        {
+          "id": "product-form",
+          "type": "Form",
+          "title": "Add Product",
+          "fields": [
+            { "id": "prod-name", "type": "Field", "label": "Name", "inputType": "text", "required": true },
+            { "id": "prod-price", "type": "Field", "label": "Price", "inputType": "number", "required": true }
+          ],
+          "actions": [
+            { "id": "save-product", "type": "Button", "text": "Save", "roleHint": "primary", "minSize": { "w": 44, "h": 44 } },
+            { "id": "cancel-product", "type": "Button", "text": "Cancel", "roleHint": "secondary", "minSize": { "w": 44, "h": 44 } }
+          ],
+          "states": ["default", "submitting", "error"]
+        },
+        {
+          "id": "orders-table",
+          "type": "Table",
+          "title": "Recent Orders",
+          "columns": [
+            { "id": "o-id", "header": "Order ID" },
+            { "id": "o-customer", "header": "Customer" },
+            { "id": "o-total", "header": "Total" }
+          ],
+          "rows": [
+            { "id": "order-1", "cells": ["#1001", "Alice", "$120.00"] },
+            { "id": "order-2", "cells": ["#1002", "Bob", "$75.50"] }
+          ]
+        }
+      ]
+    }
+  },
+  "settings": {
+    "spacingScale": [4, 8, 12, 16, 24, 32, 48],
+    "minTouchTarget": { "w": 44, "h": 44 },
+    "breakpoints": ["320x640", "768x1024", "1280x800"]
+  }
+}
