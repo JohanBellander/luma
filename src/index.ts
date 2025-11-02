@@ -84,26 +84,27 @@ async function registerCommands() {
   }
 }
 
-// Main async bootstrap then parse.
-await registerCommands();
-program.parse(process.argv);
+// Bootstrap wrapped in async IIFE to avoid top-level await (better CJS bundling).
+(async () => {
+  await registerCommands();
+  program.parse(process.argv);
 
-// Optional performance output
-const rootOpts = program.opts();
-if (rootOpts.perfStartup) {
-  const dur = performance.now() - _startupTs;
-  console.log(`startup_ms=${dur.toFixed(1)}`);
-  if (perfBreakdown.length) {
-    const totalLoaded = perfBreakdown.reduce((a, b) => a + b.ms, 0);
-    // Provide per-command breakdown sorted descending to highlight heavy modules.
-    const sorted = perfBreakdown.slice().sort((a, b) => b.ms - a.ms);
-    console.log('module_breakdown_ms=' + JSON.stringify({ totalLoaded: Number(totalLoaded.toFixed(1)), modules: sorted.map(m => ({ name: m.name, ms: Number(m.ms.toFixed(1)) })) }));
+  // Optional performance output
+  const rootOpts = program.opts();
+  if (rootOpts.perfStartup) {
+    const dur = performance.now() - _startupTs;
+    console.log(`startup_ms=${dur.toFixed(1)}`);
+    if (perfBreakdown.length) {
+      const totalLoaded = perfBreakdown.reduce((a, b) => a + b.ms, 0);
+      const sorted = perfBreakdown.slice().sort((a, b) => b.ms - a.ms);
+      console.log('module_breakdown_ms=' + JSON.stringify({ totalLoaded: Number(totalLoaded.toFixed(1)), modules: sorted.map(m => ({ name: m.name, ms: Number(m.ms.toFixed(1)) })) }));
+    }
   }
-}
 
-if (!process.argv.slice(2).length) {
-  program.outputHelp();
-}
+  if (!process.argv.slice(2).length) {
+    program.outputHelp();
+  }
+})();
 
 // Export types and utils for programmatic use
 export * from './types/index.js';

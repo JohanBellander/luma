@@ -1,4 +1,3 @@
-import { build } from 'esbuild';
 import { copyFileSync, mkdirSync } from 'fs';
 
 // Copy data files to dist
@@ -7,14 +6,6 @@ copyFileSync('src/data/topics.json', 'dist/data/topics.json');
 copyFileSync('src/data/faq.json', 'dist/data/faq.json');
 copyFileSync('src/data/component-schemas.json', 'dist/data/component-schemas.json');
 
-await build({
-  entryPoints: ['dist/index.js'],
-  bundle: true,
-  platform: 'node',
-  target: 'node18',
-  outfile: 'dist/bundle.js',
-  format: 'esm',
-  banner: {
-    js: '#!/usr/bin/env node',
-  },
-}).catch(() => process.exit(1));
+// No bundling step: rely on TypeScript output (dist/index.js) as CLI entry.
+// This avoids ESM/CJS interop issues and duplicate shebang problems introduced
+// by previous esbuild configuration.
