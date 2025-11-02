@@ -76,7 +76,8 @@ export function createPatternsCommand(): Command {
             } else {
               console.log('Pattern Suggestions:');
               for (const s of suggestions) {
-                console.log(`  - ${s.pattern} [${s.confidence}] :: ${s.reason}`);
+                // Display both legacy bucket and numeric score
+                console.log(`  - ${s.pattern} [${s.confidence} ${s.confidenceScore}] :: ${s.reason}`);
               }
             }
           }

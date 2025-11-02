@@ -128,31 +128,61 @@ You can ask LUMA to heuristically suggest which UX patterns apply to a scaffold 
 luma patterns --suggest my-scaffold.json --json
 ```
 
-Output format:
+Output format (v1.1+ now includes numeric `confidenceScore`):
 
 ```json
 {
 	"suggestions": [
-		{ "pattern": "Form.Basic", "reason": "Detected Form node with 3 field(s) and 2 action(s)", "confidence": "high" },
-		{ "pattern": "Table.Simple", "reason": "Detected Table node (5 columns, responsive.strategy=scroll)", "confidence": "high" },
-		{ "pattern": "Progressive.Disclosure", "reason": "Found collapsible disclosure behavior on one or more nodes", "confidence": "high" },
-		{ "pattern": "Guided.Flow", "reason": "Found multi-step indicators (next, previous) suggesting a wizard flow", "confidence": "medium" }
+		{
+			"pattern": "Form.Basic",
+			"reason": "Detected Form node with 3 field(s) and 2 action(s)",
+			"confidence": "high",
+			"confidenceScore": 92
+		},
+		{
+			"pattern": "Table.Simple",
+			"reason": "Detected Table node (5 columns, responsive.strategy=scroll)",
+			"confidence": "high",
+			"confidenceScore": 88
+		},
+		{
+			"pattern": "Progressive.Disclosure",
+			"reason": "Found collapsible disclosure behavior on one or more nodes",
+			"confidence": "high",
+			"confidenceScore": 83
+		},
+		{
+			"pattern": "Guided.Flow",
+			"reason": "Found multi-step indicators (next, previous) suggesting a wizard flow",
+			"confidence": "medium",
+			"confidenceScore": 56
+		}
 	]
 }
 ```
 
-Confidence scale:
-- high – direct structural match (Form node with fields/actions, Table columns, explicit disclosure behaviors)
-- medium – multiple hints (next/previous buttons implying multi-step flow)
-- low – single weak hint (a lone Next button or guidedFlow metadata without other indicators)
+Confidence representation:
+- `confidenceScore` (0–100) is the primary numeric signal (added in LUMA-117). Thresholds:
+	- High ≥ 80
+	- Medium ≥ 50 and < 80
+	- Low < 50
+- Legacy `confidence` string retained for backward compatibility; treat it as a coarse bucket of the numeric score.
 
-Use suggestions to decide which patterns to include when running:
+Heuristic examples:
+- Form.Basic: base 70 + (#fields * 4) + (#actions * 3) capped at 100.
+- Table.Simple: base 60 + column count * 5 (capped) + scroll strategy bonus.
+- Progressive.Disclosure: base 60 + collapsible behaviors * 5.
+- Guided.Flow: multi-step hints accumulate; single weak hint keeps score below 50.
+
+Auto-selection (when `luma flow` omits `--patterns`): patterns with `confidenceScore >= 80` are activated automatically unless `--no-auto` is passed.
+
+Use suggestions (and scores) to decide which patterns to include when running:
 
 ```bash
 luma flow scaffold.json --patterns Form.Basic,Table.Simple
 ```
 
-Suggestions add <5% execution time compared to listing patterns and never block validation; empty output means no strong pattern indicators were detected.
+Suggestions add <5% execution time compared to listing patterns and never block validation; empty output means no strong pattern indicators were detected. Numeric scoring enables future tuning without breaking existing consumers relying on the categorical field.
 
 ## Guided.Flow Pattern (Multi-Step Wizards)
 

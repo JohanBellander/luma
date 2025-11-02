@@ -221,7 +221,9 @@ Additive field `filteredPatterns` lists each pattern with only error/critical is
 
 ### Implicit Pattern Identification (v1.1 LUMA-75)
 
-If you omit the `--patterns` flag, LUMA will automatically select high-confidence patterns based on scaffold heuristics (e.g., detects a `Form` node and activates `Form.Basic`, detects collapsible disclosure behaviors and activates `Progressive.Disclosure`).
+If you omit the `--patterns` flag, LUMA will automatically select high-confidence patterns based on scaffold heuristics. (e.g., detects a `Form` node and activates `Form.Basic`, detects collapsible disclosure behaviors and activates `Progressive.Disclosure`).
+
+Scoring model (LUMA-117): each suggestion now includes a numeric `confidenceScore` (0–100). Auto-selection uses `confidenceScore >= 80` (high bucket). Medium (50–79) and low (<50) are reported but not auto-selected.
 
 ```bash
 # Auto-selects patterns (e.g., Form.Basic) based on scaffold contents
@@ -233,7 +235,11 @@ luma flow my-form.json --no-auto
 
 To see why patterns were auto-selected, use JSON output:
 ```bash
-luma flow my-form.json --json | jq '.autoSelected'
+# Show auto-selected patterns with scores
+luma flow my-form.json --json | jq '.autoSelected[] | {pattern, confidenceScore, reason}'
+
+# List all suggestions (even if not auto-selected) by invoking patterns suggest command
+luma patterns --suggest my-form.json --json | jq '.suggestions | sort_by(-.confidenceScore)'
 ```
 
 Provide explicit patterns to override implicit selection:
@@ -251,11 +257,11 @@ luma flow my-form.json --patterns Form.Basic,Table.Simple
 **Expected output (implicit auto-selection):**
 ```
 ✓ Pattern validation complete
-✓ Auto-selected patterns: Form.Basic
+✓ Auto-selected patterns: Form.Basic( high 92 )
 → Run folder: .ui/runs/<timestamp>
 ```
 
-Check `.ui/runs/<timestamp>/flow.json` for detailed pattern results.
+Check `.ui/runs/<timestamp>/flow.json` for detailed pattern results. JSON includes `autoSelected` array with both `confidence` and `confidenceScore` fields for backward compatibility.
 
 ## Step 6: Calculate Overall Score
 

@@ -6,7 +6,7 @@ import { getPattern, listPatternNames } from '../core/patterns/pattern-registry.
 import { getRunFilePath, selectRunFolder } from '../utils/run-folder.js';
 import type { Pattern } from '../core/patterns/types.js';
 import type { Scaffold } from '../types/scaffold.js';
-import { suggestPatterns, hasDisclosureHints, hasGuidedFlowHints, type PatternSuggestion } from '../core/patterns/suggestions.js';
+import { suggestPatterns, hasDisclosureHints, hasGuidedFlowHints, type PatternSuggestion, HIGH_CONFIDENCE_THRESHOLD } from '../core/patterns/suggestions.js';
 import { computeCoverage } from '../core/patterns/coverage.js';
 
 
@@ -14,7 +14,7 @@ export function createFlowCommand(): Command {
   const command = new Command('flow');
 
   command
-    .description('Validate scaffold against UX patterns')
+    .description('Validate scaffold against UX patterns (auto-selects patterns with confidenceScore >= 80 when --patterns omitted)')
     .argument('<file>', 'Path to scaffold JSON file')
     .option('--patterns <list>', 'Comma-separated list of patterns (optional; if omitted, auto-select high-confidence suggestions)')
   .option('--no-auto', 'Disable auto pattern selection when --patterns omitted')
@@ -88,7 +88,8 @@ export function createFlowCommand(): Command {
   // By default commander sets option.auto === true unless --no-auto passed (then false)
   if (explicitPatternNames.length === 0 && options.auto !== false) {
           allSuggestions = suggestPatterns(scaffold.screen.root);
-          autoSelected = allSuggestions.filter(s => s.confidence === 'high');
+          // Use numeric confidence threshold (LUMA-117). Preserve legacy high confidence behavior by threshold >= HIGH_CONFIDENCE_THRESHOLD.
+          autoSelected = allSuggestions.filter(s => s.confidenceScore >= HIGH_CONFIDENCE_THRESHOLD);
           for (const s of autoSelected) {
             const p = getPattern(s.pattern);
             if (p && !patterns.some(existing => existing.name === p.name)) {
@@ -142,7 +143,7 @@ export function createFlowCommand(): Command {
         if (!options.json) {
           console.log('[INFO] Flow analysis ' + (options.dryRun ? '(dry-run simulated)' : 'written to:'), options.dryRun ? flowPath + ' (not saved)' : flowPath);
           if (autoSelected.length > 0) {
-            console.log('[INFO] Auto-selected patterns:', autoSelected.map(s => `${s.pattern}(${s.confidence})`).join(', '));
+            console.log('[INFO] Auto-selected patterns:', autoSelected.map(s => `${s.pattern}(${s.confidence} ${s.confidenceScore})`).join(', '));
           } else if (explicitPatternNames.length === 0 && options.auto === false) {
             console.log('[INFO] No patterns specified and auto-selection disabled (--no-auto).');
           }
