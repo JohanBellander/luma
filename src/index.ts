@@ -44,6 +44,7 @@ const loaderEntries: LoaderEntry[] = [
   { name: 'explain', loader: async () => (await import('./cli/explain.command.js')).createExplainCommand() },
   { name: 'faq', loader: async () => (await import('./cli/faq.command.js')).createFaqCommand() },
   { name: 'report', loader: async () => (await import('./cli/report.command.js')).createReportCommand() },
+  { name: 'export', loader: async () => (await import('./cli/export.command.js')).createExportCommand() },
   { name: 'agent', loader: async () => (await import('./cli/agent.command.js')).createAgentCommand() },
   { name: 'validate', loader: async () => (
     // @ts-ignore - dynamic import resolves after build transpiles .ts to .js

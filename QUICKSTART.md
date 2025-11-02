@@ -294,6 +294,43 @@ Replace `<latest-timestamp>` with the most recent run folder from the previous s
 luma report .ui/runs/<timestamp>
 ```
 
+## Optional: Generate a Prototype (html-prototype)
+
+If you want a quick, lightweight HTML artifact of your scaffold (for stakeholder review or fast iteration) generate a prototype directly from either the scaffold file or a run folder:
+
+```bash
+# From scaffold file
+luma export my-form.json --format html-prototype
+
+# From run folder (after chaining ingest/layout/keyboard/flow)
+luma export .ui/runs/<timestamp> --format html-prototype
+```
+
+Default output: `prototype.html` in the current working directory (override with `--out`).
+
+Key options:
+- `--quick`  Strip styles and comments for minimal markup
+- `--json`   Output metadata only (no file write) e.g. `{ "nodes": 12, "format": "html-prototype" }`
+- `--dry-run` Simulate without writing file
+- `--run-id <id>` Use `.ui/runs/<id>` without typing full path (pass `.` as input)
+
+Example minimal metadata invocation:
+```bash
+luma export my-form.json --format html-prototype --json
+```
+
+What the prototype includes (v1):
+- Title and heading
+- Stack → flex container
+- Form → labels, required indicators, actions group
+- Field → label + input (type preserved)
+- Button → primary / secondary styling hint
+- Text → paragraph
+
+Not included (yet): responsive adjustments, keyboard focus styles, pattern annotations. Purpose is fast semantic preview, not production UI.
+
+Future targets: `react-component`, `markdown-doc`, enriched accessibility hints.
+
 **What it does:** Creates a visual HTML report summarizing all analysis results.
 
 **Expected output:**

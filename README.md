@@ -53,6 +53,39 @@ Requires Node.js ≥ 18.
 luma init
 ```
 
+### Prototype Export (New: html-prototype)
+
+After a scaffold passes ingest (and optionally flow/layout checks) you can generate a lightweight HTML prototype for quick visual/interaction review without writing production UI code yet:
+
+```powershell
+luma export my-form.json --format html-prototype
+```
+
+Outputs `prototype.html` in the current directory by default. Open it in a browser to see:
+- Screen title as heading
+- Basic layout structure (Stacks rendered as flex containers)
+- Form fields with labels & required indicators
+- Primary / secondary buttons styled minimally
+
+Options:
+- `--out custom.html` specify output file
+- `--quick` omit inline styles & generator comment (minimal markup only)
+- `--json` emit metadata instead of file output (includes node count, schemaVersion)
+- `--dry-run` skip writing file while still printing success message
+
+Run-folder input (export from a previous chained validation run):
+```powershell
+luma export .ui/runs/<run-id> --format html-prototype
+```
+You may also use `--run-id <id>` with `.` as input.
+
+Use cases:
+- Human review of scaffold semantics before implementation
+- Sharing a quick clickable artifact with stakeholders
+- Comparing variants (generate multiple prototypes from differing scaffolds)
+
+Future planned formats: `react-component`, `astro`, `markdown-doc` (tracked separately).
+
 ## Runtime Knowledge (Agent Command)
 
 Use the dynamic agent command to retrieve only the information you need in a deterministic JSON envelope. This replaces large static docs and reduces token usage for AI agents.
